@@ -21,6 +21,11 @@ COPY apps/hq ./apps/hq
 
 # Build types first (HQ depends on it)
 RUN npm run build -w packages/types
+
+# Accept build argument for API URL
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Build HQ
 RUN npm run build -w apps/hq
 

@@ -21,6 +21,11 @@ COPY apps/ops ./apps/ops
 
 # Build types first (OPS depends on it)
 RUN npm run build -w packages/types
+
+# Accept build argument for API URL
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Build OPS
 RUN npm run build -w apps/ops
 
