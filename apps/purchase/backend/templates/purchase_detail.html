@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in-down">
+    <div class="flex items-center justify-between pt-6 pb-2">
+        <button onclick="history.back()" class="text-slate-400 hover:text-white transition-colors">← Volver</button>
+        <span class="text-xs font-mono text-slate-500">Calculadora de Costos</span>
+    </div>
+
+    <!-- Product Header -->
+    <div class="glass p-6 rounded-2xl border-l-4 border-blue-500">
+        <h2 class="text-slate-400 text-sm mb-1">Has seleccionado:</h2>
+        <h1 class="text-2xl font-bold text-white leading-tight">{{ item_name }}</h1>
+        <div class="flex justify-between mt-3 text-sm font-mono text-slate-400">
+            <span>Último Precio:</span>
+            <span class="text-green-400">${{ last_cost }}</span>
+        </div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="space-y-4">
+        <!-- Quantity -->
+        <div class="glass p-4 rounded-xl">
+            <label class="block text-slate-300 text-sm mb-2 font-medium">Cantidad Comprada</label>
+            <div class="flex gap-2">
+                <input type="number" id="quantity" step="0.01"
+                    class="flex-1 bg-slate-800 text-white text-2xl font-bold px-4 py-3 rounded-lg border border-slate-700 outline-none focus:border-blue-500"
+                    placeholder="0">
+                <div class="bg-slate-700 px-4 py-3 rounded-lg text-slate-300 flex items-center font-bold">
+                    {{ unit_label }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Price -->
+        <div class="glass p-4 rounded-xl">
+            <label class="block text-slate-300 text-sm mb-2 font-medium">Precio Total Pagado ($)</label>
+            <input type="number" id="totalPrice" step="0.01"
+                class="w-full bg-slate-800 text-white text-2xl font-bold px-4 py-3 rounded-lg border border-slate-700 outline-none focus:border-green-500 text-green-400"
+                placeholder="$ 0.00">
+
+            <div class="flex items-center gap-2 mt-3">
+                <input type="checkbox" id="deliveryCheck"
+                    class="w-5 h-5 rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500">
+                <label for="deliveryCheck" class="text-slate-400 text-sm">Incluye Delivery / Impuestos</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Card -->
+    <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 text-center transition-all" id="resultCard">
+        <p class="text-slate-400 text-sm uppercase tracking-wider mb-1">Costo Unitario Real</p>
+        <div class="text-4xl font-bold text-white mb-1" id="unitCostDisplay">--</div>
+
+        <!-- Comparison Badge -->
+        <div id="comparisonBadge" class="inline-flex items-center px-2 py-1 rounded text-xs font-bold hidden">
+            <!-- Injected by JS -->
+        </div>
+    </div>
+
+    <!-- Next Button -->
+    <button onclick="goToConfirmation()" id="confirmBtn" disabled
+        class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/20 transition-all transform hover:scale-[1.02] mt-4">
+        Agregar al Carrito
+    </button>
+</div>
+
+<script>
+    const qtyInput = document.getElementById('quantity');
+    const priceInput = document.getElementById('totalPrice');
+    const unitCostDisplay = document.getElementById('unitCostDisplay');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const badge = document.getElementById('comparisonBadge');
+
+    const lastCost = parseFloat("{{ last_cost }}");
+
+    function calculate() {
+        const qty = parseFloat(qtyInput.value);
+        const total = parseFloat(priceInput.value);
+
+        if (qty > 0 && total > 0) {
+            const unitCost = total / qty;
+            unitCostDisplay.textContent = `$${unitCost.toFixed(2)}`;
+            confirmBtn.disabled = false;
+
+            // Compare logic
+            const diff = unitCost - lastCost;
+            badge.classList.remove('hidden', 'bg-red-500/20', 'text-red-400', 'bg-green-500/20', 'text-green-400', 'bg-gray-500/20', 'text-gray-400');
+
+            if (lastCost === 0) {
+                badge.textContent = "🆕 Nuevo Precio";
+                badge.className = "inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-blue-500/20 text-blue-400";
+            } else if (diff > 0.01) {
+                const pct = ((diff / lastCost) * 100).toFixed(0);
+                badge.textContent = `🔺 +${pct}% vs Anterior`;
+                badge.className = "inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-red-500/20 text-red-400";
+            } else if (diff < -0.01) {
+                const pct = Math.abs((diff / lastCost) * 100).toFixed(0);
+                badge.textContent = `⬇️ -${pct}% vs Anterior`;
+                badge.className = "inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-green-500/20 text-green-400";
+            } else {
+                badge.textContent = "= Mismo Precio";
+                badge.className = "inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-gray-500/20 text-gray-400";
+            }
+        } else {
+            unitCostDisplay.textContent = "--";
+            confirmBtn.disabled = true;
+            badge.classList.add('hidden');
+        }
+    }
+
+    qtyInput.addEventListener('input', calculate);
+    priceInput.addEventListener('input', calculate);
+
+    async function goToConfirmation() {
+        const qty = parseFloat(qtyInput.value);
+        const total = parseFloat(priceInput.value);
+        const unit = total / qty;
+
+        // Visual Feedback
+        confirmBtn.textContent = "⏳ Creando Borrador...";
+        confirmBtn.disabled = true;
+
+        const payload = {
+            provider_id: "{{ provider_id }}",
+            total_amount: total,
+            items: [{
+                catalog_item_id: "{{ item_id }}",
+                quantity: qty,
+                unit_cost: unit,
+                total_cost: total
+            }]
+        };
+
+        try {
+            const res = await fetch('/api/purchases', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                // Redirect to Review Screen with the new Draft ID
+                window.location.href = `/review/${data.id}`;
+            } else {
+                throw new Error("Error creating draft");
+            }
+        } catch (e) {
+            alert("Error creando borrador. Intente de nuevo.");
+            confirmBtn.textContent = "Agregar al Carrito";
+            confirmBtn.disabled = false;
+        }
+    }
+</script>
+{% endblock %}

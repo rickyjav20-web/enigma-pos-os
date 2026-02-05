@@ -1,68 +1,113 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
+@layer base {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    /* Base Shadcn - Mapped to match Enigma Dark by default for components that rely on them */
+    --background: 230 14% 4%;
+    /* #0a0a0c */
+    --foreground: 0 0% 100%;
+
+    --card: 230 14% 6%;
+    --card-foreground: 0 0% 100%;
+    --popover: 230 14% 6%;
+
+    --popover-foreground: 0 0% 100%;
+    --primary: 263 90% 66%;
+    /* Enigma Purple */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 5% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 240 5% 15%;
+    --muted-foreground: 240 5% 65%;
+
+    --accent: 240 5% 20%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 5% 15%;
+    /* #27272a */
+    --input: 240 5% 15%;
+    --ring: 263 90% 66%;
+
+    --radius: 0.75rem;
+    /* 12px rounded */
   }
-  a:hover {
-    color: #747bff;
+
+  /* Light Theme (Ceramic) - Optional Flip */
+  .light {
+    --background: 210 20% 98%;
+    --foreground: 240 10% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 4%;
+    --primary: 263 90% 66%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 59% 10%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 59% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 263 90% 66%;
   }
-  button {
-    background-color: #f9f9f9;
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground tracking-tight antialiased selection:bg-enigma-purple/30 selection:text-white;
+    /* The Deep Void Gradient */
+    background: radial-gradient(circle at top left, #1a1a23 0%, #0a0a0c 40%, #000000 100%);
+    min-height: 100vh;
+  }
+}
+
+/* Glass Utilities */
+@layer utilities {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    /* Subtle white border */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-input {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.2s ease-out;
+  }
+
+  .glass-input:focus {
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2), 0 0 15px rgba(139, 92, 246, 0.1);
+    outline: none;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  }
+
+  .text-glow-purple {
+    text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
   }
 }

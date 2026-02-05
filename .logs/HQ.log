@@ -1,0 +1,36 @@
+
+> hq@0.0.0 dev
+> vite
+
+
+  VITE v7.3.1  ready in 443 ms
+
+  ➜  Local:   http://localhost:4001/
+8:20:09 PM [vite] (client) hmr update /src/features/purchases/pages/InventoryPage.jsx, /src/index.css
+8:20:15 PM [vite] (client) hmr update /src/features/purchases/pages/InventoryPage.jsx, /src/index.css
+8:20:15 PM [vite] (client) hmr update /src/features/purchases/pages/InventoryPage.jsx, /src/index.css
+8:50:14 PM [vite] (client) hmr update /src/features/purchases/pages/InventoryPage.jsx, /src/index.css
+8:50:24 PM [vite] (client) hmr update /src/features/purchases/pages/InventoryPage.jsx, /src/index.css
+8:50:37 PM [vite] (client) hmr update /src/features/purchases/pages/InventoryPage.jsx, /src/index.css
+9:18:17 PM [vite] vite.config.ts changed, restarting server...
+9:18:18 PM [vite] server restarted.
+9:18:20 PM [vite] (client) hmr update /src/index.css
+9:18:34 PM [vite] (client) hmr update /src/index.css, /src/features/purchases/pages/InventoryPage.jsx
+9:18:34 PM [vite] Internal server error:   x Expression expected
+   ,-[/Users/rickyjav/Desktop/Enigma_OS_V2/enigma-pos-os/apps/hq/src/features/purchases/pages/InventoryPage.jsx:5:1]
+ 2 | import React, { useState, useEffect } from 'react';
+ 3 | import { useNavigate } from 'react-router-dom';
+ 4 | ArrowUpRight, ArrowDownRight, Search, Filter, Plus, FileDown, Upload, X
+ 5 | } from 'lucide-react';
+   : ^
+ 6 | import { api } from '@/lib/api';
+ 7 | import { UnifiedItemModal } from '../components/UnifiedItemModal';
+   `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/rickyjav/Desktop/Enigma_OS_V2/enigma-pos-os/apps/hq/src/features/purchases/pages/InventoryPage.jsx
+  
+9:18:59 PM [vite] (client) hmr update /src/index.css, /src/features/purchases/pages/InventoryPage.jsx

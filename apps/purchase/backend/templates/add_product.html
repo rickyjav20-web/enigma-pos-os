@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in-down">
+    <!-- Header -->
+    <div class="flex items-center justify-between pt-6 pb-2">
+        <button onclick="history.back()" class="text-slate-400 hover:text-white transition-colors">
+            ← Volver
+        </button>
+        <span class="text-xs font-mono text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-800">
+            {{ provider_name }}
+        </span>
+    </div>
+
+    <div class="text-center">
+        <h1 class="text-2xl font-bold text-white mb-2">
+            ¿Qué compraste?
+        </h1>
+    </div>
+
+    <!-- Search Input -->
+    <div class="sticky top-4 z-40">
+        <div class="relative">
+            <input type="text" id="productSearch"
+                class="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-4 text-lg text-white placeholder-slate-500 focus:border-blue-500 focus:ring-0 outline-none shadow-xl transition-all"
+                placeholder="Escribe 'Leche', 'Café'..." autocomplete="off" onkeyup="debouncedSearch()">
+
+            <div class="absolute right-4 top-4 text-slate-500">
+                🔍
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Grid -->
+    <div id="resultsGrid" class="grid grid-cols-1 gap-3 pb-20">
+        <!-- Results injected here -->
+        <div class="text-center text-slate-500 py-10 text-sm">
+            Empieza a escribir para buscar en Loyverse...
+        </div>
+    </div>
+
+    <!-- Quick Items (Top for this Provider) -->
+    <div id="quickItemsSection" class="px-2">
+        <h3 class="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">🌟 Lo más comprado aquí</h3>
+        <div id="quickItemsGrid" class="grid grid-cols-2 gap-3 mb-8">
+            <!-- Injected -->
+        </div>
+    </div>
+</div>
+
+<script>
+    let debounceTimer;
+
+    async function search(query) {
+        if (query.length < 2) {
+            document.getElementById('resultsGrid').innerHTML = '';
+            document.getElementById('quickItemsSection').classList.remove('hidden');
+            return;
+        }
+
+        document.getElementById('quickItemsSection').classList.add('hidden');
+        const grid = document.getElementById('resultsGrid');
+        grid.innerHTML = '<div class="text-center text-slate-500 py-4">Buscando...</div>';
+
+        try {
+            const res = await fetch(`/api/catalog/search?q=${encodeURIComponent(query)}`);
+            const items = await res.json();
+
+            grid.innerHTML = '';
+
+            if (items.length === 0) {
+                grid.innerHTML = `
+                <div class="text-center py-8">
+                    <p class="text-slate-400 mb-2">No encontrado.</p>
+                    <button class="text-blue-400 text-sm hover:underline">
+                        + Crear nuevo producto (Proximamente)
+                    </button>
+                </div>
+            `;
+                return;
+            }
+
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "glass p-4 rounded-xl active:scale-[0.98] transition-all cursor-pointer hover:bg-slate-700 group border-l-4 border-transparent hover:border-blue-500";
+                card.onclick = () => selectItem(item);
+
+                // Logic for unit label
+                const unitLabel = item.default_unit === 'kg' ? 'x Kg/L' : 'x Und';
+
+                card.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-bold text-white text-lg group-hover:text-blue-300 transition-colors">${item.name}</h3>
+                        <p class="text-xs text-slate-400 font-mono mt-1">SKU: ${item.sku || 'N/A'}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="block text-xs text-slate-500 uppercase">Ultimo Costo</span>
+                        <span class="font-mono text-green-400 font-bold">$${item.current_cost.toFixed(2)}</span>
+                        <span class="text-[10px] text-slate-500 block">${unitLabel}</span>
+                    </div>
+                </div>
+            `;
+                grid.appendChild(card);
+            });
+
+        } catch (e) {
+            grid.innerHTML = '<div class="text-red-400 text-center">Error al buscar</div>';
+        }
+    }
+
+    function debouncedSearch() {
+        clearTimeout(debounceTimer);
+        const query = document.getElementById('productSearch').value;
+        debounceTimer = setTimeout(() => search(query), 300);
+    }
+
+    function selectItem(item) {
+        // Go to Screen 3: Detail
+        // Params: item_id, item_name, last_cost, unit_label
+        const unitLabel = item.default_unit === 'kg' ? 'Kg' : 'Und';
+        const url = `/purchase-detail?item_id=${item.id}&item_name=${encodeURIComponent(item.name)}&last_cost=${item.current_cost}&provider_id={{ provider_id }}&unit_label=${unitLabel}`;
+        window.location.href = url;
+    }
+
+    // Auto focus
+    document.getElementById('productSearch').focus();
+
+    // Load Top Items
+    async function loadTopItems() {
+        try {
+            const res = await fetch(`/api/analysis/provider/{{ provider_id }}/top-items`);
+            const items = await res.json();
+            const container = document.getElementById('quickItemsGrid');
+
+            if (items.length === 0) {
+                document.getElementById('quickItemsSection').classList.add('hidden');
+                return;
+            }
+
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 hover:border-blue-500 cursor-pointer transition-all";
+                div.onclick = () => selectItem({ ...item, current_cost: item.last_cost, default_unit: 'und' }); // Approximation
+                div.innerHTML = `
+                    <div class="text-sm font-bold text-white mb-1 truncate">${item.name}</div>
+                    <div class="text-xs text-green-400 font-mono">$${item.last_cost.toFixed(2)}</div>
+                `;
+                container.appendChild(div);
+            });
+
+        } catch (e) { console.error(e); }
+    }
+
+    loadTopItems();
+</script>
+{% endblock %}

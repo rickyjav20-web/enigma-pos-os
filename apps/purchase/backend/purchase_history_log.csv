@@ -1,0 +1,11 @@
+purchase_id,date,provider,item_name,quantity,unit_cost,total_cost
+67,2026-01-27T12:00:00,Verduras B.O,Aceite de Girasol,2.0,15.0,30.0
+68,2026-01-27T04:59:14.041275,Abasto Local,Café molido 500gr,1.0,1.0,1.0
+69,2026-01-27T13:49:38.940681,Abasto Local,Café molido 500gr,1.0,2.0,2.0
+70,2026-01-27T13:53:21.667639,Vecina Afluente,Amaretto,1.0,17.5,17.5
+71,2026-01-27T14:35:02.567969,Abasto Local,Huevos,32.0,0.1125,3.6
+72,2026-01-27T14:36:14.524208,Distribuidora Macro,Leche Deslactosada,5.0,1.2,6.0
+73,2026-01-27T14:38:09.299513,Viejita De La Esquina,Chocolate en barra Marrón oscuro (Kron),1.0,12.0,12.0
+71,2026-01-27T14:57:39.563611,Mercado Libre,Cafe De Limon,1.0,1.0,1.0
+72,2026-01-27T16:27:55.818779,Distribuidora Macro,crema de leche latti,5.0,0.8,4.0
+73,2026-01-27T18:13:33.945333,Abasto Local,crema de leche latti,5.0,1.0,5.0

@@ -1,0 +1,687 @@
+
+> api@1.0.0 dev
+> ts-node src/index.ts
+
+[dotenv@17.2.3] injecting env (2) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+🍳 RecipeService Initialized
+{"level":30,"time":1769882157823,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","msg":"Server listening at http://127.0.0.1:4000"}
+🚀 API Server running on port 4000
+└── (empty root node)
+    ├── / (GET, HEAD)
+    │   └── api/v1/
+    │       ├── commands (POST)
+    │       ├── ingest/
+    │       │   ├── products (POST)
+    │       │   └── catalog (POST)
+    │       ├── p
+    │       │   ├── roducts (GET, HEAD, POST)
+    │       │   │   └── /
+    │       │   │       └── :id (GET, HEAD, PUT)
+    │       │   └── urchases (GET, HEAD, POST)
+    │       ├── s
+    │       │   ├── taff/
+    │       │   │   ├── auth/verify-pin (POST)
+    │       │   │   ├── s
+    │       │   │   │   ├── hifts/
+    │       │   │   │   │   ├── clock-
+    │       │   │   │   │   │   ├── in (POST)
+    │       │   │   │   │   │   └── out (POST)
+    │       │   │   │   │   ├── history (GET, HEAD)
+    │       │   │   │   │   └── active (GET, HEAD)
+    │       │   │   │   └── chedules (GET, HEAD)
+    │       │   │   └── employees (GET, HEAD, POST)
+    │       │   │       └── /
+    │       │   │           └── :id (PATCH)
+    │       │   └── uppl
+    │       │       ├── iers (GET, HEAD, POST)
+    │       │       │   └── /
+    │       │       │       └── :id (GET, HEAD)
+    │       │       └── y-items (GET, HEAD, POST)
+    │       │           └── /
+    │       │               └── :id (GET, HEAD, PUT)
+    │       ├── optimizer/analyze (POST)
+    │       └── data/
+    │           ├── import (POST)
+    │           └── export (GET, HEAD)
+    └── * (OPTIONS)
+
+{"level":30,"time":1769882157824,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","msg":"Server listening at http://192.168.1.200:4000"}
+{"level":30,"time":1769882280560,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1","req":{"method":"POST","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":62072},"msg":"incoming request"}
+[EventBus] Publishing: orden_compra_confirmada (4c950c5b-4a44-49ca-95b8-4b6e099c3af3)
+[EventBus] Subscriber count for orden_compra_confirmada: 1
+🍳 RecipeService: Received Purchase Confirmation
+{"level":30,"time":1769882280766,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1","res":{"statusCode":200},"responseTime":177.88558399677277,"msg":"request completed"}
+{"level":30,"time":1769882434297,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":62171},"msg":"incoming request"}
+{"level":30,"time":1769882434483,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2","res":{"statusCode":204},"responseTime":127.97504200041294,"msg":"request completed"}
+{"level":30,"time":1769882434515,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":62171},"msg":"incoming request"}
+{"level":30,"time":1769882434721,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":62174},"msg":"incoming request"}
+{"level":30,"time":1769882434722,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4","res":{"statusCode":204},"responseTime":0.8715000003576279,"msg":"request completed"}
+{"level":30,"time":1769882434728,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":62176},"msg":"incoming request"}
+{"level":30,"time":1769882434734,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5","res":{"statusCode":204},"responseTime":5.648917004466057,"msg":"request completed"}
+{"level":30,"time":1769882434747,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":62174},"msg":"incoming request"}
+{"level":30,"time":1769882434767,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-7","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":62177},"msg":"incoming request"}
+{"level":30,"time":1769882434767,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-7","res":{"statusCode":204},"responseTime":0.27387499809265137,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769882436405,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3","res":{"statusCode":200},"responseTime":1889.3277079984546,"msg":"request completed"}
+{"level":30,"time":1769882436448,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6","res":{"statusCode":200},"responseTime":1700.2107499986887,"msg":"request completed"}
+{"level":30,"time":1769882436804,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-8","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":62171},"msg":"incoming request"}
+{"level":30,"time":1769882436854,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-9","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":62180},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769882436895,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-9","res":{"statusCode":200},"responseTime":41.26629200577736,"msg":"request completed"}
+{"level":30,"time":1769882437002,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-8","res":{"statusCode":200},"responseTime":197.20250000059605,"msg":"request completed"}
+{"level":30,"time":1769882476402,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-a","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":62191},"msg":"incoming request"}
+{"level":30,"time":1769882476435,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-a","res":{"statusCode":204},"responseTime":21.51637500524521,"msg":"request completed"}
+{"level":30,"time":1769882476445,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-b","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":62191},"msg":"incoming request"}
+{"level":30,"time":1769882476553,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-c","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":62193},"msg":"incoming request"}
+{"level":30,"time":1769882476554,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-c","res":{"statusCode":204},"responseTime":0.38666699826717377,"msg":"request completed"}
+{"level":30,"time":1769882477016,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-b","res":{"statusCode":200},"responseTime":567.7809590026736,"msg":"request completed"}
+{"level":30,"time":1769882477087,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-d","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":62193},"msg":"incoming request"}
+{"level":30,"time":1769882477179,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-d","res":{"statusCode":200},"responseTime":56.28091599792242,"msg":"request completed"}
+{"level":30,"time":1769886512804,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-e","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63159},"msg":"incoming request"}
+{"level":30,"time":1769886512926,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-e","res":{"statusCode":204},"responseTime":76.49416700005531,"msg":"request completed"}
+{"level":30,"time":1769886512984,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-f","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63159},"msg":"incoming request"}
+{"level":30,"time":1769886513511,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-g","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63161},"msg":"incoming request"}
+{"level":30,"time":1769886513512,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-g","res":{"statusCode":204},"responseTime":0.5584579929709435,"msg":"request completed"}
+{"level":30,"time":1769886517714,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-f","res":{"statusCode":200},"responseTime":4729.52650000155,"msg":"request completed"}
+{"level":30,"time":1769886517744,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-h","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63161},"msg":"incoming request"}
+{"level":30,"time":1769886517834,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-h","res":{"statusCode":200},"responseTime":89.94241699576378,"msg":"request completed"}
+{"level":30,"time":1769886617763,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-i","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63207},"msg":"incoming request"}
+{"level":30,"time":1769886617899,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-i","res":{"statusCode":204},"responseTime":87.04720800369978,"msg":"request completed"}
+{"level":30,"time":1769886617922,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-j","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63207},"msg":"incoming request"}
+{"level":30,"time":1769886618107,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-k","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63210},"msg":"incoming request"}
+{"level":30,"time":1769886618109,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-k","res":{"statusCode":204},"responseTime":2.268417000770569,"msg":"request completed"}
+{"level":30,"time":1769886618159,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-l","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63210},"msg":"incoming request"}
+{"level":30,"time":1769886618192,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-m","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63212},"msg":"incoming request"}
+{"level":30,"time":1769886618194,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-m","res":{"statusCode":204},"responseTime":0.31595899909734726,"msg":"request completed"}
+{"level":30,"time":1769886618201,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-n","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63213},"msg":"incoming request"}
+{"level":30,"time":1769886618201,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-n","res":{"statusCode":204},"responseTime":0.6640829965472221,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769886619884,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-j","res":{"statusCode":200},"responseTime":1958.431290999055,"msg":"request completed"}
+{"level":30,"time":1769886619911,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-l","res":{"statusCode":200},"responseTime":1749.4520419985056,"msg":"request completed"}
+{"level":30,"time":1769886619917,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-o","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63213},"msg":"incoming request"}
+{"level":30,"time":1769886619920,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-p","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63207},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769886619933,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-o","res":{"statusCode":200},"responseTime":15.326999999582767,"msg":"request completed"}
+{"level":30,"time":1769886619942,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-p","res":{"statusCode":200},"responseTime":21.867292001843452,"msg":"request completed"}
+{"level":30,"time":1769886703309,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-q","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63271},"msg":"incoming request"}
+{"level":30,"time":1769886703332,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-q","res":{"statusCode":204},"responseTime":12.25204099714756,"msg":"request completed"}
+{"level":30,"time":1769886703345,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-r","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63271},"msg":"incoming request"}
+{"level":30,"time":1769886703376,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-s","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63273},"msg":"incoming request"}
+{"level":30,"time":1769886703377,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-s","res":{"statusCode":204},"responseTime":0.8151660040020943,"msg":"request completed"}
+{"level":30,"time":1769886703384,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-t","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63275},"msg":"incoming request"}
+{"level":30,"time":1769886703384,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-t","res":{"statusCode":204},"responseTime":0.33366700261831284,"msg":"request completed"}
+{"level":30,"time":1769886703386,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-u","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63273},"msg":"incoming request"}
+{"level":30,"time":1769886703390,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-v","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63277},"msg":"incoming request"}
+{"level":30,"time":1769886703392,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-v","res":{"statusCode":204},"responseTime":1.4977090060710907,"msg":"request completed"}
+{"level":30,"time":1769886703574,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-u","res":{"statusCode":200},"responseTime":187.5097920000553,"msg":"request completed"}
+{"level":30,"time":1769886703575,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-w","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63279},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769886703663,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-r","res":{"statusCode":200},"responseTime":318.6974589973688,"msg":"request completed"}
+{"level":30,"time":1769886703668,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-w","res":{"statusCode":200},"responseTime":92.3199580013752,"msg":"request completed"}
+{"level":30,"time":1769886703669,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-x","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63273},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769886703677,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-x","res":{"statusCode":200},"responseTime":7.958916999399662,"msg":"request completed"}
+{"level":30,"time":1769886792732,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-y","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63305},"msg":"incoming request"}
+{"level":30,"time":1769886792946,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-y","res":{"statusCode":204},"responseTime":162.95395899564028,"msg":"request completed"}
+{"level":30,"time":1769886792995,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-z","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63305},"msg":"incoming request"}
+{"level":30,"time":1769886793232,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-10","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63307},"msg":"incoming request"}
+{"level":30,"time":1769886793239,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-10","res":{"statusCode":204},"responseTime":6.3272919952869415,"msg":"request completed"}
+{"level":30,"time":1769886795250,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-z","res":{"statusCode":200},"responseTime":2254.866875000298,"msg":"request completed"}
+{"level":30,"time":1769886795482,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-11","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63309},"msg":"incoming request"}
+{"level":30,"time":1769886795526,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-11","res":{"statusCode":200},"responseTime":42.52658300101757,"msg":"request completed"}
+{"level":30,"time":1769886883490,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-12","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63371},"msg":"incoming request"}
+{"level":30,"time":1769886883529,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-12","res":{"statusCode":204},"responseTime":17.27854199707508,"msg":"request completed"}
+{"level":30,"time":1769886883558,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-13","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63371},"msg":"incoming request"}
+{"level":30,"time":1769886883589,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-14","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63373},"msg":"incoming request"}
+{"level":30,"time":1769886883589,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-14","res":{"statusCode":204},"responseTime":0.166750006377697,"msg":"request completed"}
+{"level":30,"time":1769886883591,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-15","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63376},"msg":"incoming request"}
+{"level":30,"time":1769886883592,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-15","res":{"statusCode":204},"responseTime":0.26125000417232513,"msg":"request completed"}
+{"level":30,"time":1769886883595,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-16","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63373},"msg":"incoming request"}
+{"level":30,"time":1769886883601,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-17","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63377},"msg":"incoming request"}
+{"level":30,"time":1769886883603,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-17","res":{"statusCode":204},"responseTime":2.4603329971432686,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769886885768,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-13","res":{"statusCode":200},"responseTime":2208.8119999989867,"msg":"request completed"}
+{"level":30,"time":1769886885799,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-18","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63377},"msg":"incoming request"}
+{"level":30,"time":1769886885829,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-16","res":{"statusCode":200},"responseTime":2233.7110420018435,"msg":"request completed"}
+{"level":30,"time":1769886885832,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-19","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63371},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769886885897,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-18","res":{"statusCode":200},"responseTime":97.88887500017881,"msg":"request completed"}
+{"level":30,"time":1769886886077,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-19","res":{"statusCode":200},"responseTime":244.2160829976201,"msg":"request completed"}
+{"level":30,"time":1769887022126,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1a","req":{"method":"GET","url":"/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63410},"msg":"incoming request"}
+{"level":30,"time":1769887022169,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1a","msg":"Route GET:/purchases not found"}
+{"level":30,"time":1769887022201,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1a","res":{"statusCode":404},"responseTime":41.86487500369549,"msg":"request completed"}
+{"level":30,"time":1769887025889,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1b","req":{"method":"GET","url":"/favicon.ico","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63418},"msg":"incoming request"}
+{"level":30,"time":1769887025893,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1b","msg":"Route GET:/favicon.ico not found"}
+{"level":30,"time":1769887025896,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1b","res":{"statusCode":404},"responseTime":5.3464579954743385,"msg":"request completed"}
+{"level":30,"time":1769887091325,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1c","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63453},"msg":"incoming request"}
+{"level":30,"time":1769887091345,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1c","res":{"statusCode":204},"responseTime":9.762792006134987,"msg":"request completed"}
+{"level":30,"time":1769887091350,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1d","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63453},"msg":"incoming request"}
+{"level":30,"time":1769887091387,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1e","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63454},"msg":"incoming request"}
+{"level":30,"time":1769887091391,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1e","res":{"statusCode":204},"responseTime":1.1920829936861992,"msg":"request completed"}
+{"level":30,"time":1769887091402,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1f","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63454},"msg":"incoming request"}
+{"level":30,"time":1769887091415,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1g","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63455},"msg":"incoming request"}
+{"level":30,"time":1769887091423,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1g","res":{"statusCode":204},"responseTime":4.120082996785641,"msg":"request completed"}
+{"level":30,"time":1769887091430,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1h","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63457},"msg":"incoming request"}
+{"level":30,"time":1769887091433,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1h","res":{"statusCode":204},"responseTime":3.4078750014305115,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769887091858,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1d","res":{"statusCode":200},"responseTime":508.1482909992337,"msg":"request completed"}
+{"level":30,"time":1769887091859,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1i","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63457},"msg":"incoming request"}
+{"level":30,"time":1769887091911,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1f","res":{"statusCode":200},"responseTime":508.2402920052409,"msg":"request completed"}
+{"level":30,"time":1769887091913,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1j","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63453},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769887091937,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1i","res":{"statusCode":200},"responseTime":77.79670799523592,"msg":"request completed"}
+{"level":30,"time":1769887091958,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1j","res":{"statusCode":200},"responseTime":45.08137500286102,"msg":"request completed"}
+{"level":30,"time":1769887122749,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1k","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63469},"msg":"incoming request"}
+{"level":30,"time":1769887122800,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1k","res":{"statusCode":204},"responseTime":22.26333300024271,"msg":"request completed"}
+{"level":30,"time":1769887122813,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1l","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63471},"msg":"incoming request"}
+{"level":30,"time":1769887122816,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1l","res":{"statusCode":204},"responseTime":2.7985420003533363,"msg":"request completed"}
+{"level":30,"time":1769887122834,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1m","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63469},"msg":"incoming request"}
+{"level":30,"time":1769887124576,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1m","res":{"statusCode":200},"responseTime":1741.288375005126,"msg":"request completed"}
+{"level":30,"time":1769887124774,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1n","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63473},"msg":"incoming request"}
+{"level":30,"time":1769887124838,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1n","res":{"statusCode":200},"responseTime":63.02624999731779,"msg":"request completed"}
+{"level":30,"time":1769887174401,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1o","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63517},"msg":"incoming request"}
+{"level":30,"time":1769887174455,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1o","res":{"statusCode":204},"responseTime":27.61983300000429,"msg":"request completed"}
+{"level":30,"time":1769887174468,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1p","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63517},"msg":"incoming request"}
+{"level":30,"time":1769887174497,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1q","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63520},"msg":"incoming request"}
+{"level":30,"time":1769887174499,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1q","res":{"statusCode":204},"responseTime":0.37633299827575684,"msg":"request completed"}
+{"level":30,"time":1769887174502,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1r","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63520},"msg":"incoming request"}
+{"level":30,"time":1769887174505,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1s","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63522},"msg":"incoming request"}
+{"level":30,"time":1769887174507,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1s","res":{"statusCode":204},"responseTime":1.8687909990549088,"msg":"request completed"}
+{"level":30,"time":1769887174508,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1t","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63523},"msg":"incoming request"}
+{"level":30,"time":1769887174509,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1t","res":{"statusCode":204},"responseTime":1.1384589970111847,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769887175243,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1p","res":{"statusCode":200},"responseTime":772.5390409976244,"msg":"request completed"}
+{"level":30,"time":1769887175250,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1u","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63523},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769887175281,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1u","res":{"statusCode":200},"responseTime":31.217000000178814,"msg":"request completed"}
+{"level":30,"time":1769887175318,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1r","res":{"statusCode":200},"responseTime":815.6298329979181,"msg":"request completed"}
+{"level":30,"time":1769887175319,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1v","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63523},"msg":"incoming request"}
+{"level":30,"time":1769887175503,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1v","res":{"statusCode":200},"responseTime":184.18687500059605,"msg":"request completed"}
+{"level":30,"time":1769887563910,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1w","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63659},"msg":"incoming request"}
+{"level":30,"time":1769887564060,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1w","res":{"statusCode":204},"responseTime":102.45233400166035,"msg":"request completed"}
+{"level":30,"time":1769887564140,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1x","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63659},"msg":"incoming request"}
+{"level":30,"time":1769887564384,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1y","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63661},"msg":"incoming request"}
+{"level":30,"time":1769887564385,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1y","res":{"statusCode":204},"responseTime":0.27958300709724426,"msg":"request completed"}
+{"level":30,"time":1769887564386,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1z","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63663},"msg":"incoming request"}
+{"level":30,"time":1769887564387,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1z","res":{"statusCode":204},"responseTime":0.6912919878959656,"msg":"request completed"}
+{"level":30,"time":1769887564391,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-20","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63664},"msg":"incoming request"}
+{"level":30,"time":1769887564392,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-20","res":{"statusCode":204},"responseTime":0.9692500084638596,"msg":"request completed"}
+{"level":30,"time":1769887564393,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-21","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63661},"msg":"incoming request"}
+{"level":30,"time":1769887566011,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-21","res":{"statusCode":200},"responseTime":1613.0939169973135,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769887566051,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-1x","res":{"statusCode":200},"responseTime":1910.728917002678,"msg":"request completed"}
+{"level":30,"time":1769887566085,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-22","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63661},"msg":"incoming request"}
+{"level":30,"time":1769887566121,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-23","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63669},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769887566143,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-22","res":{"statusCode":200},"responseTime":56.61520799994469,"msg":"request completed"}
+{"level":30,"time":1769887566154,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-23","res":{"statusCode":200},"responseTime":33.01216699182987,"msg":"request completed"}
+{"level":30,"time":1769887879548,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-24","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63791},"msg":"incoming request"}
+{"level":30,"time":1769887879614,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-24","res":{"statusCode":204},"responseTime":37.59762500226498,"msg":"request completed"}
+{"level":30,"time":1769887879630,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-25","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63791},"msg":"incoming request"}
+{"level":30,"time":1769887879700,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-26","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63793},"msg":"incoming request"}
+{"level":30,"time":1769887879701,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-26","res":{"statusCode":204},"responseTime":0.19462499022483826,"msg":"request completed"}
+{"level":30,"time":1769887879708,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-27","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63793},"msg":"incoming request"}
+{"level":30,"time":1769887879716,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-28","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63795},"msg":"incoming request"}
+{"level":30,"time":1769887879716,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-28","res":{"statusCode":204},"responseTime":0.17183299362659454,"msg":"request completed"}
+{"level":30,"time":1769887879717,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-29","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63796},"msg":"incoming request"}
+{"level":30,"time":1769887879719,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-29","res":{"statusCode":204},"responseTime":1.1142500042915344,"msg":"request completed"}
+{"level":30,"time":1769887881482,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-27","res":{"statusCode":200},"responseTime":1773.4044999927282,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769887881595,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-25","res":{"statusCode":200},"responseTime":1964.1784579902887,"msg":"request completed"}
+{"level":30,"time":1769887881600,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2a","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63802},"msg":"incoming request"}
+{"level":30,"time":1769887881605,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2b","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":63793},"msg":"incoming request"}
+{"level":30,"time":1769887881615,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2a","res":{"statusCode":200},"responseTime":14.457083001732826,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769887881619,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2b","res":{"statusCode":200},"responseTime":13.413499996066093,"msg":"request completed"}
+{"level":30,"time":1769888458282,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2c","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64010},"msg":"incoming request"}
+{"level":30,"time":1769888458297,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2c","res":{"statusCode":204},"responseTime":9.365457996726036,"msg":"request completed"}
+{"level":30,"time":1769888458303,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2d","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64010},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769888458425,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2d","res":{"statusCode":200},"responseTime":121.73737500607967,"msg":"request completed"}
+{"level":30,"time":1769888471581,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2e","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64032},"msg":"incoming request"}
+{"level":30,"time":1769888471612,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2e","res":{"statusCode":204},"responseTime":24.769124999642372,"msg":"request completed"}
+{"level":30,"time":1769888471617,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2f","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64032},"msg":"incoming request"}
+{"level":30,"time":1769888471630,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2g","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64033},"msg":"incoming request"}
+{"level":30,"time":1769888471631,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2g","res":{"statusCode":204},"responseTime":0.5799590051174164,"msg":"request completed"}
+{"level":30,"time":1769888471632,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2h","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64036},"msg":"incoming request"}
+{"level":30,"time":1769888471633,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2h","res":{"statusCode":204},"responseTime":0.28837500512599945,"msg":"request completed"}
+{"level":30,"time":1769888471635,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2i","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64033},"msg":"incoming request"}
+{"level":30,"time":1769888471641,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2j","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64037},"msg":"incoming request"}
+{"level":30,"time":1769888471643,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2j","res":{"statusCode":204},"responseTime":2.058124989271164,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769888471676,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2f","res":{"statusCode":200},"responseTime":58.46154101192951,"msg":"request completed"}
+{"level":30,"time":1769888471676,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2k","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64037},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769888471686,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2k","res":{"statusCode":200},"responseTime":9.181874990463257,"msg":"request completed"}
+{"level":30,"time":1769888471792,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2i","res":{"statusCode":200},"responseTime":156.51087500154972,"msg":"request completed"}
+{"level":30,"time":1769888471933,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2l","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64037},"msg":"incoming request"}
+{"level":30,"time":1769888471967,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2l","res":{"statusCode":200},"responseTime":34.033583998680115,"msg":"request completed"}
+{"level":30,"time":1769888549876,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2m","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64074},"msg":"incoming request"}
+{"level":30,"time":1769888549910,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2m","res":{"statusCode":204},"responseTime":26.269500002264977,"msg":"request completed"}
+{"level":30,"time":1769888549918,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2n","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64074},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769888550167,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2n","res":{"statusCode":200},"responseTime":248.26054200530052,"msg":"request completed"}
+{"level":30,"time":1769888570285,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2o","req":{"method":"GET","url":"/api/v1/products/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64098},"msg":"incoming request"}
+{"level":30,"time":1769888570316,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2o","res":{"statusCode":200},"responseTime":28.010333999991417,"msg":"request completed"}
+{"level":30,"time":1769888570317,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2p","req":{"method":"GET","url":"/api/v1/products/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64098},"msg":"incoming request"}
+{"level":30,"time":1769888570326,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2p","res":{"statusCode":200},"responseTime":8.112166002392769,"msg":"request completed"}
+{"level":30,"time":1769888570647,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2q","req":{"method":"GET","url":"/api/v1/recipes/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64098},"msg":"incoming request"}
+{"level":30,"time":1769888570648,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2q","msg":"Route GET:/api/v1/recipes/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq not found"}
+{"level":30,"time":1769888570649,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2q","res":{"statusCode":404},"responseTime":1.721915990114212,"msg":"request completed"}
+{"level":30,"time":1769888570650,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2r","req":{"method":"GET","url":"/api/v1/supply-items?limit=100&tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64100},"msg":"incoming request"}
+{"level":30,"time":1769888570656,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2s","req":{"method":"GET","url":"/api/v1/recipes/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64098},"msg":"incoming request"}
+{"level":30,"time":1769888570656,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2s","msg":"Route GET:/api/v1/recipes/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq not found"}
+{"level":30,"time":1769888570657,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2s","res":{"statusCode":404},"responseTime":0.23441600799560547,"msg":"request completed"}
+{"level":30,"time":1769888570718,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2r","res":{"statusCode":200},"responseTime":67.5619589984417,"msg":"request completed"}
+{"level":30,"time":1769888570720,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2t","req":{"method":"GET","url":"/api/v1/supply-items?limit=100&tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64098},"msg":"incoming request"}
+{"level":30,"time":1769888570732,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2t","res":{"statusCode":200},"responseTime":11.119625002145767,"msg":"request completed"}
+{"level":30,"time":1769888759960,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2u","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64139},"msg":"incoming request"}
+{"level":30,"time":1769888759992,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2u","res":{"statusCode":204},"responseTime":22.68366700410843,"msg":"request completed"}
+{"level":30,"time":1769888759996,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2v","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64139},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769888761139,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2v","res":{"statusCode":200},"responseTime":1142.3499170094728,"msg":"request completed"}
+{"level":30,"time":1769888763280,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2w","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64139},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769888763455,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2w","res":{"statusCode":200},"responseTime":168.83545799553394,"msg":"request completed"}
+{"level":30,"time":1769888800922,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2x","req":{"method":"GET","url":"/api/v1/products/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64230},"msg":"incoming request"}
+{"level":30,"time":1769888802271,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2y","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64234},"msg":"incoming request"}
+{"level":30,"time":1769888802282,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2y","res":{"statusCode":204},"responseTime":9.919209003448486,"msg":"request completed"}
+{"level":30,"time":1769888802291,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2z","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64234},"msg":"incoming request"}
+{"level":30,"time":1769888802310,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2x","res":{"statusCode":200},"responseTime":1355.5094999969006,"msg":"request completed"}
+{"level":30,"time":1769888802316,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-30","req":{"method":"GET","url":"/api/v1/products/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64230},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769888802377,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-2z","res":{"statusCode":200},"responseTime":86.40762500464916,"msg":"request completed"}
+{"level":30,"time":1769888802488,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-31","req":{"method":"GET","url":"/api/v1/recipes/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64234},"msg":"incoming request"}
+{"level":30,"time":1769888802488,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-31","msg":"Route GET:/api/v1/recipes/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq not found"}
+{"level":30,"time":1769888802488,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-31","res":{"statusCode":404},"responseTime":0.21754100918769836,"msg":"request completed"}
+{"level":30,"time":1769888802496,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-32","req":{"method":"GET","url":"/api/v1/supply-items?limit=100&tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64237},"msg":"incoming request"}
+{"level":30,"time":1769888802514,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-33","req":{"method":"GET","url":"/api/v1/recipes/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64240},"msg":"incoming request"}
+{"level":30,"time":1769888802514,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-33","msg":"Route GET:/api/v1/recipes/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq not found"}
+{"level":30,"time":1769888802514,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-33","res":{"statusCode":404},"responseTime":0.17458298802375793,"msg":"request completed"}
+{"level":30,"time":1769888802709,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-32","res":{"statusCode":200},"responseTime":213.18850000202656,"msg":"request completed"}
+{"level":30,"time":1769888802712,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-34","req":{"method":"GET","url":"/api/v1/supply-items?limit=100&tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64240},"msg":"incoming request"}
+{"level":30,"time":1769888802784,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-34","res":{"statusCode":200},"responseTime":71.5632079988718,"msg":"request completed"}
+{"level":30,"time":1769888803525,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-30","res":{"statusCode":200},"responseTime":1208.8257909864187,"msg":"request completed"}
+{"level":30,"time":1769888803557,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-35","req":{"method":"GET","url":"/api/v1/recipes/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64230},"msg":"incoming request"}
+{"level":30,"time":1769888803557,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-35","msg":"Route GET:/api/v1/recipes/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq not found"}
+{"level":30,"time":1769888803558,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-35","res":{"statusCode":404},"responseTime":0.39695900678634644,"msg":"request completed"}
+{"level":30,"time":1769888803559,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-36","req":{"method":"GET","url":"/api/v1/supply-items?limit=100&tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64240},"msg":"incoming request"}
+{"level":30,"time":1769888803690,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-36","res":{"statusCode":200},"responseTime":131.42462499439716,"msg":"request completed"}
+{"level":30,"time":1769888820135,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-37","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64247},"msg":"incoming request"}
+{"level":30,"time":1769888820176,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-37","res":{"statusCode":204},"responseTime":23.929625004529953,"msg":"request completed"}
+{"level":30,"time":1769888820193,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-38","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64247},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769888820479,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-38","res":{"statusCode":200},"responseTime":286.47504100203514,"msg":"request completed"}
+{"level":30,"time":1769889025734,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-39","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64302},"msg":"incoming request"}
+{"level":30,"time":1769889025744,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-39","res":{"statusCode":204},"responseTime":3.055082991719246,"msg":"request completed"}
+{"level":30,"time":1769889025748,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3a","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64302},"msg":"incoming request"}
+{"level":30,"time":1769889025804,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3b","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64304},"msg":"incoming request"}
+{"level":30,"time":1769889025805,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3b","res":{"statusCode":204},"responseTime":0.38600000739097595,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769889026131,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3a","res":{"statusCode":200},"responseTime":382.63854199647903,"msg":"request completed"}
+{"level":30,"time":1769889026141,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3c","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":64304},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769889026161,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3c","res":{"statusCode":200},"responseTime":20.370374992489815,"msg":"request completed"}
+{"level":30,"time":1769890588725,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3d","req":{"method":"GET","url":"/api/v1/products/sim-choco-cookie?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65088},"msg":"incoming request"}
+{"level":30,"time":1769890588915,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3d","res":{"statusCode":404},"responseTime":186.09145899116993,"msg":"request completed"}
+{"level":30,"time":1769890588917,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3e","req":{"method":"GET","url":"/api/v1/products/sim-choco-cookie?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65091},"msg":"incoming request"}
+{"level":30,"time":1769890588924,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3e","res":{"statusCode":404},"responseTime":6.954041004180908,"msg":"request completed"}
+{"level":30,"time":1769890613557,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3f","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65102},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769890613978,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3f","res":{"statusCode":200},"responseTime":420.6523330062628,"msg":"request completed"}
+{"level":30,"time":1769890616450,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3g","req":{"method":"GET","url":"/favicon.ico","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65102},"msg":"incoming request"}
+{"level":30,"time":1769890616457,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3g","msg":"Route GET:/favicon.ico not found"}
+{"level":30,"time":1769890616463,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3g","res":{"statusCode":404},"responseTime":6.905542001128197,"msg":"request completed"}
+{"level":30,"time":1769890928883,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3h","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65232},"msg":"incoming request"}
+{"level":30,"time":1769890928907,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3h","res":{"statusCode":204},"responseTime":14.385499998927116,"msg":"request completed"}
+{"level":30,"time":1769890928909,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3i","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65232},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769890929405,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3i","res":{"statusCode":200},"responseTime":495.336624994874,"msg":"request completed"}
+{"level":30,"time":1769890929407,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3j","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65235},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769890929415,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3j","res":{"statusCode":200},"responseTime":7.917665988206863,"msg":"request completed"}
+{"level":30,"time":1769890981605,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3k","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65265},"msg":"incoming request"}
+{"level":30,"time":1769890981627,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3k","res":{"statusCode":204},"responseTime":15.089292004704475,"msg":"request completed"}
+{"level":30,"time":1769890981629,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3l","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65265},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769890981712,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3l","res":{"statusCode":200},"responseTime":83.2173330038786,"msg":"request completed"}
+{"level":30,"time":1769891015571,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3m","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65280},"msg":"incoming request"}
+{"level":30,"time":1769891015651,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3m","res":{"statusCode":204},"responseTime":60.0631659924984,"msg":"request completed"}
+{"level":30,"time":1769891015685,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3n","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65280},"msg":"incoming request"}
+{"level":30,"time":1769891015723,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3o","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65282},"msg":"incoming request"}
+{"level":30,"time":1769891015733,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3o","res":{"statusCode":204},"responseTime":10.116332992911339,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769891015791,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3n","res":{"statusCode":200},"responseTime":90.67354199290276,"msg":"request completed"}
+{"level":30,"time":1769891015795,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3p","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65282},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769891015808,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3p","res":{"statusCode":200},"responseTime":10.942416995763779,"msg":"request completed"}
+{"level":30,"time":1769891110304,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3q","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65303},"msg":"incoming request"}
+{"level":30,"time":1769891110338,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3q","res":{"statusCode":204},"responseTime":24.12679199874401,"msg":"request completed"}
+{"level":30,"time":1769891110345,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3r","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65303},"msg":"incoming request"}
+{"level":30,"time":1769891110382,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3s","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65305},"msg":"incoming request"}
+{"level":30,"time":1769891110384,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3s","res":{"statusCode":204},"responseTime":2.038667008280754,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769891110454,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3r","res":{"statusCode":200},"responseTime":108.3973750025034,"msg":"request completed"}
+{"level":30,"time":1769891110455,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3t","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65305},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769891110476,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3t","res":{"statusCode":200},"responseTime":20.681333005428314,"msg":"request completed"}
+{"level":30,"time":1769891199589,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3u","req":{"method":"GET","url":"/api/v1/products/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65348},"msg":"incoming request"}
+{"level":30,"time":1769891199811,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3u","res":{"statusCode":200},"responseTime":219.32304200530052,"msg":"request completed"}
+{"level":30,"time":1769891199818,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3v","req":{"method":"GET","url":"/api/v1/products/f18ed677-ea5c-4841-9897-06091d89db23?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65348},"msg":"incoming request"}
+{"level":30,"time":1769891199830,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3v","res":{"statusCode":200},"responseTime":11.316583007574081,"msg":"request completed"}
+{"level":30,"time":1769891199973,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3w","req":{"method":"OPTIONS","url":"/api/v1/products/f18ed677-ea5c-4841-9897-06091d89db23","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65348},"msg":"incoming request"}
+{"level":30,"time":1769891199976,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3w","res":{"statusCode":204},"responseTime":2.953666001558304,"msg":"request completed"}
+{"level":30,"time":1769891199977,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3x","req":{"method":"OPTIONS","url":"/api/v1/supply-items?limit=100&tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65350},"msg":"incoming request"}
+{"level":30,"time":1769891199978,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3x","res":{"statusCode":204},"responseTime":1.0822079926729202,"msg":"request completed"}
+{"level":30,"time":1769891199990,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3y","req":{"method":"GET","url":"/api/v1/supply-items?limit=100&tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65350},"msg":"incoming request"}
+{"level":30,"time":1769891200017,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3z","req":{"method":"GET","url":"/api/v1/products/f18ed677-ea5c-4841-9897-06091d89db23","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65348},"msg":"incoming request"}
+{"level":30,"time":1769891200022,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-40","req":{"method":"OPTIONS","url":"/api/v1/products/f18ed677-ea5c-4841-9897-06091d89db23","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65354},"msg":"incoming request"}
+{"level":30,"time":1769891200023,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-40","res":{"statusCode":204},"responseTime":0.47816699743270874,"msg":"request completed"}
+{"level":30,"time":1769891200026,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-41","req":{"method":"OPTIONS","url":"/api/v1/supply-items?limit=100&tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65355},"msg":"incoming request"}
+{"level":30,"time":1769891200027,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-41","res":{"statusCode":204},"responseTime":0.3551670014858246,"msg":"request completed"}
+{"level":30,"time":1769891200150,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3y","res":{"statusCode":200},"responseTime":160.2597920000553,"msg":"request completed"}
+{"level":30,"time":1769891200151,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-42","req":{"method":"GET","url":"/api/v1/supply-items?limit=100&tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65355},"msg":"incoming request"}
+{"level":30,"time":1769891200162,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-42","res":{"statusCode":200},"responseTime":10.470209002494812,"msg":"request completed"}
+{"level":30,"time":1769891200196,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-3z","res":{"statusCode":200},"responseTime":177.11391600966454,"msg":"request completed"}
+{"level":30,"time":1769891200197,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-43","req":{"method":"GET","url":"/api/v1/products/f18ed677-ea5c-4841-9897-06091d89db23","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65355},"msg":"incoming request"}
+{"level":30,"time":1769891200201,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-43","res":{"statusCode":200},"responseTime":4.740250006318092,"msg":"request completed"}
+{"level":30,"time":1769891659199,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-44","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65438},"msg":"incoming request"}
+{"level":30,"time":1769891659320,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-44","res":{"statusCode":204},"responseTime":87.9289589971304,"msg":"request completed"}
+{"level":30,"time":1769891659333,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-45","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65438},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769891659687,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-45","res":{"statusCode":200},"responseTime":354.0985420048237,"msg":"request completed"}
+{"level":30,"time":1769891664599,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-46","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65446},"msg":"incoming request"}
+{"level":30,"time":1769891664687,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-46","res":{"statusCode":204},"responseTime":70.23445899784565,"msg":"request completed"}
+{"level":30,"time":1769891664732,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-47","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65447},"msg":"incoming request"}
+{"level":30,"time":1769891664910,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-47","res":{"statusCode":204},"responseTime":176.19924999773502,"msg":"request completed"}
+{"level":30,"time":1769891664935,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-48","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65447},"msg":"incoming request"}
+{"level":30,"time":1769891664994,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-49","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65446},"msg":"incoming request"}
+{"level":30,"time":1769891665460,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4a","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65449},"msg":"incoming request"}
+{"level":30,"time":1769891665463,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4a","res":{"statusCode":204},"responseTime":2.712707996368408,"msg":"request completed"}
+{"level":30,"time":1769891665482,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4b","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65450},"msg":"incoming request"}
+{"level":30,"time":1769891665485,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4b","res":{"statusCode":204},"responseTime":2.600624993443489,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769891666030,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-49","res":{"statusCode":200},"responseTime":1035.3232500106096,"msg":"request completed"}
+{"level":30,"time":1769891666043,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-48","res":{"statusCode":200},"responseTime":1108.0314999967813,"msg":"request completed"}
+{"level":30,"time":1769891666057,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4c","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65450},"msg":"incoming request"}
+{"level":30,"time":1769891666131,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4d","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65446},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769891666163,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4c","res":{"statusCode":200},"responseTime":104.97004199028015,"msg":"request completed"}
+{"level":30,"time":1769891666166,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4d","res":{"statusCode":200},"responseTime":34.46904098987579,"msg":"request completed"}
+{"level":30,"time":1769891668130,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4e","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65446},"msg":"incoming request"}
+{"level":30,"time":1769891668175,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4e","res":{"statusCode":200},"responseTime":44.38774999976158,"msg":"request completed"}
+{"level":30,"time":1769891668180,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4f","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65454},"msg":"incoming request"}
+{"level":30,"time":1769891668213,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4f","res":{"statusCode":200},"responseTime":31.75500001013279,"msg":"request completed"}
+{"level":30,"time":1769891668889,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4g","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65454},"msg":"incoming request"}
+{"level":30,"time":1769891668906,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4h","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65446},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769891668949,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4g","res":{"statusCode":200},"responseTime":58.356624990701675,"msg":"request completed"}
+{"level":30,"time":1769891668950,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4i","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65456},"msg":"incoming request"}
+{"level":30,"time":1769891668962,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4h","res":{"statusCode":200},"responseTime":56.506834000349045,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769891668964,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4i","res":{"statusCode":200},"responseTime":14.45091699063778,"msg":"request completed"}
+{"level":30,"time":1769891668965,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4j","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65454},"msg":"incoming request"}
+{"level":30,"time":1769891668979,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4j","res":{"statusCode":200},"responseTime":12.876415997743607,"msg":"request completed"}
+{"level":30,"time":1769891809039,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4k","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65481},"msg":"incoming request"}
+{"level":30,"time":1769891809069,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4k","res":{"statusCode":204},"responseTime":18.628041997551918,"msg":"request completed"}
+{"level":30,"time":1769891809087,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4l","req":{"method":"POST","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65481},"msg":"incoming request"}
+🍳 Syncing Recipe for SupplyItem 14d1a9c9-ec44-4b37-a7c6-b119a79fa45b
+{"level":30,"time":1769891809433,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4l","res":{"statusCode":200},"responseTime":346.10754200816154,"msg":"request completed"}
+{"level":30,"time":1769891809450,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4m","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65481},"msg":"incoming request"}
+{"level":30,"time":1769891809454,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4m","res":{"statusCode":204},"responseTime":3.5461250096559525,"msg":"request completed"}
+{"level":30,"time":1769891809456,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4n","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65481},"msg":"incoming request"}
+{"level":30,"time":1769891809457,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4o","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":65483},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=9
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769891809471,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4n","res":{"statusCode":200},"responseTime":14.666999995708466,"msg":"request completed"}
+{"level":30,"time":1769891809493,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4o","res":{"statusCode":200},"responseTime":34.87008398771286,"msg":"request completed"}
+{"level":30,"time":1769892157928,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4p","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49152},"msg":"incoming request"}
+{"level":30,"time":1769892157939,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4p","res":{"statusCode":204},"responseTime":6.874333009123802,"msg":"request completed"}
+{"level":30,"time":1769892157943,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4q","req":{"method":"POST","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49152},"msg":"incoming request"}
+🍳 Syncing Recipe for Product 0029c50e-3286-45b9-aab6-71acf23be6fe
+{"level":30,"time":1769892158089,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4q","res":{"statusCode":200},"responseTime":146.4666250050068,"msg":"request completed"}
+{"level":30,"time":1769892158098,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4r","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49152},"msg":"incoming request"}
+{"level":30,"time":1769892158100,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4s","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49156},"msg":"incoming request"}
+{"level":30,"time":1769892158100,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4s","res":{"statusCode":204},"responseTime":0.48295800387859344,"msg":"request completed"}
+{"level":30,"time":1769892158103,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4t","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49156},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769892158116,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4r","res":{"statusCode":200},"responseTime":17.694499999284744,"msg":"request completed"}
+{"level":30,"time":1769892158173,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4t","res":{"statusCode":200},"responseTime":69.73212499916553,"msg":"request completed"}
+{"level":30,"time":1769893031875,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4u","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49406},"msg":"incoming request"}
+{"level":30,"time":1769893031891,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4u","res":{"statusCode":204},"responseTime":10.585041999816895,"msg":"request completed"}
+{"level":30,"time":1769893031900,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4v","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49406},"msg":"incoming request"}
+{"level":30,"time":1769893031902,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4v","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769893031919,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4v","res":{"statusCode":404},"responseTime":19.614416003227234,"msg":"request completed"}
+{"level":30,"time":1769893031923,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4w","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49407},"msg":"incoming request"}
+{"level":30,"time":1769893031924,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4w","res":{"statusCode":204},"responseTime":0.8059999942779541,"msg":"request completed"}
+{"level":30,"time":1769893031932,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4x","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49407},"msg":"incoming request"}
+{"level":30,"time":1769893031932,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4x","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769893031933,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4x","res":{"statusCode":404},"responseTime":0.3752500116825104,"msg":"request completed"}
+{"level":30,"time":1769893063292,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4y","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49432},"msg":"incoming request"}
+{"level":30,"time":1769893063317,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4y","res":{"statusCode":204},"responseTime":20.660707995295525,"msg":"request completed"}
+{"level":30,"time":1769893063318,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4z","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49432},"msg":"incoming request"}
+{"level":30,"time":1769893063334,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4z","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769893063381,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-4z","res":{"statusCode":404},"responseTime":62.687625005841255,"msg":"request completed"}
+{"level":30,"time":1769893063382,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-50","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49433},"msg":"incoming request"}
+{"level":30,"time":1769893063383,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-50","res":{"statusCode":204},"responseTime":0.2864589989185333,"msg":"request completed"}
+{"level":30,"time":1769893063391,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-51","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49433},"msg":"incoming request"}
+{"level":30,"time":1769893063392,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-51","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769893063392,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-51","res":{"statusCode":404},"responseTime":1.1862920075654984,"msg":"request completed"}
+{"level":30,"time":1769893157049,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-52","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49475},"msg":"incoming request"}
+{"level":30,"time":1769893157110,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-52","res":{"statusCode":204},"responseTime":34.08200000226498,"msg":"request completed"}
+{"level":30,"time":1769893157125,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-53","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49475},"msg":"incoming request"}
+{"level":30,"time":1769893157214,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-54","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49477},"msg":"incoming request"}
+{"level":30,"time":1769893157215,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-54","res":{"statusCode":204},"responseTime":0.9355829954147339,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893158365,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-53","res":{"statusCode":200},"responseTime":1230.8830420076847,"msg":"request completed"}
+{"level":30,"time":1769893158459,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-55","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49477},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893158491,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-55","res":{"statusCode":200},"responseTime":31.680999994277954,"msg":"request completed"}
+{"level":30,"time":1769893178142,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-56","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49503},"msg":"incoming request"}
+{"level":30,"time":1769893178166,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-56","res":{"statusCode":204},"responseTime":17.291500002145767,"msg":"request completed"}
+{"level":30,"time":1769893178168,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-57","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49505},"msg":"incoming request"}
+{"level":30,"time":1769893178168,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-57","res":{"statusCode":204},"responseTime":0.21770800650119781,"msg":"request completed"}
+{"level":30,"time":1769893178178,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-58","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49505},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893178645,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-58","res":{"statusCode":200},"responseTime":467.00416699051857,"msg":"request completed"}
+{"level":30,"time":1769893178656,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-59","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49503},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893178694,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-59","res":{"statusCode":200},"responseTime":37.89129100739956,"msg":"request completed"}
+{"level":30,"time":1769893200655,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5a","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49514},"msg":"incoming request"}
+{"level":30,"time":1769893200703,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5a","res":{"statusCode":204},"responseTime":32.83783400058746,"msg":"request completed"}
+{"level":30,"time":1769893200730,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5b","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49514},"msg":"incoming request"}
+{"level":30,"time":1769893200770,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5c","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49516},"msg":"incoming request"}
+{"level":30,"time":1769893200773,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5c","res":{"statusCode":204},"responseTime":2.5996250063180923,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893200819,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5b","res":{"statusCode":200},"responseTime":88.812833994627,"msg":"request completed"}
+{"level":30,"time":1769893200821,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5d","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49516},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893200852,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5d","res":{"statusCode":200},"responseTime":31.12779200077057,"msg":"request completed"}
+{"level":30,"time":1769893230932,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5e","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49540},"msg":"incoming request"}
+{"level":30,"time":1769893231032,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5e","res":{"statusCode":204},"responseTime":60.51233300566673,"msg":"request completed"}
+{"level":30,"time":1769893231038,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5f","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49540},"msg":"incoming request"}
+{"level":30,"time":1769893231131,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5g","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49542},"msg":"incoming request"}
+{"level":30,"time":1769893231184,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5g","res":{"statusCode":204},"responseTime":52.9605830013752,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893231667,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5f","res":{"statusCode":200},"responseTime":626.8071250021458,"msg":"request completed"}
+{"level":30,"time":1769893231677,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5h","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49542},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893231692,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5h","res":{"statusCode":200},"responseTime":14.611458003520966,"msg":"request completed"}
+{"level":30,"time":1769893247475,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5i","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49561},"msg":"incoming request"}
+{"level":30,"time":1769893247490,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5i","res":{"statusCode":204},"responseTime":13.32625000178814,"msg":"request completed"}
+{"level":30,"time":1769893247491,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5j","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49562},"msg":"incoming request"}
+{"level":30,"time":1769893247491,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5j","res":{"statusCode":204},"responseTime":0.37450000643730164,"msg":"request completed"}
+{"level":30,"time":1769893247543,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5k","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49562},"msg":"incoming request"}
+{"level":30,"time":1769893247543,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5k","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769893247551,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5k","res":{"statusCode":404},"responseTime":7.693499997258186,"msg":"request completed"}
+{"level":30,"time":1769893247557,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5l","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49561},"msg":"incoming request"}
+{"level":30,"time":1769893247558,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5l","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769893247561,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5l","res":{"statusCode":404},"responseTime":3.7160830050706863,"msg":"request completed"}
+{"level":30,"time":1769893272541,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5m","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49572},"msg":"incoming request"}
+{"level":30,"time":1769893272582,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5m","res":{"statusCode":204},"responseTime":33.352791994810104,"msg":"request completed"}
+{"level":30,"time":1769893272597,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5n","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49572},"msg":"incoming request"}
+{"level":30,"time":1769893272768,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5o","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49574},"msg":"incoming request"}
+{"level":30,"time":1769893272769,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5o","res":{"statusCode":204},"responseTime":0.6115840077400208,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893273640,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5n","res":{"statusCode":200},"responseTime":1042.1524160057306,"msg":"request completed"}
+{"level":30,"time":1769893273643,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5p","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49574},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893273666,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5p","res":{"statusCode":200},"responseTime":21.273166999220848,"msg":"request completed"}
+{"level":30,"time":1769893280095,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5q","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49596},"msg":"incoming request"}
+{"level":30,"time":1769893280127,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5q","res":{"statusCode":204},"responseTime":19.835666999220848,"msg":"request completed"}
+{"level":30,"time":1769893280133,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5r","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49596},"msg":"incoming request"}
+{"level":30,"time":1769893280142,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5r","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769893280158,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5r","res":{"statusCode":404},"responseTime":24.579458013176918,"msg":"request completed"}
+{"level":30,"time":1769893280182,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5s","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49597},"msg":"incoming request"}
+{"level":30,"time":1769893280194,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5s","res":{"statusCode":204},"responseTime":11.673374995589256,"msg":"request completed"}
+{"level":30,"time":1769893280199,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5t","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49597},"msg":"incoming request"}
+{"level":30,"time":1769893280199,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5t","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769893280201,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5t","res":{"statusCode":404},"responseTime":2.47079199552536,"msg":"request completed"}
+{"level":30,"time":1769893316660,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5u","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49609},"msg":"incoming request"}
+{"level":30,"time":1769893316860,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5u","res":{"statusCode":204},"responseTime":38.386250004172325,"msg":"request completed"}
+{"level":30,"time":1769893316914,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5v","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49611},"msg":"incoming request"}
+{"level":30,"time":1769893316966,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5v","res":{"statusCode":204},"responseTime":19.157999992370605,"msg":"request completed"}
+{"level":30,"time":1769893316986,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5w","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49609},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893317697,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5w","res":{"statusCode":200},"responseTime":709.598999992013,"msg":"request completed"}
+{"level":30,"time":1769893317730,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5x","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49611},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893317765,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5x","res":{"statusCode":200},"responseTime":34.828666001558304,"msg":"request completed"}
+{"level":30,"time":1769893476425,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5y","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49674},"msg":"incoming request"}
+{"level":30,"time":1769893476650,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5y","res":{"statusCode":204},"responseTime":152.4389590024948,"msg":"request completed"}
+{"level":30,"time":1769893476685,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5z","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49676},"msg":"incoming request"}
+{"level":30,"time":1769893476692,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-5z","res":{"statusCode":204},"responseTime":6.974832996726036,"msg":"request completed"}
+{"level":30,"time":1769893476716,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-60","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49674},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893477927,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-60","res":{"statusCode":200},"responseTime":1210.9444580078125,"msg":"request completed"}
+{"level":30,"time":1769893477963,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-61","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49676},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893477999,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-61","res":{"statusCode":200},"responseTime":35.1474170088768,"msg":"request completed"}
+{"level":30,"time":1769893525411,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-62","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49711},"msg":"incoming request"}
+{"level":30,"time":1769893525530,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-62","res":{"statusCode":204},"responseTime":64.91620799899101,"msg":"request completed"}
+{"level":30,"time":1769893525549,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-63","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49713},"msg":"incoming request"}
+{"level":30,"time":1769893525555,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-63","res":{"statusCode":204},"responseTime":2.2460000067949295,"msg":"request completed"}
+{"level":30,"time":1769893525563,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-64","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49711},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893526971,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-64","res":{"statusCode":200},"responseTime":1406.5617090016603,"msg":"request completed"}
+{"level":30,"time":1769893526973,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-65","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49713},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=10
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1769893526991,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-65","res":{"statusCode":200},"responseTime":17.587583005428314,"msg":"request completed"}
+{"level":30,"time":1769893535761,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-66","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49731},"msg":"incoming request"}
+{"level":30,"time":1769893535806,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-66","res":{"statusCode":204},"responseTime":18.98370899260044,"msg":"request completed"}
+{"level":30,"time":1769893535827,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-67","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49731},"msg":"incoming request"}
+{"level":30,"time":1769893535847,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-67","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769893535855,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-67","res":{"statusCode":404},"responseTime":27.507957994937897,"msg":"request completed"}
+{"level":30,"time":1769893535856,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-68","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49733},"msg":"incoming request"}
+{"level":30,"time":1769893535857,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-68","res":{"statusCode":204},"responseTime":0.3206250071525574,"msg":"request completed"}
+{"level":30,"time":1769893535865,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-69","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49733},"msg":"incoming request"}
+{"level":30,"time":1769893535872,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-69","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769893535873,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-69","res":{"statusCode":404},"responseTime":4.78583399951458,"msg":"request completed"}
+{"level":30,"time":1769895185805,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6a","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49888},"msg":"incoming request"}
+{"level":30,"time":1769895186798,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6a","res":{"statusCode":204},"responseTime":806.8247919976711,"msg":"request completed"}
+{"level":30,"time":1769895193231,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6b","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49888},"msg":"incoming request"}
+{"level":30,"time":1769895193933,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6b","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769895194324,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6b","res":{"statusCode":404},"responseTime":756.6705420017242,"msg":"request completed"}
+{"level":30,"time":1769895194955,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6c","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49889},"msg":"incoming request"}
+{"level":30,"time":1769895194986,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6c","res":{"statusCode":204},"responseTime":12.181916996836662,"msg":"request completed"}
+{"level":30,"time":1769895195085,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6d","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49888},"msg":"incoming request"}
+{"level":30,"time":1769895195085,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6d","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769895195086,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6d","res":{"statusCode":404},"responseTime":0.8625420033931732,"msg":"request completed"}
+{"level":30,"time":1769895195137,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6e","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49889},"msg":"incoming request"}
+{"level":30,"time":1769895195137,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6e","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769895195140,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6e","res":{"statusCode":404},"responseTime":2.737166002392769,"msg":"request completed"}
+{"level":30,"time":1769895195141,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6f","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49892},"msg":"incoming request"}
+{"level":30,"time":1769895195207,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6f","res":{"statusCode":204},"responseTime":65.50499999523163,"msg":"request completed"}
+{"level":30,"time":1769895195237,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6g","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49888},"msg":"incoming request"}
+{"level":30,"time":1769895195237,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6g","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769895195238,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6g","res":{"statusCode":404},"responseTime":0.6484159976243973,"msg":"request completed"}
+{"level":30,"time":1769895195249,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6h","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49894},"msg":"incoming request"}
+{"level":30,"time":1769895195253,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6h","res":{"statusCode":204},"responseTime":4.296333000063896,"msg":"request completed"}
+{"level":30,"time":1769895195260,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6i","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49892},"msg":"incoming request"}
+{"level":30,"time":1769895195265,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6i","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769895195266,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6i","res":{"statusCode":404},"responseTime":5.9607080072164536,"msg":"request completed"}
+{"level":30,"time":1769895195272,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6j","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49896},"msg":"incoming request"}
+{"level":30,"time":1769895195283,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6j","res":{"statusCode":204},"responseTime":10.688709005713463,"msg":"request completed"}
+{"level":30,"time":1769895195284,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6k","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49894},"msg":"incoming request"}
+{"level":30,"time":1769895195287,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6k","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769895195288,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6k","res":{"statusCode":404},"responseTime":0.8066660016775131,"msg":"request completed"}
+{"level":30,"time":1769895195288,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6l","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49898},"msg":"incoming request"}
+{"level":30,"time":1769895195289,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6l","res":{"statusCode":204},"responseTime":0.4689999967813492,"msg":"request completed"}
+{"level":30,"time":1769895195302,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6m","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49892},"msg":"incoming request"}
+{"level":30,"time":1769895195302,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6m","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769895195310,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6m","res":{"statusCode":404},"responseTime":8.311792001128197,"msg":"request completed"}
+{"level":30,"time":1769895195318,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6n","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49888},"msg":"incoming request"}
+{"level":30,"time":1769895195318,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6n","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769895195319,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6n","res":{"statusCode":404},"responseTime":1.0582080036401749,"msg":"request completed"}
+{"level":30,"time":1769895195334,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6o","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49889},"msg":"incoming request"}
+{"level":30,"time":1769895195334,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6o","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769895195335,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6o","res":{"statusCode":404},"responseTime":0.9845419973134995,"msg":"request completed"}
+{"level":30,"time":1769895195603,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6p","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":49896},"msg":"incoming request"}
+{"level":30,"time":1769895195605,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6p","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769895195610,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6p","res":{"statusCode":404},"responseTime":6.382417008280754,"msg":"request completed"}
+{"level":30,"time":1769907329210,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6q","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":50405},"msg":"incoming request"}
+{"level":30,"time":1769907329243,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6q","res":{"statusCode":204},"responseTime":15.255082994699478,"msg":"request completed"}
+{"level":30,"time":1769907329247,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6r","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":50405},"msg":"incoming request"}
+{"level":30,"time":1769907329249,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6r","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769907329254,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6r","res":{"statusCode":404},"responseTime":6.204500004649162,"msg":"request completed"}
+{"level":30,"time":1769907329255,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6s","req":{"method":"OPTIONS","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":50407},"msg":"incoming request"}
+{"level":30,"time":1769907329255,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6s","res":{"statusCode":204},"responseTime":0.05683299899101257,"msg":"request completed"}
+{"level":30,"time":1769907329256,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6t","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":50407},"msg":"incoming request"}
+{"level":30,"time":1769907329256,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6t","msg":"Route GET:/api/v1/employees not found"}
+{"level":30,"time":1769907329256,"pid":41904,"hostname":"Ricardos-MacBook-Air.local","reqId":"req-6t","res":{"statusCode":404},"responseTime":0.07416599988937378,"msg":"request completed"}

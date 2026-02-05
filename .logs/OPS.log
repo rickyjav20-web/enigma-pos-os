@@ -1,0 +1,24 @@
+
+> ops@0.0.0 dev
+> vite
+
+
+  VITE v7.3.1  ready in 440 ms
+
+  ➜  Local:   http://localhost:4002/
+  ➜  Network: http://192.168.10.237:4002/
+8:43:54 PM [vite] (client) hmr update /src/pages/PurchasesPage.tsx, /src/index.css
+11:36:21 PM [vite] (client) hmr update /src/pages/PurchasesPage.tsx, /src/index.css
+11:41:19 PM [vite] (client) hmr update /src/pages/PurchasesPage.tsx, /src/index.css
+11:41:29 PM [vite] (client) hmr update /src/pages/PurchasesPage.tsx, /src/index.css
+12:14:36 AM [vite] (client) hmr update /src/pages/SmartShopperPage.tsx, /src/index.css
+12:14:39 AM [vite] (client) hmr update /src/pages/SmartShopperPage.tsx, /src/index.css
+12:19:56 AM [vite] (client) hmr update /src/pages/SmartShopperPage.tsx, /src/index.css
+12:30:33 AM [vite] (client) hmr update /src/pages/SmartShopperPage.tsx, /src/index.css
+12:30:35 AM [vite] (client) hmr update /src/pages/SmartShopperPage.tsx, /src/index.css
+12:33:05 AM [vite] (client) hmr update /src/pages/PurchasesPage.tsx, /src/index.css
+12:33:09 AM [vite] (client) hmr update /src/pages/PurchasesPage.tsx, /src/index.css
+12:41:21 AM [vite] (client) hmr update /src/pages/SmartShopperPage.tsx, /src/index.css
+12:44:35 AM [vite] (client) hmr update /src/pages/SmartShopperPage.tsx, /src/index.css
+12:44:49 AM [vite] (client) hmr update /src/pages/PurchasesPage.tsx, /src/index.css
+12:44:54 AM [vite] (client) hmr update /src/pages/PurchasesPage.tsx, /src/index.css

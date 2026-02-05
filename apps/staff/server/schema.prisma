@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String     @id @default(uuid())
+  name      String
+  slug      String     @unique
+  employees Employee[]
+  shifts     Shift[]
+  schedules  Schedule[]
+  recurring  RecurringSchedule[]
+  documents  Document[]
+  payments   Payment[]
+}
+
+model Employee {
+  id               String    @id @default(uuid())
+  tenantId         String
+  fullName         String
+  role             String
+  pinCode          String
+  status           String    @default("active")
+  
+  // Contact
+  email            String?
+  phone            String?
+  address          String?
+  emergencyContact String?
+  emergencyPhone   String?
+  
+  // Dates
+  birthDate        DateTime?
+  startDate        DateTime?
+  notes            String?
+  
+  // -- FINANCE & HR --
+  govId            String?   // CI / DNI
+  nationality      String?
+  paymentMethod    String?   // 'transfer', 'cash', 'mobile', 'zelle'
+  bankName         String?
+  accountNumber    String?
+  accountHolder    String?
+  salaryType       String?   // 'fixed', 'hourly'
+  salaryAmount     Float?    // Base amount in currency
+  currency         String    @default("USD")
+  
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  tenant           Tenant    @relation(fields: [tenantId], references: [id])
+  shifts           Shift[]
+  schedules        Schedule[]
+  recurring        RecurringSchedule[]
+  documents        Document[]
+  payments         Payment[]
+}
+
+model Payment {
+  id           String   @id @default(uuid())
+  tenantId     String
+  employeeId   String
+  amount       Float
+  currency     String   // 'USD', 'VES'
+  exchangeRate Float?   // Rate at time of payment
+  date         DateTime @default(now())
+  status       String   // 'pending', 'paid'
+  method       String?  // 'cash', 'zelle', 'mobile', 'transfer'
+  reference    String?  // Transaction ID
+  concept      String?  // 'Payroll Jan 15', 'Bonus'
+  notes        String?
+  
+  employee     Employee @relation(fields: [employeeId], references: [id])
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  tenantId   String
+  employeeId String
+  title      String   // 'Contract 2024', 'ID Copy'
+  type       String   // 'ID', 'CONTRACT', 'OTHER'
+  url        String   // S3 URL or Base64 (for MVP)
+  uploadedAt DateTime @default(now())
+  
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model Shift {
+  id          String    @id @default(uuid())
+  tenantId    String?   // Optional in schema but should be linked for multi-tenancy logic
+  employeeId  String
+  clockIn     DateTime
+  clockOut    DateTime?
+  mood        String?    // Entry Mood
+  exitMood    String?    // Exit Mood
+  comments    String?    // Exit Comments
+  photoUrl    String?    @db.Text
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id])
+}
+
+model Schedule {
+  id         String   @id @default(uuid())
+  tenantId   String
+  employeeId String
+  startTime  DateTime
+  endTime    DateTime
+  note       String?
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model RecurringSchedule {
+  id         String   @id @default(uuid())
+  tenantId   String
+  employeeId String
+  dayOfWeek  Int      // 0 = Sunday, 1 = Monday...
+  startTime  String   // "09:00"
+  endTime    String   // "17:00"
+  isActive   Boolean  @default(true)
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  
+  @@unique([employeeId, dayOfWeek])
+}

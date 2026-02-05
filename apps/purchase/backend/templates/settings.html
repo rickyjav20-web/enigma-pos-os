@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-8 animate-fade-in-down pb-20">
+    <!-- Header -->
+    <div class="flex items-center justify-between pt-6 pb-2">
+        <a href="/" class="text-slate-400 hover:text-white transition-colors flex items-center gap-2">
+            <span>🏠</span> Volver al Hub
+        </a>
+        <h1 class="text-xl font-bold text-white">Centro de Control & Seguridad</h1>
+    </div>
+
+    <!-- Alert / Context -->
+    <div class="bg-blue-900/20 border border-blue-500/30 p-4 rounded-xl flex gap-3 items-start">
+        <div class="text-xl">🛡️</div>
+        <div>
+            <h3 class="font-bold text-blue-400 text-sm">Modo Administrador</h3>
+            <p class="text-xs text-slate-400 mt-1">Este panel permite realizar acciones críticas sobre la integridad de
+                los datos. Procede con cautela.</p>
+        </div>
+    </div>
+
+    <!-- SECTION 1: RESPALDO Y AUDITORIA -->
+    <section>
+        <h3 class="text-xs font-bold text-green-500 uppercase tracking-wider mb-3 ml-1">1. Respaldo y Auditoría (Seguro)
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Export CSV -->
+            <div class="glass p-5 rounded-xl border border-slate-700 hover:border-green-500/50 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-bold text-white">Reporte de Transacciones</h4>
+                    <span class="text-xl">📊</span>
+                </div>
+                <!-- Action Group -->
+                <div class="space-y-2">
+                    <a href="/api/export/purchases"
+                        class="block w-full text-center bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold py-2 rounded-lg transition-colors">
+                        📥 Exportar (.csv)
+                    </a>
+
+                    <!-- Import Form -->
+                    <form id="importHistoryForm" class="relative">
+                        <input type="file" id="historyFile" accept=".csv" class="hidden"
+                            onchange="submitHistoryImport()" />
+                        <button type="button" onclick="document.getElementById('historyFile').click()"
+                            class="block w-full text-center border border-slate-600 hover:bg-slate-800 text-slate-300 text-xs font-bold py-2 rounded-lg transition-colors">
+                            📤 Restaurar Historia
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Download DB -->
+            <div class="glass p-5 rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-bold text-white">Full Backup del Sistema</h4>
+                    <span class="text-xl">💾</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-4 h-10">Descarga el archivo crudo de base de datos (.db). Útil para
+                    restauraciones técnicas completas.</p>
+                <a href="/api/settings/download-db"
+                    class="block w-full text-center bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold py-2.5 rounded-lg transition-colors mb-2">
+                    ⬇️ Descargar Base de Datos
+                </a>
+
+                <!-- Restore DB -->
+                <form id="restoreDbForm" class="relative">
+                    <input type="file" id="dbFile" accept=".db" class="hidden" onchange="submitDbRestore()" />
+                    <button type="button" onclick="document.getElementById('dbFile').click()"
+                        class="block w-full text-center border border-slate-600 hover:bg-red-900/40 text-slate-300 text-xs font-bold py-2 rounded-lg transition-colors">
+                        ⬆️ Restaurar Backup (.db)
+                    </button>
+                </form>
+            </div>
+
+            <!-- Export Catalog Section (New) -->
+            <div class="glass p-5 rounded-xl border border-slate-700 hover:border-purple-500/50 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-bold text-white">Catálogo Completo</h4>
+                    <span class="text-xl">📦</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-4 h-10">Exporta todos los productos y sus costos actuales (Formato
+                    Loyverse).</p>
+                <a href="/api/export/catalog-items"
+                    class="block w-full text-center bg-purple-700 hover:bg-purple-600 text-white text-sm font-bold py-2.5 rounded-lg transition-colors">
+                    📤 Descargar Catálogo (.csv)
+                </a>
+            </div>
+
+            <!-- Download Audit Log -->
+            <div class="glass p-5 rounded-xl border border-slate-700 hover:border-yellow-500/50 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-bold text-white">Log de Auditoría (CSV)</h4>
+                    <span class="text-xl">📜</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-4 h-10">Descarga el log cronológico inmutable de inserciones
+                    (purchase_history_log.csv).</p>
+                <a href="/api/settings/download-log"
+                    class="block w-full text-center bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold py-2.5 rounded-lg transition-colors">
+                    📑 Descargar Log
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: GESTIÓN DE CATÁLOGO -->
+    <section>
+        <h3 class="text-xs font-bold text-blue-500 uppercase tracking-wider mb-3 ml-1">2. Catálogo Maestro (Delicado)
+        </h3>
+        <div class="glass p-6 rounded-xl border border-slate-700 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+
+            <h4 class="font-bold text-white mb-1">Inyeccion de Datos (Loyverse)</h4>
+            <p class="text-xs text-slate-400 mb-4 max-w-lg">
+                Esta acción <span class="text-yellow-400 font-bold">SOBREESCRIBE</span> nombres y SKUs basados en la
+                importación.
+                Los precios no se verán afectados, pero nuevos productos se crearán.
+            </p>
+
+            <form id="uploadForm" class="space-y-3">
+                <div class="flex gap-2">
+                    <input type="file" id="csvFile" accept=".csv" class="block w-full text-sm text-slate-400
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-lg file:border-0
+                      file:text-xs file:font-semibold
+                      file:bg-slate-800 file:text-blue-400
+                      hover:file:bg-slate-700
+                      cursor-pointer
+                    " />
+                    <button type="submit" id="btnUpload"
+                        class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold px-6 py-2 rounded-lg transition-colors shadow-lg shadow-blue-500/20 whitespace-nowrap">
+                        🔄 Ejecutar Sync
+                    </button>
+                </div>
+            </form>
+            <div id="uploadStatus" class="mt-2 text-xs font-mono pl-1"></div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: DANGER ZONE -->
+    <section class="opacity-90 hover:opacity-100 transition-opacity">
+        <h3 class="text-xs font-bold text-red-500 uppercase tracking-wider mb-3 ml-1 flex items-center gap-2">
+            <span>⚠️</span> Zona de Peligro
+        </h3>
+
+        <div class="border border-red-900/50 bg-red-900/10 p-6 rounded-xl space-y-6">
+
+            <!-- Purge Transactions -->
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="font-bold text-red-400">Purgar Historial de Transacciones</h4>
+                    <p class="text-[10px] text-red-300/70 mt-1 max-w-sm">
+                        Elimina todas las compras, facturas e historial de costos. Mantiene los productos y proveedores
+                        intactos.
+                        <br><strong>Comúnmente usado después de fase de pruebas.</strong>
+                    </p>
+                </div>
+                <button onclick="confirmPurge('transactions_only')"
+                    class="border border-red-500/30 hover:bg-red-500 hover:text-white text-red-400 text-xs font-bold px-4 py-2 rounded-lg transition-all">
+                    💣 Eliminar Historial
+                </button>
+            </div>
+
+            <div class="h-px bg-red-900/50"></div>
+
+            <!-- Full Wipe -->
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="font-bold text-red-400">Factory Reset Total</h4>
+                    <p class="text-[10px] text-red-300/70 mt-1 max-w-sm">
+                        Elimina TODO: Productos, Proveedores y Compras. Deja el sistema como recién instalado.
+                        <br><strong class="uppercase">Irreversible.</strong>
+                    </p>
+                </div>
+                <button onclick="confirmPurge('full_wipe')"
+                    class="bg-red-900/50 hover:bg-red-600 text-red-200 hover:text-white text-xs font-bold px-4 py-2 rounded-lg transition-all border border-red-500/50">
+                    ☠️ BORRAR TODO
+                </button>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+<script>
+    async function submitHistoryImport() {
+        const file = document.getElementById('historyFile').files[0];
+        if (!file) return;
+
+        if (!confirm("⚠️ ¿Restaurar Historial?\\n\\nEsto intentará recrear las compras del CSV. Úsalo solo en sistemas vacíos.")) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/settings/upload-history', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (res.ok) {
+                alert(`✅ Restauración Completa:\\n${data.purchases} compras recuperadas.\\n${data.lines} items procesados.`);
+                window.location.reload();
+            } else {
+                alert("Error: " + data.error);
+            }
+        } catch (e) { alert("Error de conexión"); }
+    }
+
+    // --- Upload Logic ---
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const file = document.getElementById('csvFile').files[0];
+        if (!file) { alert("Selecciona un archivo CSV (export_items.csv)"); return; }
+
+        if (!confirm("⚠️ ¿Estás seguro de sincronizar el catálogo?\\n\\nEsto fusionará nuevos items de Loyverse.")) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        const btn = document.getElementById('btnUpload');
+        const status = document.getElementById('uploadStatus');
+
+        btn.disabled = true;
+        btn.innerHTML = "⏳ Procesando...";
+
+        try {
+            const res = await fetch('/api/settings/upload-catalog', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (res.ok) {
+                status.className = "text-green-400";
+                status.innerHTML = `✅ Sincronización completa: +${data.items_added} items, +${data.providers_added} proveedores.`;
+                document.getElementById('uploadForm').reset();
+            } else throw new Error(data.error);
+        } catch (err) {
+            status.className = "text-red-400";
+            status.innerHTML = "❌ Error: " + err.message;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = "🔄 Ejecutar Sync";
+        }
+    });
+
+    async function submitDbRestore() {
+        if (!confirm("⚠️ PELIGRO: Restaurar Base de Datos COMPLETA\\n\\nEsto reemplazará TODOS los datos actuales por los del archivo.\\n¿Estás seguro?")) return;
+
+        const file = document.getElementById('dbFile').files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/settings/upload-db', { method: 'POST', body: formData });
+            if (res.ok) {
+                alert("✅ Restauración Exitosa. El sistema se reiniciará.");
+                window.location.reload();
+            } else {
+                alert("Error al restaurar");
+            }
+        } catch (e) { alert("Error de conexión"); }
+    }
+
+    // --- Purge Logic ---
+    async function confirmPurge(mode) {
+        const msg = mode === 'full_wipe'
+            ? "🛑 ALERTA CRÍTICA 🛑\\n\\nEstás a punto de borrar TODO el sistema (Productos, Proveedores, Compras).\\n\\n¿Deseas continuar?"
+            : "⚠️ ADVERTENCIA\\n\\nEstás a punto de borrar todo el historial de compras y costos.\\n\\n¿Confirmar limpieza?";
+
+        if (!confirm(msg)) return;
+
+        // Double Check for Logic Wipe
+        if (mode === 'full_wipe') {
+            const confirmation = prompt("Para confirmar, escribe: BORRAR");
+            if (confirmation !== "BORRAR") { alert("Cancelado."); return; }
+        }
+
+        try {
+            const res = await fetch('/api/settings/purge-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: mode })
+            });
+            if (res.ok) {
+                alert("♻️ Sistema limpiado correctamente.");
+                window.location.reload();
+            } else {
+                alert("Error al limpiar.");
+            }
+        } catch (e) { alert("Error de conexión"); }
+    }
+</script>
+{% endblock %}

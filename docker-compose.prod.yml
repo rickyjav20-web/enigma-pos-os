@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # --- Database (Simulating Cloud DB) ---
+  db:
+    image: postgres:15-alpine
+    container_name: enigma-db-prod
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: enigma_os_core
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - enigma-net
+
+  # --- Backend API ---
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: enigma-api-prod
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # Connect to the local docker db
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/enigma_os_core?schema=public"
+    ports:
+      - "4000:4000"
+    depends_on:
+      - db
+    networks:
+      - enigma-net
+
+  # --- Frontend: HQ (Management) ---
+  hq:
+    build:
+      context: .
+      dockerfile: apps/hq/Dockerfile
+    container_name: enigma-hq-prod
+    ports:
+      - "8080:80" # Exposed on localhost:8080
+    networks:
+      - enigma-net
+
+  # --- Frontend: OPS (Point of Sale) ---
+  ops:
+    build:
+      context: .
+      dockerfile: apps/ops/Dockerfile
+    container_name: enigma-ops-prod
+    ports:
+      - "8081:80" # Exposed on localhost:8081
+    networks:
+      - enigma-net
+
+  # --- Frontend: Staff (Clock In/Out) ---
+  staff:
+    build:
+      context: .
+      dockerfile: apps/staff/Dockerfile
+    container_name: enigma-staff-prod
+    ports:
+      - "8082:80" # Exposed on localhost:8082
+    networks:
+      - enigma-net
+
+networks:
+  enigma-net:
+    driver: bridge
+
+volumes:
+  postgres_data:

@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in-down">
+    <!-- Header -->
+    <div class="flex items-center justify-between pt-6 pb-2">
+        <a href="/" class="text-slate-400 hover:text-white transition-colors flex items-center gap-2">
+            <span>🏠</span> Volver
+        </a>
+        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500">
+            Smart Shopper 🧠
+        </h1>
+    </div>
+
+    <div class="glass p-6 rounded-2xl border border-slate-700">
+        <h2 class="text-white font-bold mb-4">¿Qué te falta hoy?</h2>
+
+        <!-- Search to Add -->
+        <div class="relative mb-4">
+            <input type="text" id="itemSearch"
+                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-purple-500 outline-none"
+                placeholder="Buscar producto para agregar..." onkeyup="searchItems()">
+
+            <div id="searchResults"
+                class="hidden absolute w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto">
+            </div>
+        </div>
+
+        <!-- Selected List -->
+        <div id="shoppingList" class="space-y-2 mb-6">
+            <div class="text-center text-slate-500 text-sm py-4 border-2 border-dashed border-slate-700/50 rounded-xl">
+                Tu lista está vacía.
+            </div>
+        </div>
+
+        <button onclick="optimizeList()" id="optimizeBtn" disabled
+            class="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/20 transition-all">
+            ✨ Generar Plan de Compra
+        </button>
+    </div>
+
+    <!-- Results Section -->
+    <div id="planResult" class="hidden space-y-4">
+        <h3 class="text-slate-400 text-xs font-bold uppercase px-2">Plan Recomendado</h3>
+        <div id="planGrid" class="space-y-4">
+            <!-- Results injected here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedItems = [];
+    let debounceTimer;
+
+    async function searchItems() {
+        clearTimeout(debounceTimer);
+        const q = document.getElementById('itemSearch').value;
+
+        if (q.length < 2) {
+            document.getElementById('searchResults').classList.add('hidden');
+            return;
+        }
+
+        debounceTimer = setTimeout(async () => {
+            const res = await fetch(`/api/catalog/search?q=${q}`);
+            const items = await res.json();
+            renderSearchResults(items);
+        }, 300);
+    }
+
+    function renderSearchResults(items) {
+        const container = document.getElementById('searchResults');
+        container.innerHTML = '';
+        container.classList.remove('hidden');
+
+        if (items.length === 0) {
+            container.innerHTML = '<div class="p-3 text-slate-500 text-center">No encontrado</div>';
+            return;
+        }
+
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = "p-3 hover:bg-slate-700 cursor-pointer text-slate-300 border-b border-slate-700/50 last:border-0";
+            div.textContent = item.name;
+            div.onclick = () => addItem(item);
+            container.appendChild(div);
+        });
+    }
+
+    function addItem(item) {
+        // Prevent duplicates
+        if (selectedItems.find(i => i.id === item.id)) return;
+
+        selectedItems.push(item);
+        renderList();
+        document.getElementById('itemSearch').value = '';
+        document.getElementById('searchResults').classList.add('hidden');
+    }
+
+    function renderList() {
+        const container = document.getElementById('shoppingList');
+        const btn = document.getElementById('optimizeBtn');
+        container.innerHTML = '';
+
+        if (selectedItems.length === 0) {
+            container.innerHTML = '<div class="text-center text-slate-500 text-sm py-4 border-2 border-dashed border-slate-700/50 rounded-xl">Tu lista está vacía.</div>';
+            btn.disabled = true;
+            return;
+        }
+
+        btn.disabled = false;
+
+        selectedItems.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = "flex justify-between items-center bg-slate-800 p-3 rounded-lg border border-slate-700";
+            div.innerHTML = `
+                <span class="text-white">${item.name}</span>
+                <button onclick="removeItem(${index})" class="text-red-400 hover:text-white">&times;</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function removeItem(index) {
+        selectedItems.splice(index, 1);
+        renderList();
+    }
+
+    async function optimizeList() {
+        const btn = document.getElementById('optimizeBtn');
+        btn.textContent = "🧠 Analizando Historial...";
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/optimizer/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ item_ids: selectedItems.map(i => i.id) })
+            });
+            const plan = await res.json();
+            renderPlan(plan);
+        } catch (e) {
+            alert("Error al optimizar");
+        } finally {
+            btn.textContent = "✨ Generar Plan de Compra";
+            btn.disabled = false;
+        }
+    }
+
+    function renderPlan(plan) {
+        const container = document.getElementById('planGrid');
+        const section = document.getElementById('planResult');
+        container.innerHTML = '';
+        section.classList.remove('hidden');
+
+        // Plan is { provider_id: { provider_name, items: [], total_est } } logic from backend
+        // We expect an array of "trips"
+
+        if (plan.length === 0) {
+            container.innerHTML = '<div class="text-slate-500">No se pudo generar un plan.</div>';
+            return;
+        }
+
+        plan.forEach(trip => {
+            const div = document.createElement('div');
+            div.className = "glass p-4 rounded-xl border border-slate-700";
+
+            let itemsHtml = '';
+            trip.items.forEach(i => {
+                itemsHtml += `
+                    <div class="flex justify-between text-sm py-1 border-b border-slate-700/30 last:border-0">
+                        <span class="text-slate-300">${i.name}</span>
+                        <span class="font-mono text-green-400">$${i.est_cost.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+
+            div.innerHTML = `
+                <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-600">
+                    <div>
+                        <h3 class="font-bold text-white text-lg">${trip.provider_name}</h3>
+                        ${trip.provider_address ? `<p class="text-xs text-slate-400">📍 ${trip.provider_address}</p>` : ''}
+                        ${trip.provider_phone ? `<p class="text-xs text-slate-400">📞 ${trip.provider_phone}</p>` : ''}
+                    </div>
+                    <div class="text-right">
+                         <div class="text-xs text-slate-400">Total Estimado</div>
+                         <div class="font-bold text-green-400 font-mono text-xl">$${trip.total_est.toFixed(2)}</div>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    ${itemsHtml}
+                </div>
+                <div class="mt-4 pt-2">
+                    <button class="w-full bg-slate-700 hover:bg-slate-600 text-sm py-2 rounded-lg transition-colors">
+                        📍 Ir a comprar aquí (Crear Borrador)
+                    </button>
+                    <!-- Hook Create Draft Logic here later -->
+                </div>
+            `;
+            container.appendChild(div);
+        });
+
+        section.scrollIntoView({ behavior: 'smooth' });
+    }
+</script>
+{% endblock %}

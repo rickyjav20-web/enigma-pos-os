@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in-down">
+    <!-- Header -->
+    <div class="flex items-center justify-between pt-6 pb-2">
+        <button onclick="window.location.href='/'"
+            class="text-slate-400 hover:text-white transition-colors flex items-center gap-2">
+            <span>🏠</span> Inicio
+        </button>
+        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
+            Monitor de Costos
+        </h1>
+    </div>
+
+    <!-- Search -->
+    <div>
+        <input type="text" id="monitorSearch"
+            class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 outline-none"
+            placeholder="Filtrar ingredientes..." onkeyup="filterList()">
+    </div>
+
+    <!-- List -->
+    <div class="grid grid-cols-1 gap-2 pb-20" id="monitorList">
+        <div class="text-center text-slate-500 py-10">Cargando precios...</div>
+    </div>
+
+    <!-- Comparison Modal -->
+    <div id="compareModal"
+        class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="glass w-full max-w-md p-6 rounded-2xl border border-slate-700 transform transition-all scale-100">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-white" id="modalTitle">Producto</h3>
+                    <p class="text-slate-400 text-xs" id="modalSubtitle">Comparativa de Proveedores</p>
+                </div>
+                <button onclick="closeModal()" class="text-slate-500 hover:text-white text-xl">&times;</button>
+            </div>
+
+            <div id="modalContent" class="space-y-3 max-h-[60vh] overflow-y-auto">
+                <!-- Injected content -->
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-slate-700/50">
+                <button onclick="closeModal()"
+                    class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-bold">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allItems = [];
+
+    async function loadMonitor() {
+        try {
+            const res = await fetch('/api/catalog/monitor');
+            allItems = await res.json();
+            render(allItems);
+        } catch (e) {
+            document.getElementById('monitorList').innerHTML = '<div class="text-red-400">Error loading.</div>';
+        }
+    }
+
+    function render(items) {
+        const list = document.getElementById('monitorList');
+        list.innerHTML = '';
+
+        if (items.length === 0) {
+            list.innerHTML = '<div class="text-center text-slate-500 py-8">No hay precios registrados.</div>';
+            return;
+        }
+
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = "glass p-4 rounded-xl flex justify-between items-center group hover:bg-slate-700 transition-all cursor-pointer active:scale-[0.98]";
+            div.onclick = () => openComparison(item);
+
+            // Unit badge
+            const unit = item.default_unit || 'Und';
+
+            // Date logic
+            let dateStr = "Sin fecha";
+            if (item.updated_at) {
+                const date = new Date(item.updated_at);
+                const diffTime = Math.abs(new Date() - date);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                dateStr = diffDays <= 1 ? "Hoy" : `Hace ${diffDays} días`;
+            }
+
+            div.innerHTML = `
+            <div>
+                <div class="text-white font-medium group-hover:text-blue-300 transition-colors flex items-center gap-2">
+                    ${item.name}
+                </div>
+                <div class="flex gap-2 text-xs font-mono mt-0.5">
+                     <span class="text-slate-500">SKU: ${item.sku}</span>
+                     <span class="text-slate-600">• ${dateStr}</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="block font-mono text-green-400 font-bold">$${item.current_cost.toFixed(2)}</span>
+                <span class="text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">x ${unit}</span>
+            </div>
+        `;
+            list.appendChild(div);
+        });
+    }
+
+    function filterList() {
+        const q = document.getElementById('monitorSearch').value.toLowerCase();
+        const filtered = allItems.filter(i => i.name.toLowerCase().includes(q) || i.sku.toLowerCase().includes(q));
+        render(filtered);
+    }
+
+    async function openComparison(item) {
+        document.getElementById('compareModal').classList.remove('hidden');
+        document.getElementById('modalTitle').textContent = item.name;
+        document.getElementById('modalContent').innerHTML = '<div class="text-center py-4 text-slate-400">Analizando proveedores...</div>';
+
+        try {
+            const res = await fetch(`/api/analysis/comparison/${item.id}`);
+            const data = await res.json();
+
+            const container = document.getElementById('modalContent');
+            container.innerHTML = '';
+
+            if (data.providers.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-slate-500">Solo tienes un precio registrado.</div>';
+                return;
+            }
+
+            // Sort by price ascending (Best price first)
+            data.providers.sort((a, b) => a.last_price - b.last_price);
+
+            const bestPrice = data.providers[0].last_price;
+
+            data.providers.forEach((p, index) => {
+                const isBest = index === 0;
+                const date = new Date(p.date).toLocaleDateString();
+                const diff = ((p.last_price - bestPrice) / bestPrice) * 100;
+
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-lg flex justify-between items-center border ${isBest ? 'bg-green-500/10 border-green-500/50' : 'bg-slate-800 border-slate-700'}`;
+
+                div.innerHTML = `
+                    <div>
+                        <div class="text-white font-bold text-sm">
+                            ${isBest ? '🏆 ' : ''}${p.name}
+                        </div>
+                        <div class="text-xs text-slate-500">${date}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-mono ${isBest ? 'text-green-400' : 'text-slate-300'} font-bold">
+                            $${p.last_price.toFixed(2)}
+                        </div>
+                        ${!isBest ? `<div class="text-[10px] text-red-400">+${diff.toFixed(1)}%</div>` : '<div class="text-[10px] text-green-500">Mejor Precio</div>'}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+        } catch (e) {
+            console.error(e);
+            document.getElementById('modalContent').innerHTML = '<div class="text-red-400 text-center">Error al cargar datos</div>';
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('compareModal').classList.add('hidden');
+    }
+
+    loadMonitor();
+</script>
+{% endblock %}

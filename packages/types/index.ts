@@ -27,7 +27,17 @@ export enum EventType {
     ORDER_SENT = 'orden_enviada_cocina',
     ITEM_READY = 'item_listo',
     ITEM_SERVED = 'item_entregado',
-    PAYMENT_RECEIVED = 'pago_recibido'
+    PAYMENT_RECEIVED = 'pago_recibido',
+
+    // Product Events
+    PRODUCT_CREATED = 'producto_creado',
+    PRODUCT_UPDATED = 'producto_actualizado',
+
+    // Purchase Events
+    PURCHASE_ORDER_CONFIRMED = 'orden_compra_confirmada',
+
+    // Notification Events
+    NOTIFICATION_CREATED = 'notification_created'
 }
 
 export interface BaseEntity {
@@ -35,4 +45,53 @@ export interface BaseEntity {
     tenant_id: string;
     created_at: number;
     updated_at: number;
+}
+
+export interface Product extends BaseEntity {
+    name: string;
+    description?: string;
+    category_id?: string;
+    image_url?: string;
+    is_active: boolean;
+
+    // Pricing
+    price: number;
+    cost?: number; // For analytics
+
+    // Loyverse Mapping
+    loyverse_id?: string;
+    sku?: string;
+
+    // Configuration
+    track_inventory: boolean;
+
+    // Relations
+    variants?: Variant[];
+    modifiers?: string[]; // IDs of ModifierGroups
+}
+
+export interface Variant {
+    id: string;
+    name: string;
+    price: number;
+    cost?: number;
+    sku?: string;
+    loyverse_id?: string;
+}
+
+export interface Category extends BaseEntity {
+    name: string;
+    color?: string;
+    loyverse_id?: string;
+}
+
+export interface ModifierGroup extends BaseEntity {
+    name: string;
+    options: ModifierOption[];
+}
+
+export interface ModifierOption {
+    id: string;
+    name: string;
+    price_delta: number;
 }

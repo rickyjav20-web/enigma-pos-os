@@ -1,0 +1,301 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- CORE ---
+
+model Tenant {
+  id        String     @id @default(uuid())
+  name      String
+  slug      String     @unique
+  
+  // Relations
+  employees Employee[]
+  shifts     Shift[]
+  schedules  Schedule[]
+  recurring  RecurringSchedule[]
+  documents  Document[]
+  payments   Payment[]
+  products        Product[]
+  suppliers       Supplier[]
+  supplyItems     SupplyItem[]
+  purchaseOrders  PurchaseOrder[]
+}
+
+// --- MODULE: STAFF ---
+
+model Employee {
+  id               String    @id @default(uuid())
+  tenantId         String
+  fullName         String
+  role             String
+  pinCode          String
+  status           String    @default("active")
+  
+  // Contact
+  email            String?
+  phone            String?
+  address          String?
+  emergencyContact String?
+  emergencyPhone   String?
+  
+  // Dates
+  birthDate        DateTime?
+  startDate        DateTime?
+  notes            String?
+  
+  // -- FINANCE & HR --
+  govId            String?   // CI / DNI
+  nationality      String?
+  paymentMethod    String?   // 'transfer', 'cash', 'mobile', 'zelle'
+  bankName         String?
+  accountNumber    String?
+  accountHolder    String?
+  salaryType       String?   // 'fixed', 'hourly'
+  salaryAmount     Float?    // Base amount in currency
+  currency         String    @default("USD")
+  
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  tenant           Tenant    @relation(fields: [tenantId], references: [id])
+  shifts           Shift[]
+  schedules        Schedule[]
+  recurring        RecurringSchedule[]
+  documents        Document[]
+  payments         Payment[]
+}
+
+model Payment {
+  id           String   @id @default(uuid())
+  tenantId     String
+  employeeId   String
+  amount       Float
+  currency     String   // 'USD', 'VES'
+  exchangeRate Float?   // Rate at time of payment
+  date         DateTime @default(now())
+  status       String   // 'pending', 'paid'
+  method       String?  // 'cash', 'zelle', 'mobile', 'transfer'
+  reference    String?  // Transaction ID
+  concept      String?  // 'Payroll Jan 15', 'Bonus'
+  notes        String?
+  
+  employee     Employee @relation(fields: [employeeId], references: [id])
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  tenantId   String
+  employeeId String
+  title      String   // 'Contract 2024', 'ID Copy'
+  type       String   // 'ID', 'CONTRACT', 'OTHER'
+  url        String   // S3 URL or Base64 (for MVP)
+  uploadedAt DateTime @default(now())
+  
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model Shift {
+  id          String    @id @default(uuid())
+  tenantId    String?   // Optional in schema but should be linked for multi-tenancy logic
+  employeeId  String
+  clockIn     DateTime
+  clockOut    DateTime?
+  mood        String?    // Entry Mood
+  exitMood    String?    // Exit Mood
+  comments    String?    // Exit Comments
+  photoUrl    String?    @db.Text
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id])
+}
+
+model Schedule {
+  id         String   @id @default(uuid())
+  tenantId   String
+  employeeId String
+  startTime  DateTime
+  endTime    DateTime
+  note       String?
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model RecurringSchedule {
+  id         String   @id @default(uuid())
+  tenantId   String
+  employeeId String
+  dayOfWeek  Int      // 0 = Sunday, 1 = Monday...
+  startTime  String   // "09:00"
+  endTime    String   // "17:00"
+  isActive   Boolean  @default(true)
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  
+  @@unique([employeeId, dayOfWeek])
+}
+
+// --- MODULE: PRODUCTS (Ingest) ---
+
+model Product {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  categoryId  String?
+  price       Float
+  cost        Float?
+  sku         String?
+  loyverseId  String?  // Handle from CSV
+  isActive    Boolean  @default(true)
+  
+  variants    Variant[]
+  recipes     ProductRecipe[]
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, loyverseId])
+}
+
+model Variant {
+  id        String  @id @default(uuid())
+  productId String
+  name      String
+  price     Float
+  cost      Float
+  sku       String?
+  
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+// --- MODULE: PURCHASES (Optimized) ---
+
+model Supplier {
+  id              String   @id @default(uuid())
+  tenantId        String
+  name            String
+  normalizedName  String?  // For duplicate detection (e.g. "sysco_foods")
+  category        String?
+  email           String?
+  phone           String?
+  address         String?
+  notes           String?
+  
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  supplyItems     SupplyItem[]
+  purchaseOrders  PurchaseOrder[]
+}
+
+model SupplyItem {
+  id              String   @id @default(uuid())
+  tenantId        String
+  name            String
+  sku             String?
+  category        String?  // 'Lácteos', 'Vegetales'
+  defaultUnit     String   // 'kg', 'lt', 'und'
+  currentCost     Float    @default(0)
+  averageCost     Float    @default(0) // Weighted Average Cost
+  lastPurchaseDate DateTime?
+  stockQuantity   Float    @default(0) // Current stock for WAC
+  isByWeight      Boolean  @default(false)
+  
+  // Relations
+  preferredSupplierId String?
+  loyverseId          String? // Link to Sales Product if 1:1 match
+  
+  tenant            Tenant          @relation(fields: [tenantId], references: [id])
+  preferredSupplier Supplier?       @relation(fields: [preferredSupplierId], references: [id])
+  purchaseLines     PurchaseLine[]
+  priceHistory      PriceHistory[]
+  productRecipes    ProductRecipe[]
+
+  // --- NEW: Kitchen Hierarchy (Batches) ---
+  isProduction    Boolean            @default(false) // If true, this item is made in-house (e.g. "Pizza Dough")
+  yieldQuantity   Float?             // How much does one batch produce?
+  yieldUnit       String?            // Unit of the batch output (e.g. 'kg', 'lt')
+  
+  ingredients     ProductionRecipe[] @relation("ParentItem")    // Ingredients used TO MAKE this item
+  usedIn          ProductionRecipe[] @relation("ComponentItem") // Recipes WHERE this item is used
+  
+  @@unique([tenantId, sku])
+}
+
+model ProductionRecipe {
+  id            String     @id @default(uuid())
+  parentItemId  String     // The "Batch" (e.g. Pizza Dough)
+  supplyItemId  String     // The "Ingredient" (e.g. Flour)
+  
+  quantity      Float      // Amount of ingredient used
+  unit          String     // Unit of ingredient
+  
+  parent        SupplyItem @relation("ParentItem", fields: [parentItemId], references: [id])
+  component     SupplyItem @relation("ComponentItem", fields: [supplyItemId], references: [id])
+  
+  @@index([parentItemId])
+  @@index([supplyItemId])
+}
+
+model PurchaseOrder {
+  id            String   @id @default(uuid())
+  tenantId      String
+  supplierId    String
+  date          DateTime @default(now())
+  totalAmount   Float
+  invoiceNumber String?
+  status        String   @default("draft") // 'draft', 'confirmed', 'cancelled'
+  notes         String?
+  
+  supplier      Supplier       @relation(fields: [supplierId], references: [id])
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  lines         PurchaseLine[]
+}
+
+model PurchaseLine {
+  id              String   @id @default(uuid())
+  purchaseOrderId String
+  supplyItemId    String
+  
+  quantity        Float
+  unitCost        Float
+  totalCost       Float
+  
+  // Snapshots (in case Item name changes)
+  itemNameSnapshot String?
+  
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  supplyItem      SupplyItem    @relation(fields: [supplyItemId], references: [id])
+}
+
+model PriceHistory {
+  id              String   @id @default(uuid())
+  supplyItemId    String
+  supplierId      String?
+  purchaseLineId  String?
+  
+  oldCost         Float
+  newCost         Float
+  changeDate      DateTime @default(now())
+  
+  supplyItem      SupplyItem @relation(fields: [supplyItemId], references: [id])
+}
+
+model ProductRecipe {
+  id            String      @id @default(uuid())
+  productId     String
+  supplyItemId  String
+
+  quantity      Float       // e.g. 0.2
+  unit          String      // e.g. 'kg'
+  
+  costAtCreation Float?     // Historical snapshot
+
+  product       Product     @relation(fields: [productId], references: [id])
+  supplyItem    SupplyItem  @relation(fields: [supplyItemId], references: [id])
+
+  @@index([productId])
+  @@index([supplyItemId])
+}

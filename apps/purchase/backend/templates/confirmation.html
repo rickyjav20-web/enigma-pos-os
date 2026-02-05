@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in-down pt-10">
+    <div class="text-center">
+        <div class="text-6xl mb-4">📝</div>
+        <h1 class="text-2xl font-bold text-white">Revisión de Borrador</h1>
+        <p class="text-slate-400">ID: #{{ purchase.id }} • Estado: <span class="uppercase text-yellow-500 font-bold">{{
+                purchase.status }}</span></p>
+    </div>
+
+    <!-- Receipt Card -->
+    <div
+        class="glass p-8 rounded-3xl relative overflow-hidden border border-slate-600 bg-gradient-to-b from-slate-800 to-slate-900">
+        <!-- Ticket cut effect -->
+        <div class="absolute -left-4 top-1/2 w-8 h-8 bg-[#0f172a] rounded-full"></div>
+        <div class="absolute -right-4 top-1/2 w-8 h-8 bg-[#0f172a] rounded-full"></div>
+
+        <div class="space-y-4 font-mono text-sm">
+            <!-- Provider -->
+            <div class="flex justify-between border-b border-dashed border-slate-600 pb-4">
+                <span class="text-slate-400">Proveedor</span>
+                <span class="text-white font-bold text-right w-1/2">{{ purchase.provider.name }}</span>
+            </div>
+
+            <!-- Items -->
+            {% for item in lines %}
+            <div class="py-2 border-b border-slate-700/50">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-white font-bold block">{{ item.line.catalog_item_name }}</span>
+                        <span class="text-xs text-slate-500">{{ item.line.quantity }} unids @ ${{
+                            "%.2f"|format(item.line.unit_cost) }}</span>
+                    </div>
+
+                    <div class="text-right">
+                        <span class="text-white font-bold text-green-400 block">${{ "%.2f"|format(item.line.total_cost)
+                            }}</span>
+
+                        <!-- Alert Badges -->
+                        {% if item.status == 'up' %}
+                        <span
+                            class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-500 animate-pulse">
+                            🔺 Subió {{ item.diff_pct }}%
+                        </span>
+                        {% elif item.status == 'down' %}
+                        <span
+                            class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/20 text-green-500">
+                            ⬇️ Bajó {{ item.diff_pct|abs }}%
+                        </span>
+                        {% elif item.status == 'new' %}
+                        <span
+                            class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-400">
+                            🆕 Nuevo
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="pt-4 border-t border-dashed border-slate-600 flex justify-between items-center">
+                <span class="text-slate-400 text-lg">TOTAL FACTURA</span>
+                <div class="text-right">
+                    <span class="block text-3xl font-bold text-white">${{ "%.2f"|format(purchase.total_amount) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="space-y-3">
+        {% if purchase.status == 'draft' %}
+        <button onclick="confirmPurchase()" id="saveBtn"
+            class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-500/20 text-lg transition-all transform hover:scale-[1.02]">
+            🚀 Confirmar e Impactar Costos
+        </button>
+
+        <button onclick="window.location.href='/'"
+            class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl shadow-lg transition-all">
+            💾 Guardar y Salir (Borrador)
+        </button>
+
+        <button onclick="deleteDraft()"
+            class="w-full bg-transparent text-red-400 hover:text-red-300 py-3 font-medium transition-colors border border-red-900/30 rounded-xl">
+            🗑 Eliminar Borrador
+        </button>
+        {% else %}
+        <div class="p-4 bg-green-500/20 text-green-400 text-center rounded-xl font-bold">
+            ✅ Esta compra ya fue confirmada.
+        </div>
+        <button onclick="window.location.href='/'" class="w-full bg-slate-700 text-white py-3 rounded-xl">Volver al
+            Hub</button>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    const purchaseId = {{ purchase.id }};
+
+    async function confirmPurchase() {
+        if (!confirm("¿Todos los datos y precios son correctos? Esto actualizará el costo en el sistema.")) return;
+
+        const btn = document.getElementById('saveBtn');
+        btn.textContent = "⏳ Procesando...";
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`/api/purchases/${purchaseId}/confirm`, {
+                method: 'POST'
+            });
+
+            if (res.ok) {
+                btn.className = "w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg";
+                btn.textContent = "🎉 Éxito!";
+                setTimeout(() => window.location.href = '/', 1000);
+            } else {
+                throw new Error("Failed");
+            }
+        } catch (e) {
+            alert("Error al confirmar. Intenta de nuevo.");
+            btn.disabled = false;
+            btn.textContent = "🚀 Confirmar e Impactar Costos";
+        }
+    }
+
+    async function deleteDraft() {
+        if (!confirm("¿Borrar este borrador definitivamente?")) return;
+
+        try {
+            const res = await fetch(`/api/purchases/${purchaseId}`, { method: 'DELETE' });
+            if (res.ok) {
+                window.location.href = '/';
+            } else {
+                const data = await res.json();
+                alert("Error al eliminar: " + (data.error || "Desconocido"));
+            }
+        } catch (e) { console.error(e); }
+    }
+</script>
+{% endblock %}

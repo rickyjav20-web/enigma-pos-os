@@ -1,0 +1,713 @@
+
+> api@1.0.0 dev
+> ts-node src/index.ts
+
+[dotenv@17.2.3] injecting env (2) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+🍳 RecipeService Initialized
+{"level":30,"time":1770247992346,"pid":9747,"hostname":"MacBookAir.NUWE","msg":"Server listening at http://127.0.0.1:4000"}
+🚀 API Server running on port 4000
+└── (empty root node)
+    ├── / (GET, HEAD)
+    │   └── api/v1/
+    │       ├── commands (POST)
+    │       ├── ingest/
+    │       │   ├── products (POST)
+    │       │   └── catalog (POST)
+    │       ├── p
+    │       │   ├── roducts (GET, HEAD, POST)
+    │       │   │   └── /
+    │       │   │       └── :id (GET, HEAD, PUT)
+    │       │   │           └── /recipes (POST)
+    │       │   │               └── /
+    │       │   │                   └── :recipeId (DELETE)
+    │       │   └── urchases (GET, HEAD, POST)
+    │       ├── auth/verify-pin (POST)
+    │       ├── s
+    │       │   ├── hifts/
+    │       │   │   ├── clock-
+    │       │   │   │   ├── in (POST)
+    │       │   │   │   └── out (POST)
+    │       │   │   ├── history (GET, HEAD)
+    │       │   │   └── active (GET, HEAD)
+    │       │   ├── chedules (GET, HEAD, POST)
+    │       │   │   └── /
+    │       │   │       ├── autofill (POST)
+    │       │   │       └── :id (DELETE)
+    │       │   └── uppl
+    │       │       ├── iers (GET, HEAD, POST)
+    │       │       │   └── /
+    │       │       │       └── :id (GET, HEAD, PATCH)
+    │       │       │           └── /analytics (GET, HEAD)
+    │       │       └── y-items (GET, HEAD, POST)
+    │       │           └── /
+    │       │               └── :id (GET, HEAD, PUT)
+    │       ├── employees (GET, HEAD, POST)
+    │       │   └── /
+    │       │       └── :id|:employeeId (PATCH, DELETE)
+    │       │           └── /documents (GET, HEAD, POST)
+    │       ├── recurring (POST)
+    │       │   └── /
+    │       │       └── :employeeId (GET, HEAD)
+    │       ├── optimizer/analyze (POST)
+    │       ├── data/
+    │       │   ├── import (POST)
+    │       │   └── export (GET, HEAD)
+    │       └── :id
+    │           └── /price-history (GET, HEAD)
+    └── * (OPTIONS)
+
+{"level":30,"time":1770247992346,"pid":9747,"hostname":"MacBookAir.NUWE","msg":"Server listening at http://192.168.10.237:4000"}
+{"level":30,"time":1770247995709,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":50950},"msg":"incoming request"}
+{"level":30,"time":1770247995717,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":50951},"msg":"incoming request"}
+{"level":30,"time":1770247995718,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":50952},"msg":"incoming request"}
+{"level":30,"time":1770247995718,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":50953},"msg":"incoming request"}
+{"level":30,"time":1770247995963,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3","res":{"statusCode":200},"responseTime":245.00720799993724,"msg":"request completed"}
+{"level":30,"time":1770247995964,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1","res":{"statusCode":200},"responseTime":253.18866600003093,"msg":"request completed"}
+{"level":30,"time":1770247995970,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2","res":{"statusCode":200},"responseTime":252.86645800014958,"msg":"request completed"}
+{"level":30,"time":1770247995981,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4","res":{"statusCode":200},"responseTime":263.0092089995742,"msg":"request completed"}
+{"level":30,"time":1770248225209,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5","req":{"method":"GET","url":"/health","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51075},"msg":"incoming request"}
+{"level":30,"time":1770248225218,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5","msg":"Route GET:/health not found"}
+{"level":30,"time":1770248225226,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5","res":{"statusCode":404},"responseTime":9.795291000045836,"msg":"request completed"}
+{"level":30,"time":1770248235351,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6","req":{"method":"GET","url":"/products?search=Leche","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51082},"msg":"incoming request"}
+{"level":30,"time":1770248235351,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6","msg":"Route GET:/products?search=Leche not found"}
+{"level":30,"time":1770248235351,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6","res":{"statusCode":404},"responseTime":0.2263340000063181,"msg":"request completed"}
+{"level":30,"time":1770248249955,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7","req":{"method":"GET","url":"/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51093},"msg":"incoming request"}
+{"level":30,"time":1770248249957,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7","msg":"Route GET:/products not found"}
+{"level":30,"time":1770248249959,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7","res":{"statusCode":404},"responseTime":2.3460830003023148,"msg":"request completed"}
+{"level":30,"time":1770248274122,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-8","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51305},"msg":"incoming request"}
+{"level":30,"time":1770248274205,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-9","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51307},"msg":"incoming request"}
+{"level":30,"time":1770248274547,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-8","res":{"statusCode":200},"responseTime":424.14099999982864,"msg":"request completed"}
+{"level":30,"time":1770248274548,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-a","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51305},"msg":"incoming request"}
+{"level":30,"time":1770248274550,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-a","res":{"statusCode":200},"responseTime":1.8642500001005828,"msg":"request completed"}
+{"level":30,"time":1770248274555,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-9","res":{"statusCode":200},"responseTime":350.0112499999814,"msg":"request completed"}
+{"level":30,"time":1770248274556,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-b","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51305},"msg":"incoming request"}
+{"level":30,"time":1770248274567,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-b","res":{"statusCode":200},"responseTime":10.815500000026077,"msg":"request completed"}
+{"level":30,"time":1770248287822,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-c","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51305},"msg":"incoming request"}
+{"level":30,"time":1770248287889,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-c","res":{"statusCode":200},"responseTime":65.95195899996907,"msg":"request completed"}
+{"level":30,"time":1770248287897,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-d","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51307},"msg":"incoming request"}
+{"level":30,"time":1770248287906,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-d","res":{"statusCode":200},"responseTime":8.824917000252753,"msg":"request completed"}
+{"level":30,"time":1770248316371,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-e","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51307},"msg":"incoming request"}
+{"level":30,"time":1770248316394,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-f","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51305},"msg":"incoming request"}
+{"level":30,"time":1770248316416,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-e","res":{"statusCode":200},"responseTime":42.432541999965906,"msg":"request completed"}
+{"level":30,"time":1770248316420,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-f","res":{"statusCode":200},"responseTime":25.11233300017193,"msg":"request completed"}
+{"level":30,"time":1770248316424,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-g","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51311},"msg":"incoming request"}
+{"level":30,"time":1770248316429,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-h","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51307},"msg":"incoming request"}
+{"level":30,"time":1770248316431,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-g","res":{"statusCode":200},"responseTime":7.078750000335276,"msg":"request completed"}
+{"level":30,"time":1770248316437,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-h","res":{"statusCode":200},"responseTime":8.715875000227243,"msg":"request completed"}
+{"level":30,"time":1770248342419,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-i","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51348},"msg":"incoming request"}
+{"level":30,"time":1770248342448,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-i","res":{"statusCode":200},"responseTime":28.531082999892533,"msg":"request completed"}
+{"level":30,"time":1770248342451,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-j","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51350},"msg":"incoming request"}
+{"level":30,"time":1770248342483,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-j","res":{"statusCode":200},"responseTime":32.160666999872774,"msg":"request completed"}
+{"level":30,"time":1770248405776,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-k","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51350},"msg":"incoming request"}
+{"level":30,"time":1770248405826,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-k","res":{"statusCode":204},"responseTime":43.72750000003725,"msg":"request completed"}
+{"level":30,"time":1770248405838,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-l","req":{"method":"POST","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51350},"msg":"incoming request"}
+{"level":30,"time":1770248406147,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-l","res":{"statusCode":200},"responseTime":306.90975000010803,"msg":"request completed"}
+{"level":30,"time":1770248415366,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-m","req":{"method":"GET","url":"/api/v1/supply-items/807dcc2c-9bce-42d2-a3e5-082c1e94b35c/price-history","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51350},"msg":"incoming request"}
+{"level":30,"time":1770248415367,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-m","msg":"Route GET:/api/v1/supply-items/807dcc2c-9bce-42d2-a3e5-082c1e94b35c/price-history not found"}
+{"level":30,"time":1770248415368,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-m","res":{"statusCode":404},"responseTime":1.6328750001266599,"msg":"request completed"}
+{"level":30,"time":1770248425325,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-n","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51350},"msg":"incoming request"}
+{"level":30,"time":1770248425374,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-o","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51368},"msg":"incoming request"}
+{"level":30,"time":1770248425406,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-n","res":{"statusCode":200},"responseTime":73.96654200041667,"msg":"request completed"}
+{"level":30,"time":1770248425407,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-p","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51350},"msg":"incoming request"}
+{"level":30,"time":1770248425412,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-p","res":{"statusCode":200},"responseTime":4.623500000219792,"msg":"request completed"}
+{"level":30,"time":1770248425535,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-o","res":{"statusCode":200},"responseTime":158.89670799998567,"msg":"request completed"}
+{"level":30,"time":1770248425537,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-q","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51350},"msg":"incoming request"}
+{"level":30,"time":1770248425594,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-q","res":{"statusCode":200},"responseTime":55.27725000027567,"msg":"request completed"}
+{"level":30,"time":1770248503493,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-r","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51390},"msg":"incoming request"}
+{"level":30,"time":1770248503539,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-r","res":{"statusCode":200},"responseTime":44.72229199996218,"msg":"request completed"}
+{"level":30,"time":1770248503550,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-s","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51392},"msg":"incoming request"}
+{"level":30,"time":1770248503591,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-s","res":{"statusCode":200},"responseTime":40.593125000130385,"msg":"request completed"}
+{"level":30,"time":1770248525927,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-t","req":{"method":"GET","url":"/api/v1/supply-items/807dcc2c-9bce-42d2-a3e5-082c1e94b35c/price-history","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51392},"msg":"incoming request"}
+{"level":30,"time":1770248525933,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-t","msg":"Route GET:/api/v1/supply-items/807dcc2c-9bce-42d2-a3e5-082c1e94b35c/price-history not found"}
+{"level":30,"time":1770248525934,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-t","res":{"statusCode":404},"responseTime":6.826833000406623,"msg":"request completed"}
+{"level":30,"time":1770248549759,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-u","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51392},"msg":"incoming request"}
+{"level":30,"time":1770248549784,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-u","res":{"statusCode":200},"responseTime":24.573792000301182,"msg":"request completed"}
+{"level":30,"time":1770248549786,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-v","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51390},"msg":"incoming request"}
+{"level":30,"time":1770248549792,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-v","res":{"statusCode":200},"responseTime":6.054416999686509,"msg":"request completed"}
+{"level":30,"time":1770248676765,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-w","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51444},"msg":"incoming request"}
+{"level":30,"time":1770248676769,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-x","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51446},"msg":"incoming request"}
+{"level":30,"time":1770248676783,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-w","res":{"statusCode":200},"responseTime":14.938375000376254,"msg":"request completed"}
+{"level":30,"time":1770248676796,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-y","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51448},"msg":"incoming request"}
+{"level":30,"time":1770248676800,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-y","res":{"statusCode":200},"responseTime":3.851334000006318,"msg":"request completed"}
+{"level":30,"time":1770248676809,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-x","res":{"statusCode":200},"responseTime":39.83341600000858,"msg":"request completed"}
+{"level":30,"time":1770248676833,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-z","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51448},"msg":"incoming request"}
+{"level":30,"time":1770248676843,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-z","res":{"statusCode":200},"responseTime":10.411083000246435,"msg":"request completed"}
+{"level":30,"time":1770249003027,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-10","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51515},"msg":"incoming request"}
+{"level":30,"time":1770249003038,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-10","res":{"statusCode":204},"responseTime":8.486249999608845,"msg":"request completed"}
+{"level":30,"time":1770249003045,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-11","req":{"method":"POST","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51515},"msg":"incoming request"}
+{"level":30,"time":1770249003163,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-11","res":{"statusCode":200},"responseTime":118.4112909999676,"msg":"request completed"}
+{"level":30,"time":1770249213380,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-12","req":{"method":"OPTIONS","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51557},"msg":"incoming request"}
+{"level":30,"time":1770249213389,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-12","res":{"statusCode":204},"responseTime":7.119707999750972,"msg":"request completed"}
+{"level":30,"time":1770249213392,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-13","req":{"method":"POST","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51557},"msg":"incoming request"}
+[EventBus] Publishing: orden_compra_confirmada (df6d8694-5847-486a-b90e-73ff8931d6d2)
+[EventBus] Subscriber count for orden_compra_confirmada: 1
+🍳 RecipeService: Received Purchase Confirmation
+{"level":30,"time":1770249213593,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-13","res":{"statusCode":200},"responseTime":199.57329200021923,"msg":"request completed"}
+{"level":30,"time":1770249216166,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-14","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51557},"msg":"incoming request"}
+{"level":30,"time":1770249216170,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-15","req":{"method":"GET","url":"/api/v1/supply-items?limit=1","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51561},"msg":"incoming request"}
+{"level":30,"time":1770249216173,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-16","req":{"method":"GET","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51562},"msg":"incoming request"}
+{"level":30,"time":1770249216184,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-14","res":{"statusCode":200},"responseTime":18.108291999902576,"msg":"request completed"}
+{"level":30,"time":1770249216190,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-17","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51566},"msg":"incoming request"}
+{"level":30,"time":1770249216196,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-17","res":{"statusCode":200},"responseTime":4.846291999798268,"msg":"request completed"}
+{"level":30,"time":1770249216218,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-15","res":{"statusCode":200},"responseTime":47.48041700012982,"msg":"request completed"}
+{"level":30,"time":1770249216219,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-18","req":{"method":"GET","url":"/api/v1/supply-items?limit=1","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51566},"msg":"incoming request"}
+{"level":30,"time":1770249216222,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-16","res":{"statusCode":200},"responseTime":49.63020800007507,"msg":"request completed"}
+{"level":30,"time":1770249216223,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-19","req":{"method":"GET","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51561},"msg":"incoming request"}
+{"level":30,"time":1770249216225,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-18","res":{"statusCode":200},"responseTime":5.05916600022465,"msg":"request completed"}
+{"level":30,"time":1770249216227,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-19","res":{"statusCode":200},"responseTime":3.832624999806285,"msg":"request completed"}
+{"level":30,"time":1770249232933,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1a","req":{"method":"GET","url":"/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51571},"msg":"incoming request"}
+{"level":30,"time":1770249232934,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1a","msg":"Route GET:/products not found"}
+{"level":30,"time":1770249232937,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1a","res":{"statusCode":404},"responseTime":3.312667000107467,"msg":"request completed"}
+{"level":30,"time":1770249243229,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1b","req":{"method":"GET","url":"/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51576},"msg":"incoming request"}
+{"level":30,"time":1770249243229,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1b","msg":"Route GET:/supply-items not found"}
+{"level":30,"time":1770249243229,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1b","res":{"statusCode":404},"responseTime":0.17570899985730648,"msg":"request completed"}
+{"level":30,"time":1770249262094,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1c","req":{"method":"GET","url":"/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51582},"msg":"incoming request"}
+{"level":30,"time":1770249262094,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1c","msg":"Route GET:/supply-items not found"}
+{"level":30,"time":1770249262094,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1c","res":{"statusCode":404},"responseTime":0.46304200030863285,"msg":"request completed"}
+{"level":30,"time":1770249306872,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1d","req":{"method":"GET","url":"/api/v1/supply-items?search=Leche","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51592},"msg":"incoming request"}
+{"level":30,"time":1770249306894,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1d","res":{"statusCode":200},"responseTime":21.450541000347584,"msg":"request completed"}
+{"level":30,"time":1770249318024,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1e","req":{"method":"GET","url":"/api/v1/supply-items?search=Leche","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51602},"msg":"incoming request"}
+{"level":30,"time":1770249318026,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1e","res":{"statusCode":200},"responseTime":1.5122500001452863,"msg":"request completed"}
+{"level":30,"time":1770249331398,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1f","req":{"method":"GET","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51611},"msg":"incoming request"}
+{"level":30,"time":1770249331401,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1f","res":{"statusCode":200},"responseTime":2.9216669998131692,"msg":"request completed"}
+{"level":30,"time":1770249346983,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1g","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51640},"msg":"incoming request"}
+{"level":30,"time":1770249346989,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1h","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51641},"msg":"incoming request"}
+{"level":30,"time":1770249346997,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1g","res":{"statusCode":200},"responseTime":9.057166999671608,"msg":"request completed"}
+{"level":30,"time":1770249347020,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1h","res":{"statusCode":200},"responseTime":30.65887500019744,"msg":"request completed"}
+{"level":30,"time":1770249347021,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1i","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51640},"msg":"incoming request"}
+{"level":30,"time":1770249347022,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1j","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51643},"msg":"incoming request"}
+{"level":30,"time":1770249347024,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1i","res":{"statusCode":200},"responseTime":2.504417000338435,"msg":"request completed"}
+{"level":30,"time":1770249347031,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1j","res":{"statusCode":200},"responseTime":9.733250000048429,"msg":"request completed"}
+{"level":30,"time":1770249442367,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1k","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51678},"msg":"incoming request"}
+{"level":30,"time":1770249442376,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1l","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51679},"msg":"incoming request"}
+{"level":30,"time":1770249442418,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1k","res":{"statusCode":200},"responseTime":49.535624999552965,"msg":"request completed"}
+{"level":30,"time":1770249442420,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1m","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51678},"msg":"incoming request"}
+{"level":30,"time":1770249442423,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1l","res":{"statusCode":200},"responseTime":47.291916999965906,"msg":"request completed"}
+{"level":30,"time":1770249442424,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1m","res":{"statusCode":200},"responseTime":3.9124170001596212,"msg":"request completed"}
+{"level":30,"time":1770249442425,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1n","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51681},"msg":"incoming request"}
+{"level":30,"time":1770249442435,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1n","res":{"statusCode":200},"responseTime":10.577250000089407,"msg":"request completed"}
+{"level":30,"time":1770249448567,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1o","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51681},"msg":"incoming request"}
+{"level":30,"time":1770249448572,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1p","req":{"method":"GET","url":"/api/v1/supply-items?limit=1","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51678},"msg":"incoming request"}
+{"level":30,"time":1770249448573,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1q","req":{"method":"GET","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51679},"msg":"incoming request"}
+{"level":30,"time":1770249448618,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1o","res":{"statusCode":200},"responseTime":50.4917500000447,"msg":"request completed"}
+{"level":30,"time":1770249448623,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1r","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51681},"msg":"incoming request"}
+{"level":30,"time":1770249448626,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1r","res":{"statusCode":200},"responseTime":3.399540999904275,"msg":"request completed"}
+{"level":30,"time":1770249448627,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1p","res":{"statusCode":200},"responseTime":55.03825000021607,"msg":"request completed"}
+{"level":30,"time":1770249448629,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1s","req":{"method":"GET","url":"/api/v1/supply-items?limit=1","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51683},"msg":"incoming request"}
+{"level":30,"time":1770249448632,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1s","res":{"statusCode":200},"responseTime":2.864749999716878,"msg":"request completed"}
+{"level":30,"time":1770249448642,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1q","res":{"statusCode":200},"responseTime":69.62254200037569,"msg":"request completed"}
+{"level":30,"time":1770249448643,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1t","req":{"method":"GET","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51683},"msg":"incoming request"}
+{"level":30,"time":1770249448646,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1t","res":{"statusCode":200},"responseTime":2.7778329998254776,"msg":"request completed"}
+{"level":30,"time":1770249477682,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1u","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51697},"msg":"incoming request"}
+{"level":30,"time":1770249477697,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1v","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51698},"msg":"incoming request"}
+{"level":30,"time":1770249477718,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1u","res":{"statusCode":200},"responseTime":35.487249999307096,"msg":"request completed"}
+{"level":30,"time":1770249477722,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1w","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51697},"msg":"incoming request"}
+{"level":30,"time":1770249477724,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1v","res":{"statusCode":200},"responseTime":27.17470799945295,"msg":"request completed"}
+{"level":30,"time":1770249477725,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1w","res":{"statusCode":200},"responseTime":3.1140000000596046,"msg":"request completed"}
+{"level":30,"time":1770249477725,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1x","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51700},"msg":"incoming request"}
+{"level":30,"time":1770249477734,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1x","res":{"statusCode":200},"responseTime":7.885874999687076,"msg":"request completed"}
+{"level":30,"time":1770249487264,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1y","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51700},"msg":"incoming request"}
+{"level":30,"time":1770249487300,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1y","res":{"statusCode":200},"responseTime":34.00858400017023,"msg":"request completed"}
+{"level":30,"time":1770249487301,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1z","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51698},"msg":"incoming request"}
+{"level":30,"time":1770249487313,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-1z","res":{"statusCode":200},"responseTime":12.458124999888241,"msg":"request completed"}
+{"level":30,"time":1770249524120,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-20","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51698},"msg":"incoming request"}
+{"level":30,"time":1770249524125,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-21","req":{"method":"GET","url":"/api/v1/supply-items?limit=1","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51700},"msg":"incoming request"}
+{"level":30,"time":1770249524126,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-22","req":{"method":"GET","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51697},"msg":"incoming request"}
+{"level":30,"time":1770249524133,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-20","res":{"statusCode":200},"responseTime":11.803291999734938,"msg":"request completed"}
+{"level":30,"time":1770249524135,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-23","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51711},"msg":"incoming request"}
+{"level":30,"time":1770249524139,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-22","res":{"statusCode":200},"responseTime":13.008499999530613,"msg":"request completed"}
+{"level":30,"time":1770249524141,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-21","res":{"statusCode":200},"responseTime":15.844790999777615,"msg":"request completed"}
+{"level":30,"time":1770249524141,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-23","res":{"statusCode":200},"responseTime":5.6870839996263385,"msg":"request completed"}
+{"level":30,"time":1770249524142,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-24","req":{"method":"GET","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51698},"msg":"incoming request"}
+{"level":30,"time":1770249524143,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-25","req":{"method":"GET","url":"/api/v1/supply-items?limit=1","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51697},"msg":"incoming request"}
+{"level":30,"time":1770249524154,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-24","res":{"statusCode":200},"responseTime":11.394584000110626,"msg":"request completed"}
+{"level":30,"time":1770249524154,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-25","res":{"statusCode":200},"responseTime":10.917332999408245,"msg":"request completed"}
+{"level":30,"time":1770249577403,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-26","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51697},"msg":"incoming request"}
+{"level":30,"time":1770249577414,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-27","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51698},"msg":"incoming request"}
+{"level":30,"time":1770249577422,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-26","res":{"statusCode":200},"responseTime":17.382333000190556,"msg":"request completed"}
+{"level":30,"time":1770249577423,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-28","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51711},"msg":"incoming request"}
+{"level":30,"time":1770249577430,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-27","res":{"statusCode":200},"responseTime":15.386500000022352,"msg":"request completed"}
+{"level":30,"time":1770249577430,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-28","res":{"statusCode":200},"responseTime":7.232416999526322,"msg":"request completed"}
+{"level":30,"time":1770249577430,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-29","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51697},"msg":"incoming request"}
+{"level":30,"time":1770249577443,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-29","res":{"statusCode":200},"responseTime":12.786875000223517,"msg":"request completed"}
+{"level":30,"time":1770249595522,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2a","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51697},"msg":"incoming request"}
+{"level":30,"time":1770249595529,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2b","req":{"method":"GET","url":"/api/v1/supply-items?limit=1","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51698},"msg":"incoming request"}
+{"level":30,"time":1770249595530,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2c","req":{"method":"GET","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51711},"msg":"incoming request"}
+{"level":30,"time":1770249595539,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2a","res":{"statusCode":200},"responseTime":13.713583000004292,"msg":"request completed"}
+{"level":30,"time":1770249595540,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2b","res":{"statusCode":200},"responseTime":11.338457999750972,"msg":"request completed"}
+{"level":30,"time":1770249595541,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2d","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51700},"msg":"incoming request"}
+{"level":30,"time":1770249595542,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2e","req":{"method":"GET","url":"/api/v1/supply-items?limit=1","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51697},"msg":"incoming request"}
+{"level":30,"time":1770249595544,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2c","res":{"statusCode":200},"responseTime":13.183375000022352,"msg":"request completed"}
+{"level":30,"time":1770249595544,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2d","res":{"statusCode":200},"responseTime":2.867832999676466,"msg":"request completed"}
+{"level":30,"time":1770249595545,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2f","req":{"method":"GET","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51698},"msg":"incoming request"}
+{"level":30,"time":1770249595546,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2e","res":{"statusCode":200},"responseTime":4.117666999809444,"msg":"request completed"}
+{"level":30,"time":1770249595554,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2f","res":{"statusCode":200},"responseTime":8.349124999716878,"msg":"request completed"}
+{"level":30,"time":1770249694414,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2g","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51760},"msg":"incoming request"}
+{"level":30,"time":1770249694426,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2g","res":{"statusCode":204},"responseTime":11.028584000654519,"msg":"request completed"}
+{"level":30,"time":1770249694432,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2h","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51760},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770249694513,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2h","res":{"statusCode":200},"responseTime":80.59508299920708,"msg":"request completed"}
+{"level":30,"time":1770249718315,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2i","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51771},"msg":"incoming request"}
+{"level":30,"time":1770249718318,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2i","res":{"statusCode":204},"responseTime":2.9473750004544854,"msg":"request completed"}
+{"level":30,"time":1770249718321,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2j","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51771},"msg":"incoming request"}
+{"level":30,"time":1770249718323,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2k","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51775},"msg":"incoming request"}
+{"level":30,"time":1770249718323,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2k","res":{"statusCode":204},"responseTime":0.34858400002121925,"msg":"request completed"}
+{"level":30,"time":1770249718324,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2l","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51776},"msg":"incoming request"}
+{"level":30,"time":1770249718324,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2l","res":{"statusCode":204},"responseTime":0.4686669996008277,"msg":"request completed"}
+{"level":30,"time":1770249718325,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2m","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51775},"msg":"incoming request"}
+{"level":30,"time":1770249718325,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2n","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51777},"msg":"incoming request"}
+{"level":30,"time":1770249718326,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2n","res":{"statusCode":204},"responseTime":0.648207999765873,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770249718335,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2j","res":{"statusCode":200},"responseTime":14.369291000068188,"msg":"request completed"}
+{"level":30,"time":1770249718342,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2m","res":{"statusCode":200},"responseTime":17.433333000168204,"msg":"request completed"}
+{"level":30,"time":1770249718344,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2o","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51777},"msg":"incoming request"}
+{"level":30,"time":1770249718349,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2p","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51771},"msg":"incoming request"}
+{"level":30,"time":1770249718356,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2p","res":{"statusCode":200},"responseTime":6.463208000175655,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770249718361,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2o","res":{"statusCode":200},"responseTime":16.69983399938792,"msg":"request completed"}
+{"level":30,"time":1770249887654,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2q","req":{"method":"OPTIONS","url":"/api/v1/supply-items/ef1c1ace-5285-4084-a2ce-96cbbb42585d","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51807},"msg":"incoming request"}
+{"level":30,"time":1770249887728,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2q","res":{"statusCode":204},"responseTime":46.420125000178814,"msg":"request completed"}
+{"level":30,"time":1770249887730,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2r","req":{"method":"OPTIONS","url":"/api/v1/supply-items/ef1c1ace-5285-4084-a2ce-96cbbb42585d","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51809},"msg":"incoming request"}
+{"level":30,"time":1770249887730,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2r","res":{"statusCode":204},"responseTime":0.509375000372529,"msg":"request completed"}
+{"level":30,"time":1770249887739,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2s","req":{"method":"GET","url":"/api/v1/supply-items/ef1c1ace-5285-4084-a2ce-96cbbb42585d","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51807},"msg":"incoming request"}
+{"level":30,"time":1770249887851,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2s","res":{"statusCode":200},"responseTime":112.70150000043213,"msg":"request completed"}
+{"level":30,"time":1770249887852,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2t","req":{"method":"GET","url":"/api/v1/supply-items/ef1c1ace-5285-4084-a2ce-96cbbb42585d","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51809},"msg":"incoming request"}
+{"level":30,"time":1770249887858,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2t","res":{"statusCode":200},"responseTime":5.327041999436915,"msg":"request completed"}
+{"level":30,"time":1770249954924,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2u","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51837},"msg":"incoming request"}
+{"level":30,"time":1770249954930,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2u","res":{"statusCode":204},"responseTime":3.870083000510931,"msg":"request completed"}
+{"level":30,"time":1770249954934,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2v","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51837},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770249954953,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2v","res":{"statusCode":200},"responseTime":18.708832999691367,"msg":"request completed"}
+{"level":30,"time":1770250023162,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2w","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51863},"msg":"incoming request"}
+{"level":30,"time":1770250023163,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2w","res":{"statusCode":204},"responseTime":0.7323340000584722,"msg":"request completed"}
+{"level":30,"time":1770250023166,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2x","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51865},"msg":"incoming request"}
+{"level":30,"time":1770250023168,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2x","res":{"statusCode":204},"responseTime":1.1337919998914003,"msg":"request completed"}
+{"level":30,"time":1770250023169,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2y","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51865},"msg":"incoming request"}
+{"level":30,"time":1770250023170,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2z","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51863},"msg":"incoming request"}
+{"level":30,"time":1770250023170,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-30","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51866},"msg":"incoming request"}
+{"level":30,"time":1770250023170,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-30","res":{"statusCode":204},"responseTime":0.10583300050348043,"msg":"request completed"}
+{"level":30,"time":1770250023170,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-31","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51867},"msg":"incoming request"}
+{"level":30,"time":1770250023170,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-31","res":{"statusCode":204},"responseTime":0.0400409996509552,"msg":"request completed"}
+{"level":30,"time":1770250023184,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2y","res":{"statusCode":200},"responseTime":15.071915999986231,"msg":"request completed"}
+{"level":30,"time":1770250023185,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-32","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51867},"msg":"incoming request"}
+{"level":30,"time":1770250023189,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-32","res":{"statusCode":200},"responseTime":4.10833299998194,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770250023204,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-2z","res":{"statusCode":200},"responseTime":33.987832999788225,"msg":"request completed"}
+{"level":30,"time":1770250023207,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-33","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51867},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770250023210,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-33","res":{"statusCode":200},"responseTime":2.1640419997274876,"msg":"request completed"}
+{"level":30,"time":1770250227027,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-34","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51933},"msg":"incoming request"}
+{"level":30,"time":1770250227164,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-34","res":{"statusCode":200},"responseTime":135.75149999931455,"msg":"request completed"}
+{"level":30,"time":1770250227165,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-35","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51936},"msg":"incoming request"}
+{"level":30,"time":1770250227171,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-35","res":{"statusCode":200},"responseTime":4.8549170000478625,"msg":"request completed"}
+{"level":30,"time":1770250398252,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-36","req":{"method":"GET","url":"/api/v1/supply-items/5f3ace45-f924-4599-b1a8-c79644a5605d/price-history","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51967},"msg":"incoming request"}
+{"level":30,"time":1770250398255,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-36","msg":"Route GET:/api/v1/supply-items/5f3ace45-f924-4599-b1a8-c79644a5605d/price-history not found"}
+{"level":30,"time":1770250398257,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-36","res":{"statusCode":404},"responseTime":2.34270799998194,"msg":"request completed"}
+{"level":30,"time":1770250487905,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-37","req":{"method":"GET","url":"/api/v1/supply-items?search=Leche","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51989},"msg":"incoming request"}
+{"level":30,"time":1770250487944,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-37","res":{"statusCode":200},"responseTime":31.857625000178814,"msg":"request completed"}
+{"level":30,"time":1770250488867,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-38","req":{"method":"GET","url":"/favicon.ico","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51989},"msg":"incoming request"}
+{"level":30,"time":1770250488870,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-38","msg":"Route GET:/favicon.ico not found"}
+{"level":30,"time":1770250488872,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-38","res":{"statusCode":404},"responseTime":4.447999999858439,"msg":"request completed"}
+{"level":30,"time":1770250488873,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-39","req":{"method":"GET","url":"/favicon.ico","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":51990},"msg":"incoming request"}
+{"level":30,"time":1770250488874,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-39","msg":"Route GET:/favicon.ico not found"}
+{"level":30,"time":1770250488874,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-39","res":{"statusCode":404},"responseTime":0.5549999997019768,"msg":"request completed"}
+{"level":30,"time":1770250523609,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3a","req":{"method":"OPTIONS","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52004},"msg":"incoming request"}
+{"level":30,"time":1770250523611,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3a","res":{"statusCode":204},"responseTime":0.8989589996635914,"msg":"request completed"}
+{"level":30,"time":1770250523612,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3b","req":{"method":"GET","url":"/api/v1/products?tenant_id=enigma_hq","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52004},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770250523629,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3b","res":{"statusCode":200},"responseTime":16.865708000026643,"msg":"request completed"}
+{"level":30,"time":1770250597658,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3c","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52034},"msg":"incoming request"}
+{"level":30,"time":1770250597662,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3c","res":{"statusCode":204},"responseTime":1.4277499997988343,"msg":"request completed"}
+{"level":30,"time":1770250597663,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3d","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52034},"msg":"incoming request"}
+{"level":30,"time":1770250597674,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3e","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52036},"msg":"incoming request"}
+{"level":30,"time":1770250597674,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3e","res":{"statusCode":204},"responseTime":0.23808300029486418,"msg":"request completed"}
+{"level":30,"time":1770250597675,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3f","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52037},"msg":"incoming request"}
+{"level":30,"time":1770250597675,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3f","res":{"statusCode":204},"responseTime":0.18470900040119886,"msg":"request completed"}
+{"level":30,"time":1770250597676,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3g","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52036},"msg":"incoming request"}
+{"level":30,"time":1770250597677,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3h","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52038},"msg":"incoming request"}
+{"level":30,"time":1770250597677,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3h","res":{"statusCode":204},"responseTime":0.11629199981689453,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770250597679,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3d","res":{"statusCode":200},"responseTime":15.720958000048995,"msg":"request completed"}
+{"level":30,"time":1770250597680,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3i","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52038},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770250597688,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3i","res":{"statusCode":200},"responseTime":8.20429200027138,"msg":"request completed"}
+{"level":30,"time":1770250597703,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3g","res":{"statusCode":200},"responseTime":26.747624999843538,"msg":"request completed"}
+{"level":30,"time":1770250597704,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3j","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52038},"msg":"incoming request"}
+{"level":30,"time":1770250597708,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3j","res":{"statusCode":200},"responseTime":3.599750000052154,"msg":"request completed"}
+{"level":30,"time":1770251012905,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3k","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52140},"msg":"incoming request"}
+{"level":30,"time":1770251012932,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3l","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52141},"msg":"incoming request"}
+{"level":30,"time":1770251013412,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3k","res":{"statusCode":200},"responseTime":505.6853750003502,"msg":"request completed"}
+{"level":30,"time":1770251013413,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3l","res":{"statusCode":200},"responseTime":480.8845419995487,"msg":"request completed"}
+{"level":30,"time":1770251023501,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3m","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52167},"msg":"incoming request"}
+{"level":30,"time":1770251023539,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3m","res":{"statusCode":200},"responseTime":37.23325000051409,"msg":"request completed"}
+{"level":30,"time":1770251023541,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3n","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52170},"msg":"incoming request"}
+{"level":30,"time":1770251023553,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3n","res":{"statusCode":200},"responseTime":12.074040999636054,"msg":"request completed"}
+{"level":30,"time":1770251058114,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3o","req":{"method":"OPTIONS","url":"/api/v1/optimizer/analyze","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52178},"msg":"incoming request"}
+{"level":30,"time":1770251058190,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3o","res":{"statusCode":204},"responseTime":14.587083000689745,"msg":"request completed"}
+{"level":30,"time":1770251058201,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3p","req":{"method":"POST","url":"/api/v1/optimizer/analyze","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52178},"msg":"incoming request"}
+{"level":30,"time":1770251058633,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3p","res":{"statusCode":200},"responseTime":432.0819589998573,"msg":"request completed"}
+{"level":30,"time":1770252249925,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3q","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52453},"msg":"incoming request"}
+{"level":30,"time":1770252249935,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3r","req":{"method":"GET","url":"/api/v1/supply-items?limit=1","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52455},"msg":"incoming request"}
+{"level":30,"time":1770252249936,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3s","req":{"method":"GET","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52457},"msg":"incoming request"}
+{"level":30,"time":1770252250100,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3q","res":{"statusCode":200},"responseTime":171.31320799980313,"msg":"request completed"}
+{"level":30,"time":1770252250102,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3r","res":{"statusCode":200},"responseTime":166.828125,"msg":"request completed"}
+{"level":30,"time":1770252250104,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3s","res":{"statusCode":200},"responseTime":167.24866600055248,"msg":"request completed"}
+{"level":30,"time":1770252250104,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3t","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52453},"msg":"incoming request"}
+{"level":30,"time":1770252250107,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3u","req":{"method":"GET","url":"/api/v1/purchases","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52455},"msg":"incoming request"}
+{"level":30,"time":1770252250107,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3v","req":{"method":"GET","url":"/api/v1/supply-items?limit=1","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52464},"msg":"incoming request"}
+{"level":30,"time":1770252250110,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3t","res":{"statusCode":200},"responseTime":5.471665999852121,"msg":"request completed"}
+{"level":30,"time":1770252250122,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3u","res":{"statusCode":200},"responseTime":15.181707999669015,"msg":"request completed"}
+{"level":30,"time":1770252250123,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3v","res":{"statusCode":200},"responseTime":15.168624999932945,"msg":"request completed"}
+{"level":30,"time":1770252257084,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3w","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52464},"msg":"incoming request"}
+{"level":30,"time":1770252257091,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3x","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52455},"msg":"incoming request"}
+{"level":30,"time":1770252257106,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3w","res":{"statusCode":200},"responseTime":20.753208000212908,"msg":"request completed"}
+{"level":30,"time":1770252257106,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3y","req":{"method":"GET","url":"/api/v1/suppliers","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52453},"msg":"incoming request"}
+{"level":30,"time":1770252257108,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3y","res":{"statusCode":200},"responseTime":1.1880419999361038,"msg":"request completed"}
+{"level":30,"time":1770252257132,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3x","res":{"statusCode":200},"responseTime":40.32112499978393,"msg":"request completed"}
+{"level":30,"time":1770252257134,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3z","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52453},"msg":"incoming request"}
+{"level":30,"time":1770252257147,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-3z","res":{"statusCode":200},"responseTime":12.70004100073129,"msg":"request completed"}
+{"level":30,"time":1770252322576,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-40","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52453},"msg":"incoming request"}
+{"level":30,"time":1770252322590,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-40","res":{"statusCode":204},"responseTime":8.93729200027883,"msg":"request completed"}
+{"level":30,"time":1770252322594,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-41","req":{"method":"POST","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52453},"msg":"incoming request"}
+{"level":30,"time":1770252322691,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-41","res":{"statusCode":200},"responseTime":96.44987499993294,"msg":"request completed"}
+{"level":30,"time":1770252660630,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-42","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52596},"msg":"incoming request"}
+{"level":30,"time":1770252660631,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-42","res":{"statusCode":204},"responseTime":1.0195410000160336,"msg":"request completed"}
+{"level":30,"time":1770252660632,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-43","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52598},"msg":"incoming request"}
+{"level":30,"time":1770252660633,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-43","res":{"statusCode":204},"responseTime":0.5724590001627803,"msg":"request completed"}
+{"level":30,"time":1770252660635,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-44","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52596},"msg":"incoming request"}
+{"level":30,"time":1770252660639,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-45","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52599},"msg":"incoming request"}
+{"level":30,"time":1770252660639,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-45","res":{"statusCode":204},"responseTime":0.34075000043958426,"msg":"request completed"}
+{"level":30,"time":1770252660640,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-46","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52598},"msg":"incoming request"}
+{"level":30,"time":1770252660640,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-47","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52600},"msg":"incoming request"}
+{"level":30,"time":1770252660640,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-47","res":{"statusCode":204},"responseTime":0.2205419996753335,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770252660729,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-44","res":{"statusCode":200},"responseTime":94.23029099963605,"msg":"request completed"}
+{"level":30,"time":1770252660730,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-46","res":{"statusCode":200},"responseTime":90.1961670005694,"msg":"request completed"}
+{"level":30,"time":1770252660734,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-48","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52600},"msg":"incoming request"}
+{"level":30,"time":1770252660734,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-49","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52596},"msg":"incoming request"}
+{"level":30,"time":1770252660741,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-49","res":{"statusCode":200},"responseTime":6.427749999798834,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770252660743,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-48","res":{"statusCode":200},"responseTime":9.197916000150144,"msg":"request completed"}
+{"level":30,"time":1770252766367,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4a","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52630},"msg":"incoming request"}
+{"level":30,"time":1770252766402,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4a","res":{"statusCode":204},"responseTime":21.675083000212908,"msg":"request completed"}
+{"level":30,"time":1770252766416,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4b","req":{"method":"POST","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52630},"msg":"incoming request"}
+{"level":30,"time":1770252766904,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4b","res":{"statusCode":200},"responseTime":486.4678750000894,"msg":"request completed"}
+{"level":30,"time":1770252766995,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4c","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52630},"msg":"incoming request"}
+{"level":30,"time":1770252766998,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4c","res":{"statusCode":204},"responseTime":0.5948750004172325,"msg":"request completed"}
+{"level":30,"time":1770252767004,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4d","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52630},"msg":"incoming request"}
+{"level":30,"time":1770252767010,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4e","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52632},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770252767060,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4d","res":{"statusCode":200},"responseTime":55.80133299995214,"msg":"request completed"}
+{"level":30,"time":1770252767105,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4e","res":{"statusCode":200},"responseTime":94.79399999976158,"msg":"request completed"}
+{"level":30,"time":1770252841395,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4f","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52654},"msg":"incoming request"}
+{"level":30,"time":1770252841421,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4f","res":{"statusCode":204},"responseTime":3.997250000014901,"msg":"request completed"}
+{"level":30,"time":1770252841426,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4g","req":{"method":"POST","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52654},"msg":"incoming request"}
+{"level":30,"time":1770252841562,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4g","res":{"statusCode":200},"responseTime":135.76525000017136,"msg":"request completed"}
+{"level":30,"time":1770252841575,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4h","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52654},"msg":"incoming request"}
+{"level":30,"time":1770252841576,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4h","res":{"statusCode":204},"responseTime":0.6056249998509884,"msg":"request completed"}
+{"level":30,"time":1770252841577,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4i","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52656},"msg":"incoming request"}
+{"level":30,"time":1770252841579,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4j","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52654},"msg":"incoming request"}
+{"level":30,"time":1770252841625,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4i","res":{"statusCode":200},"responseTime":47.31266599986702,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770252841631,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4j","res":{"statusCode":200},"responseTime":52.15487500000745,"msg":"request completed"}
+{"level":30,"time":1770252860741,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4k","req":{"method":"OPTIONS","url":"/api/v1/supply-items/d6dc32d4-cbe6-4add-9997-d05d2aa9692a","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52654},"msg":"incoming request"}
+{"level":30,"time":1770252860747,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4k","res":{"statusCode":204},"responseTime":5.61699999962002,"msg":"request completed"}
+{"level":30,"time":1770252860749,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4l","req":{"method":"GET","url":"/api/v1/supply-items/d6dc32d4-cbe6-4add-9997-d05d2aa9692a","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52654},"msg":"incoming request"}
+{"level":30,"time":1770252860779,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4m","req":{"method":"OPTIONS","url":"/api/v1/supply-items/d6dc32d4-cbe6-4add-9997-d05d2aa9692a","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52656},"msg":"incoming request"}
+{"level":30,"time":1770252860780,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4m","res":{"statusCode":204},"responseTime":0.2952500004321337,"msg":"request completed"}
+{"level":30,"time":1770252860899,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4l","res":{"statusCode":200},"responseTime":150.0310419993475,"msg":"request completed"}
+{"level":30,"time":1770252860904,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4n","req":{"method":"GET","url":"/api/v1/supply-items/d6dc32d4-cbe6-4add-9997-d05d2aa9692a","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52656},"msg":"incoming request"}
+{"level":30,"time":1770252860930,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4n","res":{"statusCode":200},"responseTime":25.710583999753,"msg":"request completed"}
+{"level":30,"time":1770252878994,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4o","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52666},"msg":"incoming request"}
+{"level":30,"time":1770252879008,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4o","res":{"statusCode":204},"responseTime":5.087166000157595,"msg":"request completed"}
+{"level":30,"time":1770252879009,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4p","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52668},"msg":"incoming request"}
+{"level":30,"time":1770252879009,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4p","res":{"statusCode":204},"responseTime":0.12116699945181608,"msg":"request completed"}
+{"level":30,"time":1770252879009,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4q","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52670},"msg":"incoming request"}
+{"level":30,"time":1770252879027,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4q","res":{"statusCode":204},"responseTime":17.45254199951887,"msg":"request completed"}
+{"level":30,"time":1770252879027,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4r","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52671},"msg":"incoming request"}
+{"level":30,"time":1770252879027,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4r","res":{"statusCode":204},"responseTime":0.1352089997380972,"msg":"request completed"}
+{"level":30,"time":1770252879053,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4s","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52671},"msg":"incoming request"}
+{"level":30,"time":1770252879058,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4t","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52670},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770252879095,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4s","res":{"statusCode":200},"responseTime":42.085292000323534,"msg":"request completed"}
+{"level":30,"time":1770252879102,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4t","res":{"statusCode":200},"responseTime":44.47054100036621,"msg":"request completed"}
+{"level":30,"time":1770252879103,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4u","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52668},"msg":"incoming request"}
+{"level":30,"time":1770252879104,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4v","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52671},"msg":"incoming request"}
+{"level":30,"time":1770252879119,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4v","res":{"statusCode":200},"responseTime":15.455707999877632,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770252879127,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4u","res":{"statusCode":200},"responseTime":24.295624999329448,"msg":"request completed"}
+{"level":30,"time":1770252966700,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4w","req":{"method":"OPTIONS","url":"/api/v1/supply-items/06dafc5d-09da-4177-b486-175fba21642f","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52701},"msg":"incoming request"}
+{"level":30,"time":1770252966722,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4w","res":{"statusCode":204},"responseTime":19.67337500024587,"msg":"request completed"}
+{"level":30,"time":1770252966730,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4x","req":{"method":"GET","url":"/api/v1/supply-items/06dafc5d-09da-4177-b486-175fba21642f","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52701},"msg":"incoming request"}
+{"level":30,"time":1770252966830,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4y","req":{"method":"OPTIONS","url":"/api/v1/supply-items/06dafc5d-09da-4177-b486-175fba21642f","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52703},"msg":"incoming request"}
+{"level":30,"time":1770252966831,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4y","res":{"statusCode":204},"responseTime":0.3829580005258322,"msg":"request completed"}
+{"level":30,"time":1770252966858,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4x","res":{"statusCode":200},"responseTime":127.8374999994412,"msg":"request completed"}
+{"level":30,"time":1770252966866,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4z","req":{"method":"GET","url":"/api/v1/supply-items/06dafc5d-09da-4177-b486-175fba21642f","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52703},"msg":"incoming request"}
+{"level":30,"time":1770252966906,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-4z","res":{"statusCode":200},"responseTime":39.302209000103176,"msg":"request completed"}
+{"level":30,"time":1770252989355,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-50","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52709},"msg":"incoming request"}
+{"level":30,"time":1770252989366,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-50","res":{"statusCode":204},"responseTime":6.210791000165045,"msg":"request completed"}
+{"level":30,"time":1770252989367,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-51","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52709},"msg":"incoming request"}
+{"level":30,"time":1770252989372,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-52","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52711},"msg":"incoming request"}
+{"level":30,"time":1770252989375,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-52","res":{"statusCode":204},"responseTime":2.878166999667883,"msg":"request completed"}
+{"level":30,"time":1770252989379,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-53","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52714},"msg":"incoming request"}
+{"level":30,"time":1770252989380,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-53","res":{"statusCode":204},"responseTime":0.8339579999446869,"msg":"request completed"}
+{"level":30,"time":1770252989384,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-54","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52715},"msg":"incoming request"}
+{"level":30,"time":1770252989384,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-54","res":{"statusCode":204},"responseTime":0.4173750001937151,"msg":"request completed"}
+{"level":30,"time":1770252989395,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-55","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52715},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770252989418,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-51","res":{"statusCode":200},"responseTime":50.85562500078231,"msg":"request completed"}
+{"level":30,"time":1770252989422,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-55","res":{"statusCode":200},"responseTime":26.87429099995643,"msg":"request completed"}
+{"level":30,"time":1770252989422,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-56","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52714},"msg":"incoming request"}
+{"level":30,"time":1770252989424,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-57","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52709},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770252989433,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-56","res":{"statusCode":200},"responseTime":10.303791000507772,"msg":"request completed"}
+{"level":30,"time":1770252989439,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-57","res":{"statusCode":200},"responseTime":14.37929099984467,"msg":"request completed"}
+{"level":30,"time":1770253033115,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-58","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52724},"msg":"incoming request"}
+{"level":30,"time":1770253033122,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-58","res":{"statusCode":204},"responseTime":5.825332999229431,"msg":"request completed"}
+{"level":30,"time":1770253033123,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-59","req":{"method":"POST","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52724},"msg":"incoming request"}
+{"level":30,"time":1770253033182,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-59","res":{"statusCode":200},"responseTime":58.83791700005531,"msg":"request completed"}
+{"level":30,"time":1770253111732,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5a","req":{"method":"OPTIONS","url":"/api/v1/supply-items/d6dc32d4-cbe6-4add-9997-d05d2aa9692a","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52743},"msg":"incoming request"}
+{"level":30,"time":1770253111923,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5a","res":{"statusCode":204},"responseTime":17.786458999849856,"msg":"request completed"}
+{"level":30,"time":1770253111947,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5b","req":{"method":"GET","url":"/api/v1/supply-items/d6dc32d4-cbe6-4add-9997-d05d2aa9692a","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52743},"msg":"incoming request"}
+{"level":30,"time":1770253112026,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5c","req":{"method":"OPTIONS","url":"/api/v1/supply-items/d6dc32d4-cbe6-4add-9997-d05d2aa9692a","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52745},"msg":"incoming request"}
+{"level":30,"time":1770253112027,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5c","res":{"statusCode":204},"responseTime":0.751333000138402,"msg":"request completed"}
+{"level":30,"time":1770253112033,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5b","res":{"statusCode":200},"responseTime":85.63712500035763,"msg":"request completed"}
+{"level":30,"time":1770253112036,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5d","req":{"method":"GET","url":"/api/v1/supply-items/d6dc32d4-cbe6-4add-9997-d05d2aa9692a","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52745},"msg":"incoming request"}
+{"level":30,"time":1770253112046,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5d","res":{"statusCode":200},"responseTime":9.825958999805152,"msg":"request completed"}
+{"level":30,"time":1770253135826,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5e","req":{"method":"OPTIONS","url":"/api/v1/supply-items/d6dc32d4-cbe6-4add-9997-d05d2aa9692a","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52753},"msg":"incoming request"}
+{"level":30,"time":1770253135831,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5e","res":{"statusCode":204},"responseTime":2.305958000011742,"msg":"request completed"}
+{"level":30,"time":1770253161945,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5f","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52757},"msg":"incoming request"}
+{"level":30,"time":1770253161958,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5f","res":{"statusCode":204},"responseTime":4.936665999703109,"msg":"request completed"}
+{"level":30,"time":1770253161960,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5g","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52759},"msg":"incoming request"}
+{"level":30,"time":1770253161960,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5g","res":{"statusCode":204},"responseTime":0.22558399941772223,"msg":"request completed"}
+{"level":30,"time":1770253161962,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5h","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52757},"msg":"incoming request"}
+{"level":30,"time":1770253161964,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5i","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52762},"msg":"incoming request"}
+{"level":30,"time":1770253161965,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5i","res":{"statusCode":204},"responseTime":1.1309169996529818,"msg":"request completed"}
+{"level":30,"time":1770253161968,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5j","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52759},"msg":"incoming request"}
+{"level":30,"time":1770253161970,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5k","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52763},"msg":"incoming request"}
+{"level":30,"time":1770253161970,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5k","res":{"statusCode":204},"responseTime":0.26712500024586916,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770253161997,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5h","res":{"statusCode":200},"responseTime":34.767833000048995,"msg":"request completed"}
+{"level":30,"time":1770253162012,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5j","res":{"statusCode":200},"responseTime":43.72029200010002,"msg":"request completed"}
+{"level":30,"time":1770253162024,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5l","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52763},"msg":"incoming request"}
+{"level":30,"time":1770253162029,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5m","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52757},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770253162043,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5l","res":{"statusCode":200},"responseTime":19.132834000512958,"msg":"request completed"}
+{"level":30,"time":1770253162048,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5m","res":{"statusCode":200},"responseTime":19.473499999381602,"msg":"request completed"}
+{"level":30,"time":1770253368641,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5n","req":{"method":"GET","url":"/api/v1/supply-items?search=Azucar","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52821},"msg":"incoming request"}
+{"level":30,"time":1770253368691,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5n","res":{"statusCode":200},"responseTime":47.71733299922198,"msg":"request completed"}
+{"level":30,"time":1770253638580,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5o","req":{"method":"GET","url":"/api/v1/recipes","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52874},"msg":"incoming request"}
+{"level":30,"time":1770253638588,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5o","msg":"Route GET:/api/v1/recipes not found"}
+{"level":30,"time":1770253638598,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5o","res":{"statusCode":404},"responseTime":11.255209000781178,"msg":"request completed"}
+{"level":30,"time":1770253807699,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5p","req":{"method":"GET","url":"/api/v1/recipes","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52918},"msg":"incoming request"}
+{"level":30,"time":1770253807710,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5p","msg":"Route GET:/api/v1/recipes not found"}
+{"level":30,"time":1770253807730,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5p","res":{"statusCode":404},"responseTime":24.106084000319242,"msg":"request completed"}
+{"level":30,"time":1770253807767,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5q","req":{"method":"GET","url":"/api/v1/production/recipes","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52918},"msg":"incoming request"}
+{"level":30,"time":1770253807767,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5q","msg":"Route GET:/api/v1/production/recipes not found"}
+{"level":30,"time":1770253807767,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5q","res":{"statusCode":404},"responseTime":0.13770899921655655,"msg":"request completed"}
+{"level":30,"time":1770253807775,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5r","req":{"method":"GET","url":"/api/v1/supply-items/recipes","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52918},"msg":"incoming request"}
+{"level":30,"time":1770253807889,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5r","res":{"statusCode":404},"responseTime":113.41400000080466,"msg":"request completed"}
+{"level":30,"time":1770253807890,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5s","req":{"method":"GET","url":"/api/v1/batches","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52918},"msg":"incoming request"}
+{"level":30,"time":1770253807890,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5s","msg":"Route GET:/api/v1/batches not found"}
+{"level":30,"time":1770253807891,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5s","res":{"statusCode":404},"responseTime":0.3956659995019436,"msg":"request completed"}
+{"level":30,"time":1770253941777,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5t","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52948},"msg":"incoming request"}
+{"level":30,"time":1770253941843,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5t","res":{"statusCode":200},"responseTime":61.27045900002122,"msg":"request completed"}
+{"level":30,"time":1770254113321,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5u","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52997},"msg":"incoming request"}
+{"level":30,"time":1770254113324,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5u","res":{"statusCode":204},"responseTime":2.0707919988781214,"msg":"request completed"}
+{"level":30,"time":1770254113324,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5v","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52999},"msg":"incoming request"}
+{"level":30,"time":1770254113325,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5v","res":{"statusCode":204},"responseTime":0.1978750005364418,"msg":"request completed"}
+{"level":30,"time":1770254113326,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5w","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52999},"msg":"incoming request"}
+{"level":30,"time":1770254113327,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5x","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":52997},"msg":"incoming request"}
+{"level":30,"time":1770254113328,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5y","req":{"method":"OPTIONS","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53000},"msg":"incoming request"}
+{"level":30,"time":1770254113328,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5y","res":{"statusCode":204},"responseTime":0.2797919996082783,"msg":"request completed"}
+{"level":30,"time":1770254113328,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5z","req":{"method":"OPTIONS","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53001},"msg":"incoming request"}
+{"level":30,"time":1770254113328,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5z","res":{"statusCode":204},"responseTime":0.03745900094509125,"msg":"request completed"}
+{"level":30,"time":1770254113336,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5w","res":{"statusCode":200},"responseTime":9.536500001326203,"msg":"request completed"}
+{"level":30,"time":1770254113336,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-60","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53001},"msg":"incoming request"}
+{"level":30,"time":1770254113341,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-60","res":{"statusCode":200},"responseTime":4.684208000078797,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770254113349,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-5x","res":{"statusCode":200},"responseTime":21.550457999110222,"msg":"request completed"}
+{"level":30,"time":1770254113349,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-61","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53001},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770254113352,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-61","res":{"statusCode":200},"responseTime":2.993750000372529,"msg":"request completed"}
+{"level":30,"time":1770254219721,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-62","req":{"method":"POST","url":"/api/v1/production/execute","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53032},"msg":"incoming request"}
+{"level":30,"time":1770254219722,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-62","msg":"Route POST:/api/v1/production/execute not found"}
+{"level":30,"time":1770254219724,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-62","res":{"statusCode":404},"responseTime":1.952166000381112,"msg":"request completed"}
+{"level":30,"time":1770254219728,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-63","req":{"method":"POST","url":"/api/v1/batches/produce","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53032},"msg":"incoming request"}
+{"level":30,"time":1770254219729,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-63","msg":"Route POST:/api/v1/batches/produce not found"}
+{"level":30,"time":1770254219730,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-63","res":{"statusCode":404},"responseTime":1.2640000004321337,"msg":"request completed"}
+{"level":30,"time":1770254219732,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-64","req":{"method":"POST","url":"/api/v1/batches/execute","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53032},"msg":"incoming request"}
+{"level":30,"time":1770254219732,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-64","msg":"Route POST:/api/v1/batches/execute not found"}
+{"level":30,"time":1770254219732,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-64","res":{"statusCode":404},"responseTime":0.329458000138402,"msg":"request completed"}
+{"level":30,"time":1770254219738,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-65","req":{"method":"POST","url":"/api/v1/production","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53032},"msg":"incoming request"}
+{"level":30,"time":1770254219740,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-65","msg":"Route POST:/api/v1/production not found"}
+{"level":30,"time":1770254219744,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-65","res":{"statusCode":404},"responseTime":3.4688750002533197,"msg":"request completed"}
+{"level":30,"time":1770254300543,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-66","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53062},"msg":"incoming request"}
+{"level":30,"time":1770254300558,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-67","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53063},"msg":"incoming request"}
+{"level":30,"time":1770254300591,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-67","res":{"statusCode":200},"responseTime":33.23483300022781,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770254300595,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-66","res":{"statusCode":200},"responseTime":50.77225000038743,"msg":"request completed"}
+{"level":30,"time":1770254300596,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-68","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53065},"msg":"incoming request"}
+{"level":30,"time":1770254300599,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-69","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53067},"msg":"incoming request"}
+{"level":30,"time":1770254300614,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-68","res":{"statusCode":200},"responseTime":18.798209000378847,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770254300620,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-69","res":{"statusCode":200},"responseTime":20.538417000323534,"msg":"request completed"}
+{"level":30,"time":1770254441540,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6a","req":{"method":"POST","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53120},"msg":"incoming request"}
+{"level":30,"time":1770254441633,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6a","res":{"statusCode":200},"responseTime":91.13716599904001,"msg":"request completed"}
+{"level":30,"time":1770254441646,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6b","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53125},"msg":"incoming request"}
+{"level":30,"time":1770254441647,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6c","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53126},"msg":"incoming request"}
+{"level":30,"time":1770254441663,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6c","res":{"statusCode":200},"responseTime":15.517041001468897,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770254441676,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6b","res":{"statusCode":200},"responseTime":29.80125000141561,"msg":"request completed"}
+{"level":30,"time":1770254465780,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6d","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53138},"msg":"incoming request"}
+{"level":30,"time":1770254465783,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6e","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53140},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770254465804,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6d","res":{"statusCode":200},"responseTime":23.13783299922943,"msg":"request completed"}
+{"level":30,"time":1770254465806,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6e","res":{"statusCode":200},"responseTime":22.87741700001061,"msg":"request completed"}
+{"level":30,"time":1770254465810,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6f","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53142},"msg":"incoming request"}
+{"level":30,"time":1770254465811,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6g","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53144},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770254465817,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6f","res":{"statusCode":200},"responseTime":6.77008300088346,"msg":"request completed"}
+{"level":30,"time":1770254465820,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6g","res":{"statusCode":200},"responseTime":8.933207999914885,"msg":"request completed"}
+{"level":30,"time":1770254507296,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6h","req":{"method":"GET","url":"/api/v1/supply-items/d6dc32d4-cbe6-4add-9997-d05d2aa9692a","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53159},"msg":"incoming request"}
+{"level":30,"time":1770254507342,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6h","res":{"statusCode":200},"responseTime":45.59716700017452,"msg":"request completed"}
+{"level":30,"time":1770254507348,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6i","req":{"method":"GET","url":"/api/v1/supply-items/d6dc32d4-cbe6-4add-9997-d05d2aa9692a","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53162},"msg":"incoming request"}
+{"level":30,"time":1770254507356,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6i","res":{"statusCode":200},"responseTime":7.1181660015136,"msg":"request completed"}
+{"level":30,"time":1770254521798,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6j","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53174},"msg":"incoming request"}
+{"level":30,"time":1770254521800,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6k","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53175},"msg":"incoming request"}
+{"level":30,"time":1770254521821,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6j","res":{"statusCode":200},"responseTime":22.470374999567866,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770254521825,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6k","res":{"statusCode":200},"responseTime":22.116542000323534,"msg":"request completed"}
+{"level":30,"time":1770254521832,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6l","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53179},"msg":"incoming request"}
+{"level":30,"time":1770254521847,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6m","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53181},"msg":"incoming request"}
+{"level":30,"time":1770254521859,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6l","res":{"statusCode":200},"responseTime":26.575834000483155,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770254521861,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6m","res":{"statusCode":200},"responseTime":14.429457999765873,"msg":"request completed"}
+{"level":30,"time":1770254572442,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6n","req":{"method":"POST","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53193},"msg":"incoming request"}
+{"level":30,"time":1770254572477,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6n","res":{"statusCode":200},"responseTime":33.98774999938905,"msg":"request completed"}
+{"level":30,"time":1770254572515,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6o","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53197},"msg":"incoming request"}
+{"level":30,"time":1770254572574,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6p","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53199},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770254572614,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6o","res":{"statusCode":200},"responseTime":97.9027920011431,"msg":"request completed"}
+{"level":30,"time":1770254572621,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6p","res":{"statusCode":200},"responseTime":43.46066700108349,"msg":"request completed"}
+{"level":30,"time":1770254721356,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6q","req":{"method":"POST","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53230},"msg":"incoming request"}
+{"level":30,"time":1770254721378,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6q","res":{"statusCode":200},"responseTime":22.047041000798345,"msg":"request completed"}
+{"level":30,"time":1770254721403,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6r","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53235},"msg":"incoming request"}
+{"level":30,"time":1770254721403,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6s","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53236},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770254721422,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6r","res":{"statusCode":200},"responseTime":19.46416699886322,"msg":"request completed"}
+{"level":30,"time":1770254721424,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6s","res":{"statusCode":200},"responseTime":20.60504100099206,"msg":"request completed"}
+{"level":30,"time":1770254926715,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6t","req":{"method":"GET","url":"/api/v1/supply-items?search=Azucar","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53290},"msg":"incoming request"}
+{"level":30,"time":1770254926736,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6t","res":{"statusCode":200},"responseTime":19.255958000198007,"msg":"request completed"}
+{"level":30,"time":1770254947151,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6u","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53297},"msg":"incoming request"}
+{"level":30,"time":1770254947168,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6u","res":{"statusCode":200},"responseTime":16.94912499934435,"msg":"request completed"}
+{"level":30,"time":1770254971416,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6v","req":{"method":"PUT","url":"/api/v1/supply-items/a6fa9d1b-0e25-4b02-916d-521dcce7501d","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53303},"msg":"incoming request"}
+{"level":30,"time":1770254971522,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6v","res":{"statusCode":200},"responseTime":95.38649999909103,"msg":"request completed"}
+{"level":30,"time":1770254994288,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6w","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53322},"msg":"incoming request"}
+{"level":30,"time":1770254994299,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6x","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53324},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770254994398,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6x","res":{"statusCode":200},"responseTime":99.11704199947417,"msg":"request completed"}
+{"level":30,"time":1770254994486,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6w","res":{"statusCode":200},"responseTime":194.83441700041294,"msg":"request completed"}
+{"level":30,"time":1770254994629,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6y","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53327},"msg":"incoming request"}
+{"level":30,"time":1770254994632,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6z","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53328},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770254994639,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6y","res":{"statusCode":200},"responseTime":9.83504099957645,"msg":"request completed"}
+{"level":30,"time":1770254994649,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-6z","res":{"statusCode":200},"responseTime":16.33724999986589,"msg":"request completed"}
+{"level":30,"time":1770255196621,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-70","req":{"method":"POST","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53380},"msg":"incoming request"}
+🍳 Syncing Recipe for SupplyItem 0610498d-851d-4c5e-bbe6-12af662ee6f0
+{"level":50,"time":1770255197026,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-70","req":{"method":"POST","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53380},"res":{"statusCode":500},"err":{"type":"PrismaClientValidationError","message":"\nInvalid `prisma.productionRecipe.create()` invocation in\n/Users/rickyjav/Desktop/Enigma_OS_V2/enigma-pos-os/apps/api/src/services/RecipeService.ts:184:43\n\n  181 \n  182 // ADD\n  183 for (const item of toAdd) {\n→ 184     await prisma.productionRecipe.create({\n            data: {\n              parentItemId: \"0610498d-851d-4c5e-bbe6-12af662ee6f0\",\n              supplyItemId: undefined,\n              quantity: 2,\n              unit: \"kg\",\n          +   parent: {\n          +     create: SupplyItemCreateWithoutIngredientsInput | SupplyItemUncheckedCreateWithoutIngredientsInput,\n          +     connectOrCreate: SupplyItemCreateOrConnectWithoutIngredientsInput,\n          +     connect: SupplyItemWhereUniqueInput\n          +   }\n            }\n          })\n\nArgument `parent` is missing.","stack":"PrismaClientValidationError: \nInvalid `prisma.productionRecipe.create()` invocation in\n/Users/rickyjav/Desktop/Enigma_OS_V2/enigma-pos-os/apps/api/src/services/RecipeService.ts:184:43\n\n  181 \n  182 // ADD\n  183 for (const item of toAdd) {\n→ 184     await prisma.productionRecipe.create({\n            data: {\n              parentItemId: \"0610498d-851d-4c5e-bbe6-12af662ee6f0\",\n              supplyItemId: undefined,\n              quantity: 2,\n              unit: \"kg\",\n          +   parent: {\n          +     create: SupplyItemCreateWithoutIngredientsInput | SupplyItemUncheckedCreateWithoutIngredientsInput,\n          +     connectOrCreate: SupplyItemCreateOrConnectWithoutIngredientsInput,\n          +     connect: SupplyItemWhereUniqueInput\n          +   }\n            }\n          })\n\nArgument `parent` is missing.\n    at Tn (/Users/rickyjav/Desktop/Enigma_OS_V2/enigma-pos-os/node_modules/@prisma/client/runtime/library.js:116:5888)\n    at In.handleRequestError (/Users/rickyjav/Desktop/Enigma_OS_V2/enigma-pos-os/node_modules/@prisma/client/runtime/library.js:123:6510)\n    at In.handleAndLogRequestError (/Users/rickyjav/Desktop/Enigma_OS_V2/enigma-pos-os/node_modules/@prisma/client/runtime/library.js:123:6188)\n    at In.request (/Users/rickyjav/Desktop/Enigma_OS_V2/enigma-pos-os/node_modules/@prisma/client/runtime/library.js:123:5896)\n    at async l (/Users/rickyjav/Desktop/Enigma_OS_V2/enigma-pos-os/node_modules/@prisma/client/runtime/library.js:128:10871)\n    at async RecipeService.syncRecipe (/Users/rickyjav/Desktop/Enigma_OS_V2/enigma-pos-os/apps/api/src/services/RecipeService.ts:184:13)\n    at async Object.<anonymous> (/Users/rickyjav/Desktop/Enigma_OS_V2/enigma-pos-os/apps/api/src/routes/supply-items.ts:69:13)","name":"PrismaClientValidationError","clientVersion":"5.10.0"},"msg":"\nInvalid `prisma.productionRecipe.create()` invocation in\n/Users/rickyjav/Desktop/Enigma_OS_V2/enigma-pos-os/apps/api/src/services/RecipeService.ts:184:43\n\n  181 \n  182 // ADD\n  183 for (const item of toAdd) {\n→ 184     await prisma.productionRecipe.create({\n            data: {\n              parentItemId: \"0610498d-851d-4c5e-bbe6-12af662ee6f0\",\n              supplyItemId: undefined,\n              quantity: 2,\n              unit: \"kg\",\n          +   parent: {\n          +     create: SupplyItemCreateWithoutIngredientsInput | SupplyItemUncheckedCreateWithoutIngredientsInput,\n          +     connectOrCreate: SupplyItemCreateOrConnectWithoutIngredientsInput,\n          +     connect: SupplyItemWhereUniqueInput\n          +   }\n            }\n          })\n\nArgument `parent` is missing."}
+{"level":30,"time":1770255197040,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-70","res":{"statusCode":500},"responseTime":415.1546659991145,"msg":"request completed"}
+{"level":30,"time":1770255359969,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-71","req":{"method":"POST","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53416},"msg":"incoming request"}
+{"level":30,"time":1770255360040,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-71","res":{"statusCode":200},"responseTime":69.35733300074935,"msg":"request completed"}
+{"level":30,"time":1770255389852,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-72","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53429},"msg":"incoming request"}
+{"level":30,"time":1770255389860,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-73","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53430},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770255389900,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-72","res":{"statusCode":200},"responseTime":47.611750001087785,"msg":"request completed"}
+{"level":30,"time":1770255389905,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-74","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53433},"msg":"incoming request"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770255389910,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-74","res":{"statusCode":200},"responseTime":5.307499999180436,"msg":"request completed"}
+{"level":30,"time":1770255389964,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-73","res":{"statusCode":200},"responseTime":104.04645800031722,"msg":"request completed"}
+{"level":30,"time":1770255389967,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-75","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53435},"msg":"incoming request"}
+{"level":30,"time":1770255389970,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-75","res":{"statusCode":200},"responseTime":3.079916998744011,"msg":"request completed"}
+{"level":30,"time":1770255502626,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-76","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53473},"msg":"incoming request"}
+{"level":30,"time":1770255502641,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-76","res":{"statusCode":200},"responseTime":14.651875000447035,"msg":"request completed"}
+{"level":30,"time":1770255559153,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-77","req":{"method":"PUT","url":"/api/v1/supply-items/f48f31bf-1b84-41e2-b710-83a45f8721ff","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53485},"msg":"incoming request"}
+{"level":30,"time":1770255559173,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-77","res":{"statusCode":200},"responseTime":18.836167000234127,"msg":"request completed"}
+{"level":30,"time":1770255682016,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-78","req":{"method":"POST","url":"/api/v1/production","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53514},"msg":"incoming request"}
+{"level":30,"time":1770255682039,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-78","msg":"Route POST:/api/v1/production not found"}
+{"level":30,"time":1770255682071,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-78","res":{"statusCode":404},"responseTime":53.57874999940395,"msg":"request completed"}
+{"level":30,"time":1770255781297,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-79","req":{"method":"GET","url":"/api/v1/health","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53540},"msg":"incoming request"}
+{"level":30,"time":1770255781300,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-79","msg":"Route GET:/api/v1/health not found"}
+{"level":30,"time":1770255781308,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-79","res":{"statusCode":404},"responseTime":9.69879199936986,"msg":"request completed"}
+{"level":30,"time":1770255845211,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7a","req":{"method":"POST","url":"/api/v1/production","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53561},"msg":"incoming request"}
+{"level":30,"time":1770255845219,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7a","msg":"Route POST:/api/v1/production not found"}
+{"level":30,"time":1770255845221,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7a","res":{"statusCode":404},"responseTime":5.370959000661969,"msg":"request completed"}
+{"level":30,"time":1770256010201,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7b","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53616},"msg":"incoming request"}
+{"level":30,"time":1770256010301,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7c","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53618},"msg":"incoming request"}
+{"level":30,"time":1770256010899,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7d","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53625},"msg":"incoming request"}
+{"level":30,"time":1770256010920,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7c","res":{"statusCode":200},"responseTime":618.5494589991868,"msg":"request completed"}
+{"level":30,"time":1770256010923,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7d","res":{"statusCode":200},"responseTime":21.966249998658895,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770256010932,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7b","res":{"statusCode":200},"responseTime":725.7013750001788,"msg":"request completed"}
+{"level":30,"time":1770256010936,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7e","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53627},"msg":"incoming request"}
+{"level":30,"time":1770256010976,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7f","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53629},"msg":"incoming request"}
+{"level":30,"time":1770256010976,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7g","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53631},"msg":"incoming request"}
+{"level":30,"time":1770256011002,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7e","res":{"statusCode":200},"responseTime":65.67937500029802,"msg":"request completed"}
+{"level":30,"time":1770256011004,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7f","res":{"statusCode":200},"responseTime":27.77724999934435,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770256011035,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7g","res":{"statusCode":200},"responseTime":58.95904200151563,"msg":"request completed"}
+{"level":30,"time":1770256141630,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7h","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53673},"msg":"incoming request"}
+{"level":30,"time":1770256141666,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7i","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53674},"msg":"incoming request"}
+{"level":30,"time":1770256141774,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7j","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53676},"msg":"incoming request"}
+{"level":30,"time":1770256141980,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7j","res":{"statusCode":200},"responseTime":205.846207998693,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770256141982,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7h","res":{"statusCode":200},"responseTime":351.08512499928474,"msg":"request completed"}
+{"level":30,"time":1770256141983,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7i","res":{"statusCode":200},"responseTime":316.3567089997232,"msg":"request completed"}
+{"level":30,"time":1770256141983,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7k","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53680},"msg":"incoming request"}
+{"level":30,"time":1770256141998,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7l","req":{"method":"GET","url":"/api/v1/products","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53683},"msg":"incoming request"}
+{"level":30,"time":1770256142002,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7m","req":{"method":"GET","url":"/api/v1/supply-items","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53685},"msg":"incoming request"}
+{"level":30,"time":1770256142024,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7m","res":{"statusCode":200},"responseTime":21.43045900017023,"msg":"request completed"}
+{"level":30,"time":1770256142042,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7k","res":{"statusCode":200},"responseTime":58.906166998669505,"msg":"request completed"}
+[API DEBUG] GET /products tenant=enigma_hq found=11
+[API DEBUG] DB_URL=postgresql://postgres:postgres@localhost:5432/enigma_os_core?schema=public
+{"level":30,"time":1770256142087,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7l","res":{"statusCode":200},"responseTime":88.23954100161791,"msg":"request completed"}
+{"level":30,"time":1770256681619,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7n","req":{"method":"POST","url":"/api/v1/production","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":53793},"msg":"incoming request"}
+{"level":30,"time":1770256681636,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7n","msg":"Route POST:/api/v1/production not found"}
+{"level":30,"time":1770256681645,"pid":9747,"hostname":"MacBookAir.NUWE","reqId":"req-7n","res":{"statusCode":404},"responseTime":20.574707999825478,"msg":"request completed"}

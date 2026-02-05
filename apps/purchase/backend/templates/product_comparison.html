@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in-down">
+    <!-- Header -->
+    <div class="flex items-center justify-between pt-6 pb-2">
+        <button onclick="window.location.href='/'" class="text-slate-400 hover:text-white transition-colors">
+            🏠 Hub
+        </button>
+        <span class="text-xs font-mono text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-700">
+            Comparador
+        </span>
+    </div>
+
+    <div class="text-center">
+        <h2 class="text-2xl font-bold text-white">Comparador de Precios</h2>
+        <p class="text-slate-400 text-sm">¿Quién vende más barato?</p>
+    </div>
+
+    <!-- Search -->
+    <div class="relative">
+        <input type="text" id="searchBox"
+            class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 pl-12 text-white placeholder-slate-500 focus:border-purple-500 outline-none shadow-lg"
+            placeholder="Buscar producto (ej. Leche, Azucar)..." autocomplete="off">
+        <div class="absolute left-4 top-4 text-slate-500">🔍</div>
+    </div>
+
+    <!-- Results Area -->
+    <div id="resultsArea" class="space-y-4 pb-20">
+        <div class="text-center text-slate-600 mt-10">
+            Escribe para buscar...
+        </div>
+    </div>
+</div>
+
+<!-- Template for Modal or Inline Expand? Inline is better for mobile app feel -->
+<script>
+    let debounceTimer;
+
+    document.getElementById('searchBox').addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => search(e.target.value), 400);
+    });
+
+    async function search(query) {
+        if (query.length < 2) {
+            document.getElementById('resultsArea').innerHTML = '<div class="text-center text-slate-600 mt-10">Escribe para buscar...</div>';
+            return;
+        }
+
+        try {
+            // 1. Search Catalog
+            const res = await fetch(`/api/catalog/search?q=${encodeURIComponent(query)}`);
+            const items = await res.json();
+
+            renderResults(items);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function renderResults(items) {
+        const list = document.getElementById('resultsArea');
+        list.innerHTML = '';
+
+        if (items.length === 0) {
+            list.innerHTML = '<div class="text-center text-slate-500">No se encontraron productos.</div>';
+            return;
+        }
+
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = "glass rounded-2xl overflow-hidden border border-slate-700/50";
+            div.innerHTML = `
+            <div class="p-4 bg-slate-800/10 cursor-pointer hover:bg-slate-700/50 transition-colors flex justify-between items-center" 
+                 onclick="toggleComparison(${item.id}, this)">
+                <div>
+                    <h3 class="font-bold text-white text-lg">${item.name}</h3>
+                    <p class="text-xs text-slate-500">${item.sku || 'No SKU'}</p>
+                </div>
+                <div class="text-blue-400 text-sm font-medium">Ver Precios ↓</div>
+            </div>
+            <div class="hidden bg-slate-900/50 p-4 border-t border-slate-700/50" id="comp-${item.id}">
+                <div class="text-center text-xs text-slate-500">Cargando comparativa...</div>
+            </div>
+        `;
+            list.appendChild(div);
+        });
+    }
+
+    async function toggleComparison(itemId, triggerEl) {
+        const container = document.getElementById(`comp-${itemId}`);
+        // Toggle
+        if (!container.classList.contains('hidden')) {
+            container.classList.add('hidden');
+            return;
+        }
+        container.classList.remove('hidden');
+
+        try {
+            // Fetch Comparison Data
+            const res = await fetch(`/api/analysis/comparison/${itemId}`);
+            const data = await res.json();
+
+            if (data.providers.length === 0) {
+                container.innerHTML = '<div class="text-center text-xs text-slate-400">Sin historial de varios proveedores.</div>';
+                return;
+            }
+
+            // Build Table
+            // Sort by price (Low to High)
+            data.providers.sort((a, b) => a.last_price - b.last_price);
+
+            let html = `
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-slate-500 uppercase">
+                    <tr>
+                        <th class="pb-2">Proveedor</th>
+                        <th class="pb-2 text-right">Precio</th>
+                        <th class="pb-2 text-right">Fecha</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700">
+        `;
+
+            data.providers.forEach((p, index) => {
+                const isCheapest = index === 0;
+                const badge = isCheapest ? '<span class="ml-1 text-[10px] bg-green-900 text-green-300 px-1 rounded">MEJOR</span>' : '';
+                const color = isCheapest ? 'text-green-400 font-bold' : 'text-slate-300';
+
+                html += `
+                <tr>
+                    <td class="py-2 text-white">${p.name} ${badge}</td>
+                    <td class="py-2 text-right ${color}">$${p.last_price.toFixed(2)}</td>
+                    <td class="py-2 text-right text-slate-500 text-xs">${new Date(p.date).toLocaleDateString()}</td>
+                </tr>
+            `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+
+        } catch (e) {
+            container.innerHTML = '<div class="text-red-400 text-xs">Error cargando datos.</div>';
+        }
+    }
+</script>
+{% endblock %}

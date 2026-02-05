@@ -1,0 +1,261 @@
+
+> api@1.0.0 dev
+> ts-node src/index.ts
+
+[dotenv@17.2.3] injecting env (2) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+🍳 RecipeService Initialized
+{"level":30,"time":1770268193375,"pid":22527,"hostname":"MacBookAir.NUWE","msg":"Server listening at http://127.0.0.1:4000"}
+🚀 API Server running on port 4000
+└── (empty root node)
+    ├── / (GET, HEAD)
+    │   └── api/v1/
+    │       ├── commands (POST)
+    │       ├── ingest/
+    │       │   ├── products (POST)
+    │       │   └── catalog (POST)
+    │       ├── p
+    │       │   ├── roduct
+    │       │   │   ├── s (GET, HEAD, POST)
+    │       │   │   │   └── /
+    │       │   │   │       └── :id (GET, HEAD, PUT)
+    │       │   │   │           └── /recipes (POST)
+    │       │   │   │               └── /
+    │       │   │   │                   └── :recipeId (DELETE)
+    │       │   │   └── ion (POST)
+    │       │   └── urchases (GET, HEAD, POST)
+    │       ├── auth/verify-pin (POST)
+    │       ├── s
+    │       │   ├── hifts/
+    │       │   │   ├── clock-
+    │       │   │   │   ├── in (POST)
+    │       │   │   │   └── out (POST)
+    │       │   │   ├── history (GET, HEAD)
+    │       │   │   └── active (GET, HEAD)
+    │       │   ├── chedules (GET, HEAD, POST)
+    │       │   │   └── /
+    │       │   │       ├── autofill (POST)
+    │       │   │       └── :id (DELETE)
+    │       │   └── uppl
+    │       │       ├── iers (GET, HEAD, POST)
+    │       │       │   └── /
+    │       │       │       └── :id (GET, HEAD, PATCH)
+    │       │       │           └── /analytics (GET, HEAD)
+    │       │       └── y-items (GET, HEAD, POST)
+    │       │           └── /
+    │       │               └── :id (GET, HEAD, PUT)
+    │       ├── employees (GET, HEAD, POST)
+    │       │   └── /
+    │       │       └── :id|:employeeId (PATCH, DELETE)
+    │       │           └── /documents (GET, HEAD, POST)
+    │       ├── recurring (POST)
+    │       │   └── /
+    │       │       └── :employeeId (GET, HEAD)
+    │       ├── optimizer/analyze (POST)
+    │       ├── data/
+    │       │   ├── import (POST)
+    │       │   ├── export (GET, HEAD)
+    │       │   │   └── /staff (GET, HEAD)
+    │       │   └── backup/full (GET, HEAD)
+    │       └── :id
+    │           └── /price-history (GET, HEAD)
+    └── * (OPTIONS)
+
+{"level":30,"time":1770268193375,"pid":22527,"hostname":"MacBookAir.NUWE","msg":"Server listening at http://192.168.10.237:4000"}
+{"level":30,"time":1770268210068,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-1","req":{"method":"POST","url":"/api/v1/optimizer/analyze","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56614},"msg":"incoming request"}
+Optimizer Plan Result: [
+  {
+    "supplierId": "8d4ed382-abcd-4204-8239-e89d3ffd2c2a",
+    "supplierName": "Simulated Foods Inc",
+    "supplierPhone": "asdasdasd",
+    "supplierAddress": "asdasdasd",
+    "supplierEmail": "asdasdasd@asdasd",
+    "items": [
+      {
+        "itemId": "8d85abac-8695-4417-9de5-57d0ae35e3ac",
+        "name": "leche",
+        "estCost": 1,
+        "sku": "SKU-1770064292717",
+        "lastDate": "2026-02-03T18:23:59.628Z",
+        "averageCost": 47,
+        "currentCost": 120
+      }
+    ],
+    "totalEst": 1
+  }
+]
+{"level":30,"time":1770268210394,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-1","res":{"statusCode":200},"responseTime":325.24562500044703,"msg":"request completed"}
+{"level":30,"time":1770268248283,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-2","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56639},"msg":"incoming request"}
+{"level":30,"time":1770268248285,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-3","req":{"method":"GET","url":"/api/v1/supply-items?limit=200","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56640},"msg":"incoming request"}
+{"level":30,"time":1770268248298,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-2","res":{"statusCode":200},"responseTime":14.588750001043081,"msg":"request completed"}
+{"level":30,"time":1770268248301,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-3","res":{"statusCode":200},"responseTime":15.683915998786688,"msg":"request completed"}
+{"level":30,"time":1770268252178,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-4","req":{"method":"OPTIONS","url":"/api/v1/optimizer/analyze","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56639},"msg":"incoming request"}
+{"level":30,"time":1770268252179,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-4","res":{"statusCode":204},"responseTime":1.0661670006811619,"msg":"request completed"}
+{"level":30,"time":1770268252180,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-5","req":{"method":"POST","url":"/api/v1/optimizer/analyze","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56640},"msg":"incoming request"}
+Optimizer Plan Result: [
+  {
+    "supplierId": "8d4ed382-abcd-4204-8239-e89d3ffd2c2a",
+    "supplierName": "Simulated Foods Inc",
+    "supplierPhone": "asdasdasd",
+    "supplierAddress": "asdasdasd",
+    "supplierEmail": "asdasdasd@asdasd",
+    "items": [
+      {
+        "itemId": "8d85abac-8695-4417-9de5-57d0ae35e3ac",
+        "name": "leche",
+        "estCost": 1,
+        "sku": "SKU-1770064292717",
+        "lastDate": "2026-02-03T18:23:59.628Z",
+        "averageCost": 47,
+        "currentCost": 120
+      }
+    ],
+    "totalEst": 1
+  }
+]
+{"level":30,"time":1770268252189,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-5","res":{"statusCode":200},"responseTime":8.605333000421524,"msg":"request completed"}
+{"level":30,"time":1770268310244,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-6","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56660},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268310262,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-7","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56661},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268310297,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-6","res":{"statusCode":200},"responseTime":52.82574999704957,"msg":"request completed"}
+{"level":30,"time":1770268310298,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-7","res":{"statusCode":200},"responseTime":36.15058299899101,"msg":"request completed"}
+{"level":30,"time":1770268311076,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-8","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56665},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268311077,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-9","req":{"method":"GET","url":"/api/v1/schedules?start=2026-02-05T04:00:00.000Z&end=2026-02-06T03:59:59.999Z","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56667},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268311081,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-8","res":{"statusCode":200},"responseTime":5.338749997317791,"msg":"request completed"}
+{"level":30,"time":1770268311086,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-9","res":{"statusCode":200},"responseTime":8.717875000089407,"msg":"request completed"}
+{"level":30,"time":1770268311542,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-a","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56671},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268311543,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-b","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56673},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268311546,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-b","res":{"statusCode":200},"responseTime":3.138707999140024,"msg":"request completed"}
+{"level":30,"time":1770268311546,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-a","res":{"statusCode":200},"responseTime":3.880458999425173,"msg":"request completed"}
+{"level":30,"time":1770268315114,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-c","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56676},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268315127,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-c","res":{"statusCode":200},"responseTime":11.734083000570536,"msg":"request completed"}
+{"level":30,"time":1770268317961,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-d","req":{"method":"GET","url":"/api/v1/recurring/25500af3-2d09-4a5e-af97-9bbd48ba35e8","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56680},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268317962,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-e","req":{"method":"GET","url":"/api/v1/employees/25500af3-2d09-4a5e-af97-9bbd48ba35e8/documents","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56682},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268317973,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-e","res":{"statusCode":200},"responseTime":10.844875000417233,"msg":"request completed"}
+{"level":30,"time":1770268317974,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-d","res":{"statusCode":200},"responseTime":13.27454099804163,"msg":"request completed"}
+{"level":30,"time":1770268321241,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-f","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56686},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268321243,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-g","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56688},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268321251,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-g","res":{"statusCode":200},"responseTime":7.623041000217199,"msg":"request completed"}
+{"level":30,"time":1770268321254,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-f","res":{"statusCode":200},"responseTime":12.424791000783443,"msg":"request completed"}
+{"level":30,"time":1770268322546,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-h","req":{"method":"GET","url":"/api/v1/shifts/history","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56691},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[API-DEBUG] Fetching history for tenant: enigma_hq
+[API-DEBUG] Found 10 historical shifts.
+{"level":30,"time":1770268322559,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-h","res":{"statusCode":200},"responseTime":12.628166999667883,"msg":"request completed"}
+{"level":30,"time":1770268325532,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-i","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56695},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268325541,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-j","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56697},"msg":"incoming request"}
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268325552,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-j","res":{"statusCode":200},"responseTime":11.172249998897314,"msg":"request completed"}
+{"level":30,"time":1770268325554,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-i","res":{"statusCode":200},"responseTime":20.517958000302315,"msg":"request completed"}
+{"level":30,"time":1770268335560,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-k","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56702},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268335572,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-l","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56704},"msg":"incoming request"}
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268335591,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-l","res":{"statusCode":200},"responseTime":18.631500001996756,"msg":"request completed"}
+{"level":30,"time":1770268335592,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-k","res":{"statusCode":200},"responseTime":27.01120899990201,"msg":"request completed"}
+{"level":30,"time":1770268345622,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-m","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56716},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268345625,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-n","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56717},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268345628,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-n","res":{"statusCode":200},"responseTime":3.1199170015752316,"msg":"request completed"}
+{"level":30,"time":1770268345629,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-m","res":{"statusCode":200},"responseTime":5.813832998275757,"msg":"request completed"}
+{"level":30,"time":1770268355714,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-o","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56722},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268355715,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-p","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56724},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268355717,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-o","res":{"statusCode":200},"responseTime":2.9302500002086163,"msg":"request completed"}
+{"level":30,"time":1770268355717,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-p","res":{"statusCode":200},"responseTime":2.0877499990165234,"msg":"request completed"}
+{"level":30,"time":1770268365819,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-q","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56730},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268365822,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-r","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56732},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268365828,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-r","res":{"statusCode":200},"responseTime":5.857790999114513,"msg":"request completed"}
+{"level":30,"time":1770268365829,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-q","res":{"statusCode":200},"responseTime":9.418375000357628,"msg":"request completed"}
+{"level":30,"time":1770268375911,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-s","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56736},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268375911,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-t","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56738},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268375914,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-s","res":{"statusCode":200},"responseTime":3.117042001336813,"msg":"request completed"}
+{"level":30,"time":1770268375914,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-t","res":{"statusCode":200},"responseTime":2.6243340000510216,"msg":"request completed"}
+{"level":30,"time":1770268386018,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-u","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56742},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268386020,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-v","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56744},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268386024,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-v","res":{"statusCode":200},"responseTime":3.779332999140024,"msg":"request completed"}
+{"level":30,"time":1770268386024,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-u","res":{"statusCode":200},"responseTime":5.770500000566244,"msg":"request completed"}
+{"level":30,"time":1770268421323,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-w","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56757},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268421325,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-x","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56758},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268421330,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-x","res":{"statusCode":200},"responseTime":4.8462500013411045,"msg":"request completed"}
+{"level":30,"time":1770268421331,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-w","res":{"statusCode":200},"responseTime":7.1842090003192425,"msg":"request completed"}
+{"level":30,"time":1770268431411,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-y","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56763},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268431412,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-z","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56764},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268431418,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-z","res":{"statusCode":200},"responseTime":5.842875000089407,"msg":"request completed"}
+{"level":30,"time":1770268431419,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-y","res":{"statusCode":200},"responseTime":7.5233329981565475,"msg":"request completed"}
+{"level":30,"time":1770268442587,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-10","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56770},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268442589,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-11","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56771},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268442597,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-11","res":{"statusCode":200},"responseTime":7.87508399784565,"msg":"request completed"}
+{"level":30,"time":1770268442597,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-10","res":{"statusCode":200},"responseTime":10.373500000685453,"msg":"request completed"}
+{"level":30,"time":1770268458182,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-12","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56778},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268458189,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-13","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56779},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268458192,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-12","res":{"statusCode":200},"responseTime":9.53354199975729,"msg":"request completed"}
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268458193,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-13","res":{"statusCode":200},"responseTime":4.15608299896121,"msg":"request completed"}
+{"level":30,"time":1770268483973,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-14","req":{"method":"GET","url":"/api/v1/shifts/active","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56793},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+{"level":30,"time":1770268483976,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-15","req":{"method":"GET","url":"/api/v1/employees","host":"localhost:4000","remoteAddress":"127.0.0.1","remotePort":56794},"msg":"incoming request"}
+[TENANT-DEBUG] Looking up tenant: 'enigma_hq'
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+[TENANT-DEBUG] Found tenant: enigma_hq (Enigma HQ)
+{"level":30,"time":1770268483981,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-14","res":{"statusCode":200},"responseTime":7.874249998480082,"msg":"request completed"}
+{"level":30,"time":1770268483982,"pid":22527,"hostname":"MacBookAir.NUWE","reqId":"req-15","res":{"statusCode":200},"responseTime":5.603416997939348,"msg":"request completed"}

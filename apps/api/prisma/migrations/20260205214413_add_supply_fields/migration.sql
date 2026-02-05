@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "SupplyItem" ADD COLUMN     "averageCost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "lastPurchaseDate" TIMESTAMP(3),
+ADD COLUMN     "stockQuantity" DOUBLE PRECISION NOT NULL DEFAULT 0;

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in-down">
+    <div class="text-center pt-8 pb-4">
+        <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+            Enigma Purchase
+        </h1>
+        <p class="text-slate-400 text-sm mt-1">Gestión Inteligente de Compras</p>
+    </div>
+
+    <!-- Main Actions Grid -->
+
+    {% if draft_count > 0 %}
+    <div onclick="window.location.href='/drafts'"
+        class="glass border-l-4 border-yellow-500 p-4 rounded-xl flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-all mb-2">
+        <div>
+            <h3 class="font-bold text-white">Bandeja de Entrada</h3>
+            <p class="text-xs text-yellow-400 font-bold">{{ draft_count }} Borradores Pendientes</p>
+        </div>
+        <div class="text-2xl">📝</div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-2 gap-4">
+        <!-- New Purchase -->
+        <a href="/new-purchase"
+            class="col-span-2 glass p-6 rounded-2xl hover:bg-slate-700/50 transition-all group border border-slate-700 hover:border-blue-500">
+            <div class="flex items-center gap-4">
+                <div class="bg-blue-600/20 p-4 rounded-xl text-3xl group-hover:scale-110 transition-transform">➕</div>
+                <div>
+                    <h2 class="text-xl font-bold text-white">Registrar Compra</h2>
+                    <p class="text-xs text-slate-400">Ingresa nueva factura o compra rápida</p>
+                </div>
+            </div>
+        </a>
+
+        <!-- Monitor -->
+        <a href="/price-monitor"
+            class="glass p-6 rounded-2xl hover:bg-slate-700/50 transition-all border border-slate-700 hover:border-green-500">
+            <div class="text-2xl mb-2">📊</div>
+            <h3 class="font-bold text-white">Monitor Precios</h3>
+            <p class="text-xs text-slate-400">Ver costos actuales</p>
+        </a>
+
+        <!-- Smart Shopping List (New) -->
+        <a href="/optimizer"
+            class="glass p-6 rounded-2xl hover:bg-slate-700/50 transition-all border border-slate-700 hover:border-purple-500">
+            <div class="text-2xl mb-2">🧠</div>
+            <h3 class="font-bold text-white">Lista Inteligente</h3>
+            <p class="text-xs text-slate-400">Optimizador de Compra</p>
+        </a>
+    </div>
+
+    <!-- Secondary Actions -->
+    <div class="grid grid-cols-2 gap-4">
+        <!-- Providers -->
+        <a href="/list-providers"
+            class="glass p-4 rounded-xl hover:bg-slate-700/50 text-center transition-opacity opacity-75 hover:opacity-100">
+            <div class="text-xl mb-1">🏪</div>
+            <span class="text-sm font-medium text-slate-300">Proveedores</span>
+        </a>
+
+        <!-- Settings -->
+        <a href="/settings"
+            class="glass p-4 rounded-xl hover:bg-slate-700/50 text-center transition-opacity opacity-75 hover:opacity-100">
+            <div class="text-xl mb-1">⚙️</div>
+            <span class="text-sm font-medium text-slate-300">Ajustes & Data</span>
+        </a>
+    </div>
+
+    <!-- Recent Activity Mini List -->
+    <div class="pt-4">
+        <h3 class="text-slate-500 text-xs font-bold uppercase mb-3 px-2">Actividad Reciente</h3>
+        <div id="miniActivity" class="space-y-2">
+            <div class="text-center text-xs text-slate-600 py-4">Cargando...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadMiniActivity() {
+        try {
+            // We can reuse the history endpoint logic or make a 'recent purchases' API
+            // For MVP, let's just fetch last 3 purchases globally if we had that endpoint.
+            // Or leave it simple. Let's try to fetch all providers and show random? No.
+            // Let's just show a static placeholder or fetch if we add endpoints.
+            // Adding endpoint to app.py shortly.
+
+            const res = await fetch('/api/purchases/recent');
+            if (!res.ok) throw new Error();
+            const purchases = await res.json();
+
+            const div = document.getElementById('miniActivity');
+            div.innerHTML = '';
+
+            if (purchases.length === 0) {
+                div.innerHTML = '<div class="text-center text-xs text-slate-600">Nada por aquí aún.</div>';
+                return;
+            }
+
+            purchases.slice(0, 3).forEach(p => {
+                // simplified view
+                const date = new Date(p.date).toLocaleDateString();
+                p.lines.forEach(l => {
+                    const el = document.createElement('div');
+                    el.className = "bg-slate-800/50 px-4 py-3 rounded-lg flex justify-between items-center border border-slate-700/50";
+                    el.innerHTML = `
+                    <span class="text-sm text-slate-300 truncate w-1/2">${l.catalog_item_name}</span>
+                    <span class="text-xs font-mono text-green-400">$${l.total_cost.toFixed(2)}</span>
+                `;
+                    div.appendChild(el);
+                });
+            });
+
+        } catch (e) {
+            document.getElementById('miniActivity').innerHTML = '<div class="text-center text-xs text-slate-600">--</div>';
+        }
+    }
+    loadMiniActivity();
+</script>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in-down">
+    <!-- Header -->
+    <div class="flex items-center justify-between pt-6 pb-2">
+        <a href="/" class="text-slate-400 hover:text-white transition-colors flex items-center gap-2">
+            <span>🏠</span> Volver al Hub
+        </a>
+        <h2 class="text-xl font-bold text-white">Directorio Proveedores</h2>
+    </div>
+
+    <!-- Search -->
+    <div class="relative">
+        <input type="text" id="pSearch" onkeyup="filterP()" placeholder="Buscar proveedor..."
+            class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+    </div>
+
+    <!-- Grid -->
+    <div id="pGrid" class="grid grid-cols-2 gap-3 pb-20">
+        {% for p in providers %}
+        <div data-name="{{ p.name|lower }}" onclick="window.location.href='/providers/{{ p.id }}'"
+            class="glass p-4 rounded-xl cursor-pointer hover:bg-slate-700 border border-slate-700 hover:border-purple-500 transition-all group">
+            <h3 class="font-bold text-white group-hover:text-purple-300">{{ p.name }}</h3>
+            <p class="text-xs text-slate-500 mt-1">{{ p.category }}</p>
+            <div class="mt-2 text-right">
+                <span class="text-xs text-blue-400">Ver Análisis →</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function filterP() {
+        const q = document.getElementById('pSearch').value.toLowerCase();
+        document.querySelectorAll('#pGrid > div').forEach(el => {
+            const name = el.getAttribute('data-name');
+            el.style.display = name.includes(q) ? 'block' : 'none';
+        });
+    }
+</script>
+{% endblock %}
