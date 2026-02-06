@@ -10,7 +10,7 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
         const activeTenant = request.tenantId || 'enigma_hq';
 
 
-        const take = limit ? parseInt(limit) : 20;
+        const take = limit ? parseInt(limit) : 1000;
 
         const where: any = {
             tenantId: activeTenant
