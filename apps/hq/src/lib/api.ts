@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-    baseURL: 'https://fearless-youthfulness-production.up.railway.app/api/v1',
+    baseURL: 'https://enigma-pos-os-production.up.railway.app/api/v1',
     headers: {
         'Content-Type': 'application/json',
     },
