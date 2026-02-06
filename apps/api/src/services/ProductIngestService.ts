@@ -16,22 +16,39 @@ export class ProductIngestService {
         // 0. Header Analysis
         const header = records[0];
         const colMap: any = {};
-        header.forEach((h: string, i: number) => colMap[h.trim()] = i);
 
-        // Map Columns based on Italian/Spanish/English headers standard in Loyverse
-        const COL_HANDLE = colMap['Handle'];
-        const COL_NAME = colMap['Nombre'] || colMap['Name'];
-        const COL_SKU = colMap['REF'] || colMap['SKU'];
-        const COL_CAT = colMap['Categoria'] || colMap['Category'];
-        const COL_PRICE = colMap['Precio [Enigma Café ]'] || colMap['Price'];
-        const COL_COST = colMap['Coste'] || colMap['Cost'];
-        const COL_COMP_REF = colMap['REF del componente'] || colMap['Component SKU'];
-        const COL_COMP_QTY = colMap['Cantidad del componente'] || colMap['Component Quantity'];
-        // const COL_UNIT = colMap['Vendido por'] || 'Unidad'; // Infer unit
+        console.log('[Ingest] Raw Headers:', header);
+
+        header.forEach((h: string, i: number) => {
+            let key = h.trim();
+            // Manual BOM Strip (just in case csv-parse fails)
+            if (key.charCodeAt(0) === 0xFEFF) {
+                key = key.slice(1);
+            }
+            // Normalize to lowercase for case-insensitive matching
+            colMap[key.toLowerCase()] = i;
+        });
+
+        console.log('[Ingest] Normalized Column Map:', Object.keys(colMap));
+
+        // Map Columns (lowercase keys)
+        const COL_HANDLE = colMap['handle'];
+        const COL_NAME = colMap['nombre'] || colMap['name'];
+        const COL_SKU = colMap['ref'] || colMap['sku'];
+        const COL_CAT = colMap['categoria'] || colMap['category'];
+        const COL_PRICE = colMap['precio [enigma café ]'] || colMap['price'];
+        const COL_COST = colMap['coste'] || colMap['cost'];
+        const COL_COMP_REF = colMap['ref del componente'] || colMap['component sku'];
+        const COL_COMP_QTY = colMap['cantidad del componente'] || colMap['component quantity'];
 
         // Supplier Columns
-        const COL_SUPPLIER = colMap['Proveedor'] || colMap['Supplier'];
-        const COL_PURCHASE_COST = colMap['Costo de compra'] || colMap['Purchase cost'];
+        const COL_SUPPLIER = colMap['proveedor'] || colMap['supplier'] || colMap['vendor'];
+        const COL_PURCHASE_COST = colMap['costo de compra'] || colMap['purchase cost'];
+
+        // VALIDATION
+        if (typeof COL_HANDLE === 'undefined') {
+            throw new Error(`Critical: Could not find 'Handle' column in CSV. Found: ${Object.keys(colMap).join(', ')}`);
+        }
 
         console.log(`[Ingest] Parsing ${records.length} rows...`);
 
