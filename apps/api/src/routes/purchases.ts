@@ -9,7 +9,7 @@ export default async function (fastify: FastifyInstance) {
     // --- SUPPLIERS ---
 
     fastify.get('/suppliers', async (request, reply) => {
-        const tenantId = request.headers['x-tenant-id'] as string || 'enigma_hq';
+        const tenantId = request.tenantId || 'enigma_hq';
 
         const suppliers = await prisma.supplier.findMany({
             where: { tenantId },
@@ -19,8 +19,9 @@ export default async function (fastify: FastifyInstance) {
     });
 
     fastify.post('/suppliers', async (request, reply) => {
-        const { name, category, email, phone, tenantId } = request.body as any;
+        const { name, category, email, phone } = request.body as any;
         const normalized = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const tenantId = request.tenantId || 'enigma_hq';
 
         // Dedup Check
         const existing = await prisma.supplier.findFirst({
@@ -36,7 +37,7 @@ export default async function (fastify: FastifyInstance) {
                 category: category || 'General',
                 email,
                 phone,
-                tenantId: tenantId || 'enigma_hq' // Default for now
+                tenantId
             }
         });
         return supplier;
