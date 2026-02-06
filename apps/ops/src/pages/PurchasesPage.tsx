@@ -8,7 +8,7 @@ import {
     findPurchaseUnit
 } from '../utils/unitConversion';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
+const API_URL = 'https://enigma-pos-os-production.up.railway.app/api/v1';
 const TENANT_HEADER = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
 
 const CATEGORIES = ['Lácteos', 'Panadería', 'Carnes', 'Vegetales', 'Bebidas', 'Otros'];
