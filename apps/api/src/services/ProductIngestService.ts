@@ -148,7 +148,7 @@ export class ProductIngestService {
 
                 const priceStr = (row[COL_PRICE] || '').toString().trim().toLowerCase();
                 const priceVal = parseFloat(priceStr) || 0;
-                const isSold = priceVal > 0 || priceStr === 'variable';
+                const isSold = priceVal > 0;
 
                 nodes.set(handle, {
                     handle,
