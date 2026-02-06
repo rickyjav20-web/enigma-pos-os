@@ -8,7 +8,7 @@ interface IngestBody {
 }
 
 export default async function ingestRoutes(fastify: FastifyInstance) {
-    fastify.post<{ Body: IngestBody }>('/ingest/products', { bodyLimit: 10485760 }, async (request, reply) => {
+    fastify.post<{ Body: IngestBody }>('/ingest/products', async (request, reply) => {
         const { csv_content, tenant_id: bodyTenantId, actor_id } = request.body;
 
         // Prioritize Auth Context Tenant, fallback to body
