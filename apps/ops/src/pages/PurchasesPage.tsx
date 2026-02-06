@@ -187,7 +187,7 @@ export default function PurchasesPage() {
                     currentCost: Number(newItem.currentCost),
                     // Map frontend 'defaultUnit' to backend 'unitOfMeasure'
                     unitOfMeasure: newItem.defaultUnit,
-                    preferredSupplierId: selectedSupplier?.id
+                    preferredSupplierId: selectedSupplier?.id || preselectedSupplierId
                 })
             });
 
@@ -806,6 +806,12 @@ export default function PurchasesPage() {
                         <div className="space-y-4">
                             <div>
                                 <label className="text-sm text-white/50 mb-1 block">Nombre *</label>
+                                {selectedSupplier && (
+                                    <div className="mb-2 px-3 py-1.5 bg-enigma-green/10 border border-enigma-green/20 rounded-lg inline-flex items-center gap-2">
+                                        <Building2 className="w-3 h-3 text-enigma-green" />
+                                        <span className="text-xs text-enigma-green">Vinculado a: {selectedSupplier.name}</span>
+                                    </div>
+                                )}
                                 <input
                                     type="text"
                                     value={newItem.name}
