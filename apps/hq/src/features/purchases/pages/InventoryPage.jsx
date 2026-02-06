@@ -96,7 +96,8 @@ export default function InventoryPage() {
                 }
             } catch (err) {
                 console.error("Import error:", err);
-                alert("Failed to import CSV. Check console for details.");
+                const errMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+                alert("Failed to import CSV: " + errMsg);
             } finally {
                 setLoading(false);
                 // Reset input
