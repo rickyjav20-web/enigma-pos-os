@@ -3,7 +3,9 @@ import axios from 'axios';
 import { db } from './db';
 
 const api = axios.create({
-    baseURL: (window._env_ && window._env_.VITE_API_URL) || import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1'
+    baseURL: (window._env_ && window._env_.VITE_API_URL) ||
+        import.meta.env.VITE_API_URL ||
+        'https://enigma-pos-os-production.up.railway.app/api/v1'
 });
 
 // Add Tenant interceptor if needed
