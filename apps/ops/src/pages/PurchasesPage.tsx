@@ -187,7 +187,7 @@ export default function PurchasesPage() {
                     currentCost: Number(newItem.currentCost),
                     // Map frontend 'defaultUnit' to backend 'unitOfMeasure'
                     unitOfMeasure: newItem.defaultUnit,
-                    tenantId: 'enigma_hq'
+                    preferredSupplierId: selectedSupplier?.id
                 })
             });
 
