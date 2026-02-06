@@ -33,8 +33,8 @@ COPY --from=builder /app/dist .
 COPY apps/staff/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy env script
-COPY apps/staff/env.sh /docker-entrypoint.d/env.sh
-RUN chmod +x /docker-entrypoint.d/env.sh
+COPY apps/staff/env.sh /docker-entrypoint.d/30-env-subst.sh
+RUN chmod +x /docker-entrypoint.d/30-env-subst.sh
 
 EXPOSE 8080
-CMD ["/bin/sh", "-c", "/docker-entrypoint.d/env.sh && nginx -g 'daemon off;'"]
+CMD ["nginx", "-g", "daemon off;"]
