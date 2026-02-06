@@ -16,6 +16,9 @@ COPY apps/staff/client ./
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 
+# Force create .env file for Vite to pick it up reliably
+RUN echo "VITE_API_URL=${VITE_API_URL}" > .env
+
 # Build
 RUN npm run build
 

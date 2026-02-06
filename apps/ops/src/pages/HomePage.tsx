@@ -26,7 +26,7 @@ export default function HomePage() {
         ]).then(([suppliers, items, purchases]) => {
             setStats({
                 suppliers: suppliers?.length || 0,
-                items: items?.count || 0,
+                items: items?.total || 0,
                 recentPurchases: purchases?.length || 0
             });
             setRecentOrders((purchases || []).slice(0, 3));

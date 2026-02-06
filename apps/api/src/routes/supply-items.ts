@@ -10,11 +10,6 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
         const activeTenant = request.tenantId || 'enigma_hq';
 
 
-        const totalItems = await prisma.supplyItem.count();
-
-
-        const take = limit ? parseInt(limit) : 20;
-
         const where: any = {
             tenantId: activeTenant
         };
@@ -26,6 +21,8 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
             };
         }
 
+        const totalItems = await prisma.supplyItem.count({ where });
+
         const items = await prisma.supplyItem.findMany({
             where,
             take,
@@ -33,7 +30,7 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
             include: { ingredients: { include: { component: true } } }
         });
 
-        return { success: true, count: items.length, data: items };
+        return { success: true, count: items.length, total: totalItems, data: items };
     });
 
     // GET /supply-items/:id

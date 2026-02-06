@@ -26,6 +26,9 @@ RUN npm run build -w packages/types
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 
+# Force create .env file
+RUN echo "VITE_API_URL=${VITE_API_URL}" > apps/ops/.env
+
 # Build OPS
 RUN npm run build -w apps/ops
 
