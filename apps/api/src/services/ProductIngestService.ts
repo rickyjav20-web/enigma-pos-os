@@ -99,6 +99,7 @@ export class ProductIngestService {
         // We need to identify unique items by Handle/SKU.
         // A single item might span multiple rows (for ingredients), so we use a Map to dedup.
 
+        // ... (ItemNode type definition suppressed for brevity, assume valid context) ...
         type ItemNode = {
             handle: string;
             sku: string;
@@ -112,6 +113,7 @@ export class ProductIngestService {
         };
 
         const nodes = new Map<string, ItemNode>();
+        // ... (Loop to populate nodes is fine) ...
 
         for (let i = 1; i < records.length; i++) {
             const row = records[i];
@@ -160,14 +162,12 @@ export class ProductIngestService {
 
         console.log(`[Ingest] Identified ${nodes.size} unique nodes.`);
 
+        let insertedCount = 0;
+        const errors: string[] = [];
+
         for (const node of nodes.values()) {
 
             // 1. CREATE SUPPLY ITEM (Use SKU as key)
-            // Even if it's a product, we create a supply item for inventory tracking if desired.
-            // In Enigma, sold items also map to supply items if they are stocked directly (like Soda cans).
-            // OR they map to Recipes.
-            // For safety, we create SupplyItem for EVERYTHING that has a SKU.
-
             if (node.sku) {
                 try {
                     await prisma.supplyItem.upsert({
@@ -180,19 +180,19 @@ export class ProductIngestService {
                             category: node.category,
                             defaultUnit: 'und',
                             isProduction: node.isProduction,
-                            preferredSupplierId: node.supplierId
+                            preferredSupplierId: node.supplierId || null // Fix undefined issue
                         },
                         update: {
                             name: node.name,
                             currentCost: node.cost,
-                            // If CSV has provider, update it. If not, leave existing? 
-                            // User wants CLEAN IMPORT, so we enforce what's in CSV.
-                            preferredSupplierId: node.supplierId,
+                            preferredSupplierId: node.supplierId || null,
                             isProduction: node.isProduction
                         }
                     });
-                } catch (e) {
+                    insertedCount++;
+                } catch (e: any) {
                     console.error(`[Ingest] Error upserting SupplyItem ${node.sku}:`, e);
+                    errors.push(`SupplyItem ${node.sku}: ${e.message}`);
                 }
             }
 
@@ -217,8 +217,9 @@ export class ProductIngestService {
                             cost: node.cost
                         }
                     });
-                } catch (e) {
+                } catch (e: any) {
                     console.error(`[Ingest] Error upserting Product ${node.handle}:`, e);
+                    errors.push(`Product ${node.handle}: ${e.message}`);
                 }
             }
         }
@@ -227,6 +228,9 @@ export class ProductIngestService {
         // --- PASS 2: EDGES (Link Components) ---
         console.log(`[Ingest] Linking components...`);
         let linksCreated = 0;
+        // ... (Keep existing Pass 2 logic, assume it works if nodes exist) ...
+
+        const parentNodes = Array.from(nodes.values()); // Helper if needed, but we iterate records
 
         let currentParentHandle: string | null = null;
 
@@ -253,7 +257,6 @@ export class ProductIngestService {
                 });
 
                 if (!componentItem) {
-                    // console.warn(`[Ingest] Warning: Component with SKU ${compSku} not found for parent ${currentParentHandle}`);
                     continue;
                 }
 
@@ -288,29 +291,39 @@ export class ProductIngestService {
                         });
 
                         if (!existingLink) {
-                            await prisma.productionRecipe.create({
-                                data: {
-                                    parentItemId: parentSupplyItem.id,
-                                    supplyItemId: componentItem.id,
-                                    quantity: compQty,
-                                    unit: 'und'
-                                }
-                            });
-                            // Mark as production
-                            if (!parentSupplyItem.isProduction) {
-                                await prisma.supplyItem.update({
-                                    where: { id: parentSupplyItem.id },
-                                    data: { isProduction: true }
+                            try {
+                                await prisma.productionRecipe.create({
+                                    data: {
+                                        parentItemId: parentSupplyItem.id,
+                                        supplyItemId: componentItem.id,
+                                        quantity: compQty,
+                                        unit: 'und'
+                                    }
                                 });
+                                // Mark as production
+                                if (!parentSupplyItem.isProduction) {
+                                    await prisma.supplyItem.update({
+                                        where: { id: parentSupplyItem.id },
+                                        data: { isProduction: true }
+                                    });
+                                }
+                                linksCreated++;
+                            } catch (e) {
+                                console.error('[Ingest] Error creating production link', e);
                             }
-                            linksCreated++;
                         }
                     }
                 }
             }
         }
 
-        return { nodes: nodes.size, links: linksCreated, suppliers: supplierMap.size };
+        return {
+            nodes: insertedCount, // Return executed count
+            totalParsed: nodes.size,
+            links: linksCreated,
+            suppliers: supplierMap.size,
+            errors: errors.slice(0, 5) // Return first 5 errors
+        };
     }
 }
 

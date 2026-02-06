@@ -79,7 +79,17 @@ export default function InventoryPage() {
                 });
 
                 if (response.data.success) {
-                    alert(`Import successful! Added ${response.data.nodes} items.`);
+                    const inserted = response.data.nodes;
+                    const total = response.data.totalParsed || inserted;
+                    const errors = response.data.errors || [];
+
+                    let msg = `Import finished. Successfully added ${inserted} of ${total} items.`;
+
+                    if (errors.length > 0) {
+                        msg += `\n\nFailures (First 5):\n${errors.join('\n')}`;
+                    }
+
+                    alert(msg);
                     await fetchData(); // Refresh data
                 } else {
                     alert('Import completed but returned no success flag.');
