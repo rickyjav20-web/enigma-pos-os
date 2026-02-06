@@ -37,4 +37,5 @@ COPY apps/staff/env.sh /docker-entrypoint.d/30-env-subst.sh
 RUN chmod +x /docker-entrypoint.d/30-env-subst.sh
 
 EXPOSE 8080
-CMD ["nginx", "-g", "daemon off;"]
+# Explicitly run the script before starting Nginx to guarantee execution
+CMD ["/bin/sh", "-c", "/docker-entrypoint.d/30-env-subst.sh && nginx -g 'daemon off;'"]
