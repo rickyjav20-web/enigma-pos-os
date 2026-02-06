@@ -228,12 +228,12 @@ export class ProductIngestService {
         // --- PASS 2: EDGES (Link Components) ---
         console.log(`[Ingest] Linking components...`);
         let linksCreated = 0;
-        // ... (Keep existing Pass 2 logic, assume it works if nodes exist) ...
 
-        const parentNodes = Array.from(nodes.values()); // Helper if needed, but we iterate records
-
+        // map<handle, list of components>
+        const recipeMap = new Map<string, Array<{ compSku: string, compQty: number }>>();
         let currentParentHandle: string | null = null;
 
+        // 1. Accumulate all ingredients for each parent
         for (let i = 1; i < records.length; i++) {
             const row = records[i];
             const handle = row[COL_HANDLE];
@@ -247,82 +247,80 @@ export class ProductIngestService {
             const compSku = row[COL_COMP_REF];
             const compQty = parseFloat(row[COL_COMP_QTY]);
 
-            if (compSku && compQty) {
-                const parentNode = nodes.get(currentParentHandle);
-                if (!parentNode) continue;
+            if (compSku && compQty > 0) {
+                if (!recipeMap.has(currentParentHandle)) {
+                    recipeMap.set(currentParentHandle, []);
+                }
+                recipeMap.get(currentParentHandle)?.push({ compSku, compQty });
+            }
+        }
 
-                // Find the Child Component (SupplyItem)
-                const componentItem = await prisma.supplyItem.findFirst({
-                    where: { tenantId, sku: compSku }
+        console.log(`[Ingest] Found recipes for ${recipeMap.size} items.`);
+
+        // 2. Process each Parent
+        for (const [handle, components] of recipeMap.entries()) {
+            const parentNode = nodes.get(handle);
+            if (!parentNode) continue;
+
+            // Resolve Component IDs
+            const validIngredients: { id: string, quantity: number, unit: string }[] = [];
+
+            for (const c of components) {
+                const supplyItem = await prisma.supplyItem.findFirst({
+                    where: { tenantId, sku: c.compSku }
                 });
-
-                if (!componentItem) {
-                    continue;
-                }
-
-                // 2A. If Parent is a PRODUCT (Saleable)
-                if (parentNode.isSold) {
-                    const parentProduct = await prisma.product.findUnique({
-                        where: { tenantId_loyverseId: { tenantId, loyverseId: currentParentHandle } }
+                if (supplyItem) {
+                    validIngredients.push({
+                        id: supplyItem.id,
+                        quantity: c.compQty,
+                        unit: 'und' // Default to unit for now
                     });
-
-                    if (parentProduct) {
-                        try {
-                            await recipeService.linkIngredient(parentProduct.id, componentItem.id, compQty, 'und');
-                            linksCreated++;
-                        } catch (e) {
-                            // Ignore duplicates
-                        }
-                    }
                 }
+            }
 
-                // 2B. If Parent is INTERNAL (Production/Batch) 
-                if (parentNode.isProduction || !parentNode.isSold) {
-                    const parentSupplyItem = await prisma.supplyItem.findUnique({
-                        where: { tenantId_sku: { tenantId, sku: parentNode.sku } }
-                    });
-
-                    if (parentSupplyItem) {
-                        const existingLink = await prisma.productionRecipe.findFirst({
-                            where: {
-                                parentItemId: parentSupplyItem.id,
-                                supplyItemId: componentItem.id
-                            }
+            if (validIngredients.length > 0) {
+                try {
+                    // 2A. Product Recipe (Menu Item)
+                    if (parentNode.isSold) {
+                        const product = await prisma.product.findUnique({
+                            where: { tenantId_loyverseId: { tenantId, loyverseId: handle } }
                         });
-
-                        if (!existingLink) {
-                            try {
-                                await prisma.productionRecipe.create({
-                                    data: {
-                                        parentItemId: parentSupplyItem.id,
-                                        supplyItemId: componentItem.id,
-                                        quantity: compQty,
-                                        unit: 'und'
-                                    }
-                                });
-                                // Mark as production
-                                if (!parentSupplyItem.isProduction) {
-                                    await prisma.supplyItem.update({
-                                        where: { id: parentSupplyItem.id },
-                                        data: { isProduction: true }
-                                    });
-                                }
-                                linksCreated++;
-                            } catch (e) {
-                                console.error('[Ingest] Error creating production link', e);
-                            }
+                        if (product) {
+                            // Use the CORRECT service method
+                            await recipeService.syncProductRecipe(product.id, validIngredients);
+                            linksCreated += validIngredients.length;
                         }
                     }
+
+                    // 2B. Production Recipe (Batch/Internal)
+                    // Note: If an item is BOTH sold and has recipe, we might want to track it as production too?
+                    // For Enigma, usually: 
+                    // - Menu Products use ProductRecipe
+                    // - Intermediate Batches use ProductionRecipe
+                    // If something is NOT sold, it MUST be ProductionRecipe.
+                    // If something IS sold but also isProduction (flagged), it implies it's a Batch we sell?
+                    else if (parentNode.isProduction || !parentNode.isSold) {
+                        const supplyItem = await prisma.supplyItem.findUnique({
+                            where: { tenantId_sku: { tenantId, sku: parentNode.sku } }
+                        });
+                        if (supplyItem) {
+                            await recipeService.syncRecipe(supplyItem.id, validIngredients);
+                            linksCreated += validIngredients.length;
+                        }
+                    }
+                } catch (e: any) {
+                    console.error(`[Ingest] Error syncing recipe for ${handle}:`, e);
+                    errors.push(`Recipe ${handle}: ${e.message}`);
                 }
             }
         }
 
         return {
-            nodes: insertedCount, // Return executed count
+            nodes: insertedCount,
             totalParsed: nodes.size,
             links: linksCreated,
             suppliers: supplierMap.size,
-            errors: errors.slice(0, 5) // Return first 5 errors
+            errors: errors.slice(0, 5)
         };
     }
 }
