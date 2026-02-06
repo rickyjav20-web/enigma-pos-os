@@ -9,19 +9,24 @@ interface IngestBody {
 
 export default async function ingestRoutes(fastify: FastifyInstance) {
     fastify.post<{ Body: IngestBody }>('/ingest/products', async (request, reply) => {
-        const { csv_content, tenant_id, actor_id } = request.body;
+        const { csv_content, tenant_id: bodyTenantId, actor_id } = request.body;
 
-        if (!csv_content || !tenant_id) {
-            return reply.status(400).send({ error: 'Missing csv_content or tenant_id' });
+        // Prioritize Auth Context Tenant, fallback to body
+        const activeTenant = request.tenantId || bodyTenantId;
+
+        if (!csv_content || !activeTenant) {
+            return reply.status(400).send({ error: 'Missing csv_content or tenant_id resolution failed' });
         }
 
         try {
-            const result = await productIngestService.ingestLoyverseExport(csv_content, tenant_id);
+            const result = await productIngestService.ingestLoyverseExport(csv_content, activeTenant);
             return {
                 success: true,
                 nodes: result.nodes,
+                totalParsed: result.totalParsed,
                 links: result.links,
-                message: `Successfully ingested ${result.nodes} items and ${result.links} links for tenant ${tenant_id}`
+                errors: result.errors,
+                message: `Successfully processed for tenant ${activeTenant}`
             };
         } catch (error) {
             request.log.error(error);
