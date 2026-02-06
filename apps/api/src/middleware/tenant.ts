@@ -42,10 +42,16 @@ export async function tenantMiddleware(request: FastifyRequest, reply: FastifyRe
     });
 
     if (!tenant) {
-        console.error(`[TENANT-DEBUG] FAILED to find tenant: '${tenantId}'`);
-        // If default also fails (DB empty?), handle gracefully or return error
-        // Ideally we should SEED the DB with the default tenant if it's empty.
-        return reply.status(400).send({ error: `Invalid Tenant: ${tenantId}` });
+        console.log(`[TENANT-DEBUG] Tenant '${tenantId}' not found. Auto-creating for MVP...`);
+        const newTenant = await prisma.tenant.create({
+            data: {
+                id: tenantId,
+                name: tenantId === 'enigma_hq' ? 'Enigma HQ' : 'New Tenant',
+                slug: tenantId
+            }
+        });
+        request.tenantId = newTenant.id;
+        return;
     }
     console.log(`[TENANT-DEBUG] Found tenant: ${tenant.id} (${tenant.name})`);
 

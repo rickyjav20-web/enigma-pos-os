@@ -243,7 +243,9 @@ export default function InventoryPage() {
                 </div>
                 <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
                     <p className="text-zinc-500 text-xs uppercase font-bold">Total Stock Value</p>
-                    <p className="text-2xl font-bold text-emerald-500">$12,450</p>
+                    <p className="text-2xl font-bold text-emerald-500">
+                        ${supplyItems.reduce((acc, item) => acc + ((item.currentCost || 0) * (item.stockQuantity || 0)), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
                 </div>
             </div>
 
