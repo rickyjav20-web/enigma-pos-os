@@ -79,25 +79,15 @@ export default async function productRoutes(fastify: FastifyInstance) {
         });
 
         // 2. Sync Recipe (if provided)
-        const fs = await import('fs');
-        const path = await import('path');
-        const logFile = path.join(process.cwd(), 'debug_api.log');
-        const log = (msg: string) => fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
-
-        log(`PUT /products/${id} body.recipes: ${JSON.stringify(recipes)}`);
-
         if (recipes !== undefined && Array.isArray(recipes)) {
-            log(`Calling syncProductRecipe for ${id} with ${recipes.length} items`);
+            console.log(`[API] PUT /products/${id} syncing recipes:`, recipes);
             try {
                 const { recipeService } = await import('../services/RecipeService');
                 await recipeService.syncProductRecipe(id, recipes);
-                log(`Sync Success`);
+                console.log(`[API] Sync Success for ${id}`);
             } catch (err: any) {
-                log(`Sync Error: ${err.message}`);
-                console.error(err);
+                console.error(`[API] Sync Error for ${id}:`, err);
             }
-        } else {
-            log(`No recipes provided or not array.`);
         }
 
         return product;
