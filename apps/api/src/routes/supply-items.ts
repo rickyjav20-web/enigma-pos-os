@@ -62,7 +62,7 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
                 currentCost: Number(currentCost) || 0,
                 defaultUnit: unitOfMeasure || 'und',
                 preferredSupplierId,
-                tenantId: tenantId || 'enigma_hq',
+                tenantId: request.tenantId || 'enigma_hq', // Use resolved Tenant ID
                 yieldQuantity: yieldQuantity ? Number(yieldQuantity) : null,
                 yieldUnit
             }
