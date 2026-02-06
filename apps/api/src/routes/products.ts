@@ -1,31 +1,22 @@
 import { FastifyInstance } from 'fastify';
 import prisma from '../lib/prisma';
+import { recipeService } from '../services/RecipeService';
 
 export default async function productRoutes(fastify: FastifyInstance) {
 
-    // Force Restart Trigger
-    // GET /products
+    // GET /products (Listing)
     fastify.get<{ Querystring: { tenant_id: string } }>('/products', async (request, reply) => {
         const { tenant_id } = request.query;
-
-        // Use resolved tenant ID from middleware (UUID)
         const activeTenant = request.tenantId || 'enigma_hq';
 
         const products = await prisma.product.findMany({
             where: { tenantId: activeTenant },
             include: { variants: true, recipes: { include: { supplyItem: true } } }
         });
-        console.log(`[API DEBUG] GET /products tenant=${activeTenant} found=${products.length}`);
-        console.log(`[API DEBUG] DB_URL=${process.env.DATABASE_URL}`);
         return {
             success: true,
             count: products.length,
-            data: products,
-            debug: {
-                tenant: activeTenant,
-                db_url: process.env.DATABASE_URL,
-                node_env: process.env.NODE_ENV
-            }
+            data: products
         };
     });
 
@@ -56,7 +47,6 @@ export default async function productRoutes(fastify: FastifyInstance) {
 
         // 2. Handle Recipe (if provided)
         if (recipes && Array.isArray(recipes) && recipes.length > 0) {
-            const { recipeService } = await import('../services/RecipeService');
             await recipeService.syncProductRecipe(product.id, recipes);
         }
 
@@ -65,32 +55,39 @@ export default async function productRoutes(fastify: FastifyInstance) {
 
     // PUT /products/:id
     fastify.put<{ Params: { id: string } }>('/products/:id', async (request, reply) => {
-        const { id } = request.params;
-        const { name, price, cost, categoryId, recipes } = request.body as any;
+        try {
+            const { id } = request.params;
+            const body = request.body as any;
+            const { name, price, cost, categoryId, recipes } = body;
 
-        const product = await prisma.product.update({
-            where: { id },
-            data: {
-                name,
-                price: price !== undefined ? Number(price) : undefined,
-                cost: cost !== undefined ? Number(cost) : undefined,
-                categoryId
-            }
-        });
+            console.log(`[API] PUT /products/${id} payload:`, { name, recipesCount: recipes?.length });
 
-        // 2. Sync Recipe (if provided)
-        if (recipes !== undefined && Array.isArray(recipes)) {
-            console.log(`[API] PUT /products/${id} syncing recipes:`, recipes);
-            try {
-                const { recipeService } = await import('../services/RecipeService');
+            const product = await prisma.product.update({
+                where: { id },
+                data: {
+                    name,
+                    price: price !== undefined ? Number(price) : undefined,
+                    cost: cost !== undefined ? Number(cost) : undefined,
+                    categoryId
+                }
+            });
+
+            // 2. Sync Recipe (if provided)
+            if (recipes !== undefined && Array.isArray(recipes)) {
+                console.log(`[API] Syncing recipes for ${id}...`);
                 await recipeService.syncProductRecipe(id, recipes);
-                console.log(`[API] Sync Success for ${id}`);
-            } catch (err: any) {
-                console.error(`[API] Sync Error for ${id}:`, err);
+                console.log(`[API] Recipe Sync Complete.`);
             }
-        }
 
-        return product;
+            return product;
+        } catch (error: any) {
+            console.error(`[API] CRITICAL ERROR in PUT /products/:id`, error);
+            // Return 500 with message so UI can show it
+            return reply.status(500).send({
+                error: "Server Error",
+                message: error.message || "Unknown error during update"
+            });
+        }
     });
 
     // POST /products/:id/recipes (Add Ingredient)
@@ -98,7 +95,6 @@ export default async function productRoutes(fastify: FastifyInstance) {
         const { id } = request.params;
         const { supplyItemId, quantity, unit } = request.body as any;
 
-        // Create Recipe Link
         await prisma.productRecipe.create({
             data: {
                 productId: id,
@@ -108,26 +104,15 @@ export default async function productRoutes(fastify: FastifyInstance) {
             }
         });
 
-        // Recalculate
-        const { recipeService } = await import('../services/RecipeService');
         await recipeService.recalculateProductCost(id);
-
         return { success: true };
     });
 
     // DELETE /products/:id/recipes/:recipeId (Remove Ingredient)
     fastify.delete<{ Params: { id: string; recipeId: string } }>('/products/:id/recipes/:recipeId', async (request, reply) => {
         const { id, recipeId } = request.params;
-
-        // Remove
-        await prisma.productRecipe.delete({
-            where: { id: recipeId }
-        });
-
-        // Recalculate
-        const { recipeService } = await import('../services/RecipeService');
+        await prisma.productRecipe.delete({ where: { id: recipeId } });
         await recipeService.recalculateProductCost(id);
-
         return { success: true };
     });
 }

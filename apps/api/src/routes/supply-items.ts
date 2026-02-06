@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import prisma from '../lib/prisma';
+import { recipeService } from '../services/RecipeService';
 
 export default async function supplyItemRoutes(fastify: FastifyInstance) {
 
@@ -52,58 +53,66 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
 
     // POST /supply-items (Create)
     fastify.post('/supply-items', async (request, reply) => {
-        const { name, sku, category, currentCost, unitOfMeasure, preferredSupplierId, tenantId, yieldQuantity, yieldUnit, ingredients } = request.body as any;
+        try {
+            const { name, sku, category, currentCost, unitOfMeasure, preferredSupplierId, tenantId, yieldQuantity, yieldUnit, ingredients } = request.body as any;
 
-        const item = await prisma.supplyItem.create({
-            data: {
-                name,
-                sku: sku || `SKU-${Date.now()}`,
-                category: category || 'General',
-                currentCost: Number(currentCost) || 0,
-                defaultUnit: unitOfMeasure || 'und',
-                preferredSupplierId,
-                tenantId: request.tenantId || 'enigma_hq', // Use resolved Tenant ID
-                yieldQuantity: yieldQuantity ? Number(yieldQuantity) : null,
-                yieldUnit
+            const item = await prisma.supplyItem.create({
+                data: {
+                    name,
+                    sku: sku || `SKU-${Date.now()}`,
+                    category: category || 'General',
+                    currentCost: Number(currentCost) || 0,
+                    defaultUnit: unitOfMeasure || 'und',
+                    preferredSupplierId,
+                    tenantId: request.tenantId || 'enigma_hq',
+                    yieldQuantity: yieldQuantity ? Number(yieldQuantity) : null,
+                    yieldUnit
+                }
+            });
+
+            // 2. Handle Recipe (if provided)
+            if (ingredients && Array.isArray(ingredients) && ingredients.length > 0) {
+                await recipeService.syncRecipe(item.id, ingredients);
             }
-        });
 
-        // 2. Handle Recipe (if provided)
-        if (ingredients && Array.isArray(ingredients) && ingredients.length > 0) {
-            const { recipeService } = await import('../services/RecipeService');
-            await recipeService.syncRecipe(item.id, ingredients);
+            return item;
+        } catch (error: any) {
+            console.error(`[API] CRITICAL ERROR in POST /supply-items`, error);
+            return reply.status(500).send({ error: "Server Error", message: error.message });
         }
-
-        return item;
     });
 
     // PUT /supply-items/:id (Update & Sync Recipe)
     fastify.put<{ Params: { id: string } }>('/supply-items/:id', async (request, reply) => {
-        const { id } = request.params;
-        const { name, sku, category, currentCost, defaultUnit, preferredSupplierId, yieldQuantity, yieldUnit, ingredients } = request.body as any;
+        try {
+            const { id } = request.params;
+            const { name, sku, category, currentCost, defaultUnit, preferredSupplierId, yieldQuantity, yieldUnit, ingredients } = request.body as any;
 
-        // 1. Update Basic Info
-        const item = await prisma.supplyItem.update({
-            where: { id },
-            data: {
-                name,
-                sku,
-                category,
-                currentCost: currentCost !== undefined ? Number(currentCost) : undefined,
-                defaultUnit,
-                preferredSupplierId,
-                yieldQuantity: yieldQuantity !== undefined ? Number(yieldQuantity) : undefined,
-                yieldUnit
+            // 1. Update Basic Info
+            const item = await prisma.supplyItem.update({
+                where: { id },
+                data: {
+                    name,
+                    sku,
+                    category,
+                    currentCost: currentCost !== undefined ? Number(currentCost) : undefined,
+                    defaultUnit,
+                    preferredSupplierId,
+                    yieldQuantity: yieldQuantity !== undefined ? Number(yieldQuantity) : undefined,
+                    yieldUnit
+                }
+            });
+
+            // 2. Sync Recipe (if provided)
+            if (ingredients !== undefined && Array.isArray(ingredients)) {
+                await recipeService.syncRecipe(id, ingredients);
             }
-        });
 
-        // 2. Sync Recipe (if provided)
-        if (ingredients !== undefined && Array.isArray(ingredients)) {
-            const { recipeService } = await import('../services/RecipeService');
-            await recipeService.syncRecipe(id, ingredients);
+            return item;
+        } catch (error: any) {
+            console.error(`[API] CRITICAL ERROR in PUT /supply-items/:id`, error);
+            return reply.status(500).send({ error: "Server Error", message: error.message });
         }
-
-        return item;
     });
 
     // --- PRICE HISTORY ---
