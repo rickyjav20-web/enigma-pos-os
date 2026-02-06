@@ -14,6 +14,11 @@ fastify.register(cors, {
     origin: '*'
 });
 
+fastify.addHook('onRequest', (req, reply, done) => {
+    console.log(`[REQUEST] ${req.method} ${req.url}`);
+    done();
+});
+
 import { tenantMiddleware } from './middleware/tenant';
 fastify.addHook('onRequest', tenantMiddleware);
 
