@@ -170,7 +170,8 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
             onClose();
         } catch (e) {
             console.error("Save failed", e);
-            alert("Error saving item: " + e.message);
+            const errMsg = e.response?.data?.error || e.response?.data?.message || e.message;
+            alert("Error saving item: " + errMsg);
         } finally {
             setLoading(false);
         }
