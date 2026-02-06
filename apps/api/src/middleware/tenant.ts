@@ -11,6 +11,11 @@ declare module 'fastify' {
 export async function tenantMiddleware(request: FastifyRequest, reply: FastifyReply) {
     const headers = request.headers;
     // Check Header first (Standard)
+    if (request.url.includes('/setup/')) {
+        console.log('[TENANT-DEBUG] Skipping middleware for setup route');
+        return;
+    }
+
     let tenantId = headers['x-tenant-id'] as string;
 
     // Fallback to Query or Body (Legacy/Dev)
