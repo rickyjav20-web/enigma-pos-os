@@ -9,7 +9,8 @@ export class ProductIngestService {
         const records = parse(csvContent, {
             columns: false,
             skip_empty_lines: false,
-            relax_column_count: true
+            relax_column_count: true,
+            bom: true
         });
 
         // 0. Header Analysis
