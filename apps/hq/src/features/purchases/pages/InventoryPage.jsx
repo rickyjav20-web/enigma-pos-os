@@ -141,8 +141,8 @@ export default function InventoryPage() {
     );
 
     const menuItems = filteredProducts;
-    const kitchenItems = filteredSupplyItems.filter(i => i.isProduction);
-    const pantryItems = filteredSupplyItems.filter(i => !i.isProduction);
+    const kitchenItems = filteredSupplyItems.filter(i => i.isProduction && !products.some(p => p.sku === i.sku));
+    const pantryItems = filteredSupplyItems.filter(i => !i.isProduction && !products.some(p => p.sku === i.sku));
 
     // Combine for Search (Ingredients can come from Pantry OR Kitchen)
     const allIngredients = [...supplyItems];
@@ -231,11 +231,15 @@ export default function InventoryPage() {
                 </div>
                 <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
                     <p className="text-zinc-500 text-xs uppercase font-bold">Batches (Preps)</p>
-                    <p className="text-2xl font-bold text-amber-500">{supplyItems.filter(i => i.isProduction).length}</p>
+                    <p className="text-2xl font-bold text-amber-500">
+                        {supplyItems.filter(i => i.isProduction && !products.some(p => p.sku === i.sku)).length}
+                    </p>
                 </div>
                 <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
                     <p className="text-zinc-500 text-xs uppercase font-bold">Raw Ingredients</p>
-                    <p className="text-2xl font-bold text-blue-500">{supplyItems.filter(i => !i.isProduction).length}</p>
+                    <p className="text-2xl font-bold text-blue-500">
+                        {supplyItems.filter(i => !i.isProduction && !products.some(p => p.sku === i.sku)).length}
+                    </p>
                 </div>
                 <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
                     <p className="text-zinc-500 text-xs uppercase font-bold">Total Stock Value</p>

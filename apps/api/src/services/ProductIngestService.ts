@@ -146,14 +146,18 @@ export class ProductIngestService {
                     }
                 }
 
+                const priceStr = (row[COL_PRICE] || '').toString().trim().toLowerCase();
+                const priceVal = parseFloat(priceStr) || 0;
+                const isSold = priceVal > 0 || priceStr === 'variable';
+
                 nodes.set(handle, {
                     handle,
                     sku: row[COL_SKU] || handle, // Fallback to handle if SKU missing
                     name: row[COL_NAME],
                     category,
-                    price: parseFloat(row[COL_PRICE]) || 0,
+                    price: priceVal,
                     cost: finalCost,
-                    isSold: (parseFloat(row[COL_PRICE]) || 0) > 0,
+                    isSold,
                     isProduction,
                     supplierId
                 });
