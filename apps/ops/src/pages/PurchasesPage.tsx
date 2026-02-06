@@ -175,6 +175,7 @@ export default function PurchasesPage() {
 
     const createNewItem = async () => {
         if (!newItem.name.trim()) return;
+        setLoading(true);
 
         try {
             const res = await fetch(`${API_URL}/supply-items`, {
@@ -183,7 +184,10 @@ export default function PurchasesPage() {
                 body: JSON.stringify({
                     ...newItem,
                     sku: newItem.sku || `SKU-${Date.now()}`,
-                    currentCost: Number(newItem.currentCost)
+                    currentCost: Number(newItem.currentCost),
+                    // Map frontend 'defaultUnit' to backend 'unitOfMeasure'
+                    unitOfMeasure: newItem.defaultUnit,
+                    tenantId: 'enigma_hq'
                 })
             });
 
@@ -212,9 +216,17 @@ export default function PurchasesPage() {
                 });
                 setPurchaseQtyInput('1');
                 setSearchQuery('');
+                setMessage({ type: 'success', text: 'Item creado exitosamente' });
+                setTimeout(() => setMessage(null), 2000);
+            } else {
+                const err = await res.json();
+                setMessage({ type: 'error', text: err.error || 'Error al crear item' });
             }
         } catch (e) {
             console.error(e);
+            setMessage({ type: 'error', text: 'Error de conexión al crear item' });
+        } finally {
+            setLoading(false);
         }
     };
 
