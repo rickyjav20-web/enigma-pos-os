@@ -298,7 +298,24 @@ export default async function setupRoutes(fastify: FastifyInstance) {
 
     // GET /setup/diagnose?tenantId=...
     fastify.get('/setup/diagnose', async (request, reply) => {
-        const tenantId = request.tenantId || (request.query as any).tenantId;
+        const tenantIdParam = request.tenantId || (request.query as any).tenantId;
+
+        if (tenantIdParam === 'ALL' || (request.query as any).tenantId === 'ALL') {
+            const allTenants = await prisma.tenant.findMany();
+            const results = [];
+            for (const t of allTenants) {
+                const counts = {
+                    products: await prisma.product.count({ where: { tenantId: t.id } }),
+                    items: await prisma.supplyItem.count({ where: { tenantId: t.id } }),
+                    suppliers: await prisma.supplier.count({ where: { tenantId: t.id } }),
+                    staff: await prisma.employee.count({ where: { tenantId: t.id } })
+                };
+                results.push({ tenant: t, counts });
+            }
+            return { mode: 'ALL', results };
+        }
+
+        const tenantId = tenantIdParam;
         if (!tenantId) return { error: 'No tenant specified' };
 
         const counts = {
