@@ -58,7 +58,7 @@ export default function InventoryPage() {
 
     const loadItems = async () => {
         try {
-            const res = await fetch(`${API_URL}/supply-items?limit=200`, {
+            const res = await fetch(`${API_URL}/supply-items?limit=1000`, {
                 headers: TENANT_HEADER
             });
             const data = await res.json();

@@ -18,8 +18,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const logFile = path.join(__dirname, 'server_debug.log');
 
 app.use((req, res, next) => {
-    const log = `[${new Date().toISOString()}] ${req.method} ${req.url} | Tenant: ${req.headers['x-tenant-id']} | Body keys: ${Object.keys(req.body).join(',')}\n`;
-    fs.appendFileSync(logFile, log);
+    const log = `[${new Date().toISOString()}] ${req.method} ${req.url} | Tenant: ${req.headers['x-tenant-id']} | Body keys: ${Object.keys(req.body).join(',')}`;
+    // fs.appendFileSync(logFile, log + '\n');
     console.log(log.trim());
     next();
 });
@@ -143,12 +143,12 @@ app.post('/shifts/clock-in', tenantMiddleware, async (req, res) => {
         });
 
         const successLog = `[${new Date().toISOString()}] SUCCESS Clock-In: Shift ${shift.id}\n`;
-        fs.appendFileSync(logFile, successLog);
+        // fs.appendFileSync(logFile, successLog);
 
         res.json({ shift });
     } catch (error) {
         const errorLog = `[${new Date().toISOString()}] ERROR Clock-In: ${error.message}\n${error.stack}\n`;
-        fs.appendFileSync(logFile, errorLog);
+        // fs.appendFileSync(logFile, errorLog);
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -188,7 +188,7 @@ app.post('/shifts/clock-out', tenantMiddleware, async (req, res) => {
         });
 
         const log = `[${new Date().toISOString()}] SUCCESS Clock-Out: Shift ${shift.id}\n`;
-        fs.appendFileSync(logFile, log);
+        // fs.appendFileSync(logFile, log);
 
         res.json({ shift: updatedShift });
     } catch (error) {
@@ -322,7 +322,7 @@ app.post('/employees', tenantMiddleware, async (req, res) => {
         res.json({ employee });
     } catch (error) {
         const errorLog = `[${new Date().toISOString()}] ERROR POST Employee: ${error.message}\n${error.stack}\n`;
-        fs.appendFileSync(logFile, errorLog);
+        // fs.appendFileSync(logFile, errorLog);
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -372,7 +372,7 @@ app.patch('/employees/:id', tenantMiddleware, async (req, res) => {
         res.json({ employee });
     } catch (error) {
         const errorLog = `[${new Date().toISOString()}] ERROR PATCH Employee: ${error.message}\n${error.stack}\n`;
-        fs.appendFileSync(logFile, errorLog);
+        // fs.appendFileSync(logFile, errorLog);
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -521,7 +521,7 @@ app.post('/recurring', tenantMiddleware, async (req, res) => {
         res.json({ success: true });
     } catch (error) {
         const errorLog = `[${new Date().toISOString()}] ERROR POST Recurring: ${error.message}\n${error.stack}\n`;
-        fs.appendFileSync(logFile, errorLog);
+        // fs.appendFileSync(logFile, errorLog);
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
