@@ -180,10 +180,22 @@ function OptimizerView() {
     }, []);
 
     const loadInventory = async () => {
-        const res = await api.get('/supply-items');
-        // Handle both Array directly (legacy) or { data: [] } (new standard)
-        const itemsData = Array.isArray(res.data) ? res.data : (res.data.data || []);
-        setItems(itemsData);
+        const [prodRes, supplyRes] = await Promise.all([
+            api.get('/products'),
+            api.get('/supply-items')
+        ]);
+
+        const products = prodRes.data.data || [];
+        const allSupply = Array.isArray(supplyRes.data) ? supplyRes.data : (supplyRes.data.data || []);
+
+        // Filter for Zone 3 (Pantry) Only
+        // Logic: Not Production AND Item SKU does not match any Product SKU (to exclude 1:1 mapped items)
+        const pantryItems = allSupply.filter(i =>
+            !i.isProduction &&
+            !products.some(p => p.sku && i.sku && p.sku === i.sku)
+        );
+
+        setItems(pantryItems);
     };
 
     const toggleItem = (id) => {

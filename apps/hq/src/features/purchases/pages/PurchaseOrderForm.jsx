@@ -17,12 +17,53 @@ export default function PurchaseOrderForm() {
     }, []);
 
     const loadData = async () => {
-        const [s, i] = await Promise.all([
+        const [s, p, i] = await Promise.all([
             api.get('/suppliers'),
+            api.get('/products'),
             api.get('/supply-items')
         ]);
         setSuppliers(s.data.data || []);
-        setItems(i.data.data || []);
+
+        const products = p.data.data || [];
+        const allSupply = i.data.data || [];
+
+        // Filter: Zone 3 Only
+        const pantryItems = allSupply.filter(item =>
+            !item.isProduction &&
+            !products.some(prod => prod.sku && item.sku && prod.sku === item.sku)
+        );
+
+        setItems(pantryItems);
+    };
+
+    // --- NEW ITEM CREATION ---
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [newItemName, setNewItemName] = useState('');
+    const [newItemUnit, setNewItemUnit] = useState('und');
+    const [newItemCost, setNewItemCost] = useState('');
+
+    const handleCreateItem = async () => {
+        if (!newItemName) return;
+        try {
+            const res = await api.post('/supply-items', {
+                name: newItemName,
+                defaultUnit: newItemUnit,
+                currentCost: parseFloat(newItemCost) || 0,
+                category: 'Generico', // Default for Shopper creation
+                isProduction: false,   // Zone 3
+                stockQuantity: 0
+            });
+
+            // Refresh and Select
+            await loadData();
+            setIsCreateOpen(false);
+            setNewItemName('');
+            setNewItemCost('');
+            alert("Item Created in Zone 3!");
+        } catch (e) {
+            console.error(e);
+            alert("Failed to create item");
+        }
     };
 
     const addLine = () => {
@@ -66,7 +107,7 @@ export default function PurchaseOrderForm() {
     const total = lines.reduce((acc, l) => acc + (l.quantity * l.unitCost), 0);
 
     return (
-        <div className="space-y-8 animate-fade-in p-6 max-w-4xl mx-auto">
+        <div className="space-y-8 animate-fade-in p-6 max-w-4xl mx-auto relative">
             <button onClick={() => navigate(-1)} className="flex items-center text-gray-400 hover:text-white mb-4">
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back
             </button>
@@ -97,9 +138,14 @@ export default function PurchaseOrderForm() {
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
                         <h3 className="font-medium text-white">Items</h3>
-                        <button onClick={addLine} className="text-sm text-enigma-purple hover:text-white flex items-center gap-1">
-                            <Plus className="w-3 h-3" /> Add Line
-                        </button>
+                        <div className="flex gap-4">
+                            <button onClick={() => setIsCreateOpen(true)} className="text-sm text-enigma-green hover:text-white flex items-center gap-1">
+                                <Plus className="w-3 h-3" /> New Item (Zone 3)
+                            </button>
+                            <button onClick={addLine} className="text-sm text-enigma-purple hover:text-white flex items-center gap-1">
+                                <Plus className="w-3 h-3" /> Add Line
+                            </button>
+                        </div>
                     </div>
 
                     {lines.map((line, idx) => (
@@ -150,6 +196,44 @@ export default function PurchaseOrderForm() {
                     </button>
                 </div>
             </div>
+
+            {/* CREATE MODAL */}
+            {isCreateOpen && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-zinc-900 border border-zinc-700 p-6 rounded-2xl w-full max-w-md space-y-4">
+                        <h3 className="text-xl font-bold text-white">Create Zone 3 Item</h3>
+                        <input
+                            className="w-full bg-black border border-zinc-700 p-3 rounded-lg text-white"
+                            placeholder="Item Name (e.g. Cinnamon)"
+                            value={newItemName}
+                            onChange={e => setNewItemName(e.target.value)}
+                        />
+                        <div className="flex gap-2">
+                            <input
+                                className="w-1/2 bg-black border border-zinc-700 p-3 rounded-lg text-white"
+                                placeholder="Unit Cost ($)"
+                                type="number"
+                                value={newItemCost}
+                                onChange={e => setNewItemCost(e.target.value)}
+                            />
+                            <select
+                                className="w-1/2 bg-black border border-zinc-700 p-3 rounded-lg text-white"
+                                value={newItemUnit}
+                                onChange={e => setNewItemUnit(e.target.value)}
+                            >
+                                <option value="und">und</option>
+                                <option value="kg">kg</option>
+                                <option value="lt">lt</option>
+                                <option value="lb">lb</option>
+                            </select>
+                        </div>
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button onClick={() => setIsCreateOpen(false)} className="px-4 py-2 text-zinc-400">Cancel</button>
+                            <button onClick={handleCreateItem} className="px-4 py-2 bg-enigma-purple text-white rounded-lg">Create</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
