@@ -72,7 +72,14 @@ export default function EmployeeManager() {
                 </div>
                 <div className="flex gap-2">
                     <button
-                        onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'https://enigma-pos-os-production.up.railway.app/api/v1'}/data/export/staff?tenantId=enigma_hq`, '_blank')}
+                        onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = `${import.meta.env.VITE_API_URL || 'https://enigma-pos-os-production.up.railway.app/api/v1'}/data/export/staff?tenantId=enigma_hq`;
+                            link.setAttribute('download', 'enigma_staff.csv');
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }}
                         className="px-5 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-medium transition-all border border-white/10 flex items-center gap-2"
                     >
                         Export CSV

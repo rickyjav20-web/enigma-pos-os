@@ -23,7 +23,14 @@ export default function ProductsPage() {
                     <p className="text-muted-foreground">Manage the master catalog synced from Loyverse.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'https://enigma-pos-os-production.up.railway.app/api/v1'}/data/export?tenantId=${CURRENT_TENANT_ID}`, '_blank')}>
+                    <Button variant="outline" onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = `${import.meta.env.VITE_API_URL || 'https://enigma-pos-os-production.up.railway.app/api/v1'}/data/export?tenantId=${CURRENT_TENANT_ID}`;
+                        link.setAttribute('download', 'enigma_inventory.csv'); // Hint filename
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }}>
                         Export CSV
                     </Button>
                     <Button>
