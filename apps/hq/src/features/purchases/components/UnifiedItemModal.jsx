@@ -41,6 +41,7 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                 category: initialData.category || '',
                 price: initialData.price || '', // Product
                 currentCost: initialData.currentCost || '', // Supply
+                stockQuantity: initialData.stockQuantity !== undefined ? initialData.stockQuantity : '',
                 unitOfMeasure: initialData.defaultUnit || 'und', // Supply
                 yieldQuantity: initialData.yieldQuantity || '', // Batch
                 yieldUnit: initialData.yieldUnit || 'und', // Batch
@@ -79,7 +80,7 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
             // Reset
             setFormData({
                 name: '', sku: `SKU-${Date.now()}`, category: '',
-                price: '', currentCost: '', unitOfMeasure: 'und',
+                price: '', currentCost: '', unitOfMeasure: 'und', stockQuantity: '',
                 yieldQuantity: '10', yieldUnit: 'kg', // Defaults for Batch
                 preferredSupplierId: null
             });
@@ -131,6 +132,7 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
             // Format numbers
             if (payload.price) payload.price = parseFloat(payload.price);
             if (payload.currentCost) payload.currentCost = parseFloat(payload.currentCost);
+            if (payload.stockQuantity !== '') payload.stockQuantity = parseFloat(payload.stockQuantity);
             if (payload.yieldQuantity) payload.yieldQuantity = parseFloat(payload.yieldQuantity);
 
             // Mapping for Backend consistency
@@ -302,17 +304,32 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                             </>
                         )}
 
-                        {/* Pantry Cost */}
+                        {/* Pantry Cost & Stock */}
                         {type === 'SUPPLY' && (
-                            <div className="col-span-2 sm:col-span-1">
-                                <label className="block text-xs font-medium text-zinc-400 mb-1">Direct Cost ($)</label>
-                                <input
-                                    type="number"
-                                    className="w-full bg-zinc-800 border-zinc-700 rounded-lg p-2 text-white outline-none"
-                                    value={formData.currentCost}
-                                    onChange={e => setFormData({ ...formData, currentCost: e.target.value })}
-                                />
-                            </div>
+                            <>
+                                <div className="col-span-2 sm:col-span-1">
+                                    <label className="block text-xs font-medium text-zinc-400 mb-1">Direct Cost ($)</label>
+                                    <input
+                                        type="number"
+                                        className="w-full bg-zinc-800 border-zinc-700 rounded-lg p-2 text-white outline-none"
+                                        value={formData.currentCost}
+                                        onChange={e => setFormData({ ...formData, currentCost: e.target.value })}
+                                    />
+                                </div>
+                                <div className="col-span-2 sm:col-span-1 bg-blue-900/10 p-2 rounded-lg border border-blue-500/20">
+                                    <label className="block text-xs font-medium text-blue-300 mb-1">Current Stock (Physical)</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            className="w-full bg-zinc-800 border-zinc-700 rounded-lg p-2 text-white outline-none"
+                                            value={formData.stockQuantity}
+                                            onChange={e => setFormData({ ...formData, stockQuantity: e.target.value })}
+                                            placeholder="0.00"
+                                        />
+                                        <span className="text-xs text-zinc-500">{formData.unitOfMeasure}</span>
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </div>
 

@@ -86,7 +86,7 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
     fastify.put<{ Params: { id: string } }>('/supply-items/:id', async (request, reply) => {
         try {
             const { id } = request.params;
-            const { name, sku, category, currentCost, defaultUnit, preferredSupplierId, yieldQuantity, yieldUnit, ingredients } = request.body as any;
+            const { name, sku, category, currentCost, defaultUnit, preferredSupplierId, stockQuantity, yieldQuantity, yieldUnit, ingredients } = request.body as any;
 
             // 1. Update Basic Info
             const item = await prisma.supplyItem.update({
@@ -98,6 +98,7 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
                     currentCost: currentCost !== undefined ? Number(currentCost) : undefined,
                     defaultUnit,
                     preferredSupplierId,
+                    stockQuantity: stockQuantity !== undefined ? Number(stockQuantity) : undefined,
                     yieldQuantity: yieldQuantity !== undefined ? Number(yieldQuantity) : undefined,
                     yieldUnit
                 }
