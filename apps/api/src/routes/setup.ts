@@ -46,10 +46,31 @@ export default async function setupRoutes(fastify: FastifyInstance) {
             console.log(`⚠️ RESETTING DATA FOR TENANT: ${tenantId}`);
 
             // 1. Delete Operational Data (Order matters for Foreign Keys)
-            await prisma.productionRecipe.deleteMany({ where: { parent: { tenantId } } });
+            // Fix: Delete by verifying all relation paths to ensure no orphans block deletion
+
+            // Production Recipes (Batches) - Delete if linked to ANY item in this tenant
+            await prisma.productionRecipe.deleteMany({
+                where: {
+                    OR: [
+                        { parent: { tenantId } },
+                        { component: { tenantId } }
+                    ]
+                }
+            });
+
+            // Product Recipes (Menu)
             await prisma.productRecipe.deleteMany({ where: { product: { tenantId } } });
 
-            await prisma.purchaseLine.deleteMany({ where: { purchaseOrder: { tenantId } } });
+            // Purchase Lines: Delete if Order is in Tenant OR Item is in Tenant
+            await prisma.purchaseLine.deleteMany({
+                where: {
+                    OR: [
+                        { purchaseOrder: { tenantId } },
+                        { supplyItem: { tenantId } }
+                    ]
+                }
+            });
+
             await prisma.purchaseOrder.deleteMany({ where: { tenantId } });
 
             await prisma.priceHistory.deleteMany({ where: { supplyItem: { tenantId } } });
