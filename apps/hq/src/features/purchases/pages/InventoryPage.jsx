@@ -520,6 +520,7 @@ export default function InventoryPage() {
 function ItemPassport({ item, onClose }) {
     const isProduct = item.type === 'PRODUCT';
     const [history, setHistory] = useState([]);
+    const [logs, setLogs] = useState([]);
 
     // Fetch history if it's a supply item
     useEffect(() => {
@@ -528,6 +529,7 @@ function ItemPassport({ item, onClose }) {
                 .then(res => {
                     const data = res.data;
                     if (data.priceHistory) setHistory(data.priceHistory);
+                    if (data.inventoryLogs) setLogs(data.inventoryLogs);
                 })
                 .catch(console.error);
         }
@@ -695,7 +697,46 @@ function ItemPassport({ item, onClose }) {
                         </div>
                     )}
 
-                    {/* 3. METADATA */}
+                    {/* 3. STOCK AUDIT / SHRINKAGE LOG */}
+                    {!isProduct && (
+                        <div className="space-y-3 pt-4 border-t border-zinc-800">
+                            <h3 className="font-bold text-lg flex items-center gap-2">
+                                <TrendingUp size={18} className="text-purple-500" /> Stock Audit & Shrinkage
+                            </h3>
+                            {logs.length > 0 ? (
+                                <div className="border border-zinc-700 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-zinc-800 text-zinc-400 sticky top-0">
+                                            <tr>
+                                                <th className="p-3 font-medium">Date</th>
+                                                <th className="p-3 font-medium">Reason</th>
+                                                <th className="p-3 font-medium text-right">Old</th>
+                                                <th className="p-3 font-medium text-right">New</th>
+                                                <th className="p-3 font-medium text-right">Variance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-zinc-800">
+                                            {logs.map(l => (
+                                                <tr key={l.id} className="hover:bg-white/5">
+                                                    <td className="p-3 text-zinc-300">{new Date(l.createdAt).toLocaleString()}</td>
+                                                    <td className="p-3 text-zinc-400 uppercase text-xs font-bold">{l.reason}</td>
+                                                    <td className="p-3 text-right text-zinc-500">{l.previousStock}</td>
+                                                    <td className="p-3 text-right text-white font-bold">{l.newStock}</td>
+                                                    <td className={`p-3 text-right font-bold ${l.changeAmount < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                        {l.changeAmount > 0 ? '+' : ''}{l.changeAmount.toFixed(4)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <p className="text-zinc-500 italic text-sm">No stock adjustments recorded.</p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* 4. METADATA */}
                     <div className="pt-4 border-t border-zinc-800 flex justify-between text-xs text-zinc-500">
                         <span>ID: {item.id}</span>
                         <span>Tenant: {item.tenantId || 'Enigma HQ'}</span>
@@ -703,6 +744,6 @@ function ItemPassport({ item, onClose }) {
 
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

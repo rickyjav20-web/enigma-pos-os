@@ -44,6 +44,7 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
             include: {
                 ingredients: { include: { component: true } },
                 priceHistory: { orderBy: { changeDate: 'desc' }, take: 20 },
+                inventoryLogs: { orderBy: { createdAt: 'desc' }, take: 50 },
                 preferredSupplier: true
             }
         });
@@ -88,8 +89,32 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
             const { id } = request.params;
             const { name, sku, category, currentCost, defaultUnit, preferredSupplierId, stockQuantity, yieldQuantity, yieldUnit, ingredients } = request.body as any;
 
-            // 1. Update Basic Info
-            const item = await prisma.supplyItem.update({
+            // 1. Fetch current item for Audit
+            const currentItem = await prisma.supplyItem.findUnique({ where: { id } });
+            if (!currentItem) return reply.status(404).send({ error: "Item not found" });
+
+            // 2. Check for Stock Audit
+            if (stockQuantity !== undefined) {
+                const newStock = Number(stockQuantity);
+                const oldStock = currentItem.stockQuantity || 0;
+
+                if (newStock !== oldStock) {
+                    const diff = newStock - oldStock;
+                    await prisma.inventoryLog.create({
+                        data: {
+                            tenantId: currentItem.tenantId,
+                            supplyItemId: id,
+                            previousStock: oldStock,
+                            newStock: newStock,
+                            changeAmount: diff,
+                            reason: 'audit' // Manual Adjustment
+                        }
+                    });
+                }
+            }
+
+            // 3. Update Basic Info
+            const updatedItem = await prisma.supplyItem.update({
                 where: { id },
                 data: {
                     name,
@@ -104,12 +129,12 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
                 }
             });
 
-            // 2. Sync Recipe (if provided)
+            // 4. Sync Recipe (if provided)
             if (ingredients !== undefined && Array.isArray(ingredients)) {
                 await recipeService.syncRecipe(id, ingredients);
             }
 
-            return item;
+            return updatedItem;
         } catch (error: any) {
             console.error(`[API] CRITICAL ERROR in PUT /supply-items/:id`, error);
             return reply.status(500).send({ error: "Server Error", message: error.message });

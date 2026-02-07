@@ -25,6 +25,7 @@ model Tenant {
   suppliers       Supplier[]
   supplyItems     SupplyItem[]
   purchaseOrders  PurchaseOrder[]
+  inventoryLogs   InventoryLog[]
 }
 
 // --- MODULE: STAFF ---
@@ -211,6 +212,7 @@ model SupplyItem {
   preferredSupplier Supplier?       @relation(fields: [preferredSupplierId], references: [id])
   purchaseLines     PurchaseLine[]
   priceHistory      PriceHistory[]
+  inventoryLogs     InventoryLog[]
   productRecipes    ProductRecipe[]
 
   // --- NEW: Kitchen Hierarchy (Batches) ---
@@ -297,5 +299,25 @@ model ProductRecipe {
   supplyItem    SupplyItem  @relation(fields: [supplyItemId], references: [id])
 
   @@index([productId])
+  @@index([supplyItemId])
+}
+
+model InventoryLog {
+  id            String   @id @default(uuid())
+  tenantId      String
+  supplyItemId  String
+  
+  previousStock Float
+  newStock      Float
+  changeAmount  Float    // new - old
+  
+  reason        String   // 'purchase', 'production', 'audit', 'waste'
+  notes         String?
+  
+  createdAt     DateTime @default(now())
+  
+  supplyItem    SupplyItem @relation(fields: [supplyItemId], references: [id])
+  tenant        Tenant     @relation(fields: [tenantId], references: [id])
+
   @@index([supplyItemId])
 }
