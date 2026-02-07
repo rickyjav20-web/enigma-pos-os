@@ -142,8 +142,8 @@ export default function InventoryPage() {
     );
 
     const menuItems = filteredProducts;
-    const kitchenItems = filteredSupplyItems.filter(i => i.isProduction && !products.some(p => p.sku === i.sku));
-    const pantryItems = filteredSupplyItems.filter(i => !i.isProduction && !products.some(p => p.sku === i.sku));
+    const kitchenItems = filteredSupplyItems.filter(i => i.isProduction && !products.some(p => p.sku && i.sku && p.sku === i.sku));
+    const pantryItems = filteredSupplyItems.filter(i => !i.isProduction && !products.some(p => p.sku && i.sku && p.sku === i.sku));
 
     // Combine for Search (Ingredients can come from Pantry OR Kitchen)
     const allIngredients = [...supplyItems];
