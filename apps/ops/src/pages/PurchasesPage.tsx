@@ -96,10 +96,20 @@ export default function PurchasesPage() {
     useEffect(() => {
         Promise.all([
             fetch(`${API_URL}/suppliers`, { headers: TENANT_HEADER }).then(r => r.json()),
-            fetch(`${API_URL}/supply-items?limit=200`, { headers: TENANT_HEADER }).then(r => r.json())
-        ]).then(([suppliersData, itemsData]) => {
+            fetch(`${API_URL}/supply-items?limit=1000`, { headers: TENANT_HEADER }).then(r => r.json()),
+            fetch(`${API_URL}/products`, { headers: TENANT_HEADER }).then(r => r.json())
+        ]).then(([suppliersData, itemsData, productsData]) => {
             setSuppliers(suppliersData || []);
-            const loadedItems = itemsData?.data || [];
+
+            const rawItems = itemsData?.data || [];
+            const products = productsData?.data || [];
+
+            // Filter Zone 3 Only
+            const loadedItems = rawItems.filter((i: any) =>
+                !i.isProduction &&
+                !products.some((p: any) => p.sku && i.sku && p.sku === i.sku)
+            );
+
             setAllItems(loadedItems);
 
             // Handle Smart Shopper State
