@@ -428,6 +428,7 @@ export default function InventoryPage() {
                                                     <Search size={16} />
                                                 </button>
                                                 <button onClick={() => navigate(`/purchases/inventory/${item.id}`)} className="text-blue-400 hover:text-white">History</button>
+                                                <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="text-zinc-500 hover:text-white">Edit</button>
                                             </div>
                                         </td>
                                     </tr>
