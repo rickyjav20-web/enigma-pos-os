@@ -203,6 +203,87 @@ export default async function setupRoutes(fastify: FastifyInstance) {
         }
     });
 
+    // POST /setup/nuke
+    // GLOBAL RESET: Wipes all operational data across ALL tenants.
+    // DANGEROUS: Use with caution.
+    fastify.post('/setup/nuke', async (request, reply) => {
+        try {
+            console.warn('☢️ INITIATING GLOBAL NUKE ☢️');
+
+            // 1. Global Wipe (No Tenant Filter)
+            // Order is crucial for Foreign Keys.
+
+            // Recipes & Dependencies
+            await prisma.productionRecipe.deleteMany({});
+            await prisma.productRecipe.deleteMany({});
+
+            // Purchases & History
+            await prisma.purchaseLine.deleteMany({});
+            await prisma.purchaseOrder.deleteMany({});
+            await prisma.priceHistory.deleteMany({});
+
+            // Catalog
+            await prisma.variant.deleteMany({});
+            await prisma.product.deleteMany({});
+            await prisma.supplyItem.deleteMany({});
+            await prisma.supplier.deleteMany({});
+
+            // Optional: Wipe Staff? (Default: Keep)
+            const { keepStaff = true } = request.query as any;
+            if (keepStaff !== 'true' && keepStaff !== true) {
+                await prisma.shift.deleteMany({});
+                // await prisma.employee.deleteMany({}); // Dangerous lockout
+                console.log('Skipping Employee global delete to prevent lockout.');
+            }
+
+            // 2. Re-Seed Default Tenant (enigma_hq)
+            const tenantId = 'enigma_hq';
+
+            // Ensure Tenant Exists
+            await prisma.tenant.upsert({
+                where: { id: tenantId },
+                update: {},
+                create: { id: tenantId, name: 'Enigma HQ', slug: 'enigma-hq' }
+            });
+
+            // Suppliers
+            const sysco = await prisma.supplier.create({
+                data: { tenantId, name: 'Sysco International', category: 'General', email: 'orders@sysco.com', phone: '+1-800-SYSCO' }
+            });
+            const localFarm = await prisma.supplier.create({
+                data: { tenantId, name: 'Finca La Esperanza', category: 'Frescos', email: 'contacto@laesperanza.com', phone: '+58-414-1234567' }
+            });
+
+            // Inventory
+            const flour = await prisma.supplyItem.create({
+                data: { tenantId, name: 'Harina de Trigo (Todo Uso)', category: 'Secos', defaultUnit: 'kg', currentCost: 1.50, averageCost: 1.45, stockQuantity: 50, preferredSupplierId: sysco.id }
+            });
+            const tomatoes = await prisma.supplyItem.create({
+                data: { tenantId, name: 'Tomates Perita', category: 'Vegetales', defaultUnit: 'kg', currentCost: 2.20, averageCost: 2.00, stockQuantity: 15, preferredSupplierId: localFarm.id }
+            });
+            const cheese = await prisma.supplyItem.create({
+                data: { tenantId, name: 'Queso Mozzarella', category: 'Lácteos', defaultUnit: 'kg', currentCost: 8.50, averageCost: 8.20, stockQuantity: 10, preferredSupplierId: sysco.id }
+            });
+
+            // Products
+            const pizza = await prisma.product.create({
+                data: { tenantId, name: 'Pizza Margarita', price: 12.00, cost: 3.50, categoryId: 'Pizzas', isActive: true }
+            });
+
+            // Recipe Links
+            await prisma.productRecipe.create({ data: { productId: pizza.id, supplyItemId: flour.id, quantity: 0.3, unit: 'kg' } });
+            await prisma.productRecipe.create({ data: { productId: pizza.id, supplyItemId: cheese.id, quantity: 0.2, unit: 'kg' } });
+            await prisma.productRecipe.create({ data: { productId: pizza.id, supplyItemId: tomatoes.id, quantity: 0.15, unit: 'kg' } });
+
+            console.log('✅ GLOBAL NUKE COMPLETE. DB Seeded.');
+            return { success: true, message: 'GLOBAL RESET COMPLETE. Database is clean and re-seeded.' };
+
+        } catch (error: any) {
+            fastify.log.error(error);
+            return reply.status(500).send({ error: error.message });
+        }
+    });
+
     // GET /setup/diagnose?tenantId=...
     fastify.get('/setup/diagnose', async (request, reply) => {
         const tenantId = request.tenantId || (request.query as any).tenantId;
