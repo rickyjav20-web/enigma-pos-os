@@ -57,12 +57,9 @@ export default async function productRoutes(fastify: FastifyInstance) {
     fastify.put<{ Params: { id: string } }>('/products/:id', async (request, reply) => {
         try {
             const { id } = request.params;
-            console.log(`[API] DEBUG PUT /products/${id} HIT!`);
-            return { id, name: "DEBUG_SUCCESS", price: 0 };
-            /*
             const body = request.body as any;
             const { name, price, cost, categoryId, recipes } = body;
-            
+
             console.log(`[API] PUT /products/${id} payload:`, { name, recipesCount: recipes?.length });
 
             const product = await prisma.product.update({
@@ -78,12 +75,11 @@ export default async function productRoutes(fastify: FastifyInstance) {
             // 2. Sync Recipe (if provided)
             if (recipes !== undefined && Array.isArray(recipes)) {
                 console.log(`[API] Syncing recipes for ${id}...`);
-                 await recipeService.syncProductRecipe(id, recipes);
+                await recipeService.syncProductRecipe(id, recipes);
                 console.log(`[API] Recipe Sync Complete.`);
             }
 
             return product;
-            */
         } catch (error: any) {
             console.error(`[API] CRITICAL ERROR in PUT /products/:id`, error);
             // Return 500 with message so UI can show it
