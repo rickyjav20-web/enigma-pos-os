@@ -202,4 +202,21 @@ export default async function setupRoutes(fastify: FastifyInstance) {
             return reply.status(500).send({ error: error.message });
         }
     });
+
+    // GET /setup/diagnose?tenantId=...
+    fastify.get('/setup/diagnose', async (request, reply) => {
+        const tenantId = request.tenantId || (request.query as any).tenantId;
+        if (!tenantId) return { error: 'No tenant specified' };
+
+        const counts = {
+            products: await prisma.product.count({ where: { tenantId } }),
+            items: await prisma.supplyItem.count({ where: { tenantId } }),
+            suppliers: await prisma.supplier.count({ where: { tenantId } }),
+            orders: await prisma.purchaseOrder.count({ where: { tenantId } }),
+            recipes: await prisma.productRecipe.count({ where: { product: { tenantId } } }),
+            staff: await prisma.employee.count({ where: { tenantId } })
+        };
+
+        return { tenantId, counts };
+    });
 }
