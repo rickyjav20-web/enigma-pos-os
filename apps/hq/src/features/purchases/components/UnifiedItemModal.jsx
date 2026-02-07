@@ -133,6 +133,12 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
             if (payload.currentCost) payload.currentCost = parseFloat(payload.currentCost);
             if (payload.yieldQuantity) payload.yieldQuantity = parseFloat(payload.yieldQuantity);
 
+            // Mapping for Backend consistency
+            // API PUT /supply-items expects 'defaultUnit'
+            if (type !== 'PRODUCT') {
+                payload.defaultUnit = formData.unitOfMeasure;
+            }
+
             // Attach Recipe
             // API expects: 'ingredients' (for Supply) or 'recipes' (for Product)
             // Format: { id, quantity, unit }
