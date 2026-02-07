@@ -244,25 +244,54 @@ export default async function staffRoutes(fastify: FastifyInstance) {
     // 6.5 Update Employee
     fastify.patch<{ Params: { id: string } }>('/employees/:id', async (request, reply) => {
         const { id } = request.params;
-        try {
-            // For simplicity, accepting partial update blindly for now, relying on Prisma to ignore extras or we should validate.
-            // But existing code allowed many fields.
-            // We'll trust the body is mostly correct for MVP speed.
-            const data = request.body as any;
-            delete data.id;
-            delete data.tenantId; // Security
 
-            if (data.birthDate === '') data.birthDate = null;
-            if (data.startDate === '') data.startDate = null;
+        // Zod Schema to strip unknown fields and validate types
+        const updateSchema = z.object({
+            fullName: z.string().optional(),
+            role: z.string().optional(),
+            pinCode: z.string().optional(),
+            status: z.string().optional(),
+            email: z.string().optional().nullable().or(z.literal('')),
+            phone: z.string().optional().nullable().or(z.literal('')),
+            address: z.string().optional().nullable().or(z.literal('')),
+            birthDate: z.string().optional().nullable().or(z.literal('')),
+            startDate: z.string().optional().nullable().or(z.literal('')),
+            emergencyContact: z.string().optional().nullable().or(z.literal('')),
+            emergencyPhone: z.string().optional().nullable().or(z.literal('')),
+            notes: z.string().optional().nullable().or(z.literal('')),
+            salaryType: z.string().optional().nullable(),
+            salaryAmount: z.coerce.number().optional().nullable(),
+            currency: z.string().optional().nullable(),
+            paymentMethod: z.string().optional().nullable(),
+            bankName: z.string().optional().nullable(),
+            accountNumber: z.string().optional().nullable(),
+            accountHolder: z.string().optional().nullable(),
+        });
+
+        try {
+            // Parse and strip unknown (like 'shifts', 'recurring', etc.)
+            const data = updateSchema.parse(request.body);
+
+            const prepareDate = (d: string | null | undefined) => d ? new Date(d) : (d === '' ? null : undefined);
+
+            const updateData: any = {
+                ...data,
+                // Handle Dates specifically if they are present
+                birthDate: data.birthDate !== undefined ? (data.birthDate ? new Date(data.birthDate) : null) : undefined,
+                startDate: data.startDate !== undefined ? (data.startDate ? new Date(data.startDate) : null) : undefined,
+            };
+
+            // Remove undefined keys to avoid overriding with undefined
+            Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
             const employee = await prisma.employee.update({
                 where: { id, tenantId: request.tenantId },
-                data: data
+                data: updateData
             });
             return { employee };
-        } catch (error) {
+        } catch (error: any) {
             fastify.log.error(error);
-            return reply.status(500).send({ error: 'Server error' });
+            return reply.status(500).send({ error: 'Server error', details: error.message });
         }
     });
 
