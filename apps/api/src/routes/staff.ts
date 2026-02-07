@@ -259,6 +259,8 @@ export default async function staffRoutes(fastify: FastifyInstance) {
             emergencyContact: z.string().optional().nullable().or(z.literal('')),
             emergencyPhone: z.string().optional().nullable().or(z.literal('')),
             notes: z.string().optional().nullable().or(z.literal('')),
+            govId: z.string().optional().nullable().or(z.literal('')),
+            nationality: z.string().optional().nullable().or(z.literal('')),
             salaryType: z.string().optional().nullable(),
             salaryAmount: z.coerce.number().optional().nullable(),
             currency: z.string().optional().nullable(),
@@ -270,6 +272,7 @@ export default async function staffRoutes(fastify: FastifyInstance) {
 
         try {
             // Parse and strip unknown (like 'shifts', 'recurring', etc.)
+            console.log(`[API-DEBUG] PATCH /employees/${id} payload keys:`, Object.keys(request.body as any));
             const data = updateSchema.parse(request.body);
 
             const prepareDate = (d: string | null | undefined) => d ? new Date(d) : (d === '' ? null : undefined);
@@ -290,7 +293,12 @@ export default async function staffRoutes(fastify: FastifyInstance) {
             });
             return { employee };
         } catch (error: any) {
+            console.error(`[API-DEBUG] Error updating employee ${id}:`, error);
             fastify.log.error(error);
+            // Return validation error details if it's Zod
+            if (error instanceof z.ZodError) {
+                return reply.status(400).send({ error: 'Validation Error', details: error.issues });
+            }
             return reply.status(500).send({ error: 'Server error', details: error.message });
         }
     });
