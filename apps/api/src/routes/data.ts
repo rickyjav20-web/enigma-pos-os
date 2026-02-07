@@ -106,8 +106,10 @@ export default async function (fastify: FastifyInstance) {
 
     // GET /api/v1/data/export/staff
     // CSV Export of Staff and Shifts
+    // CSV Export of Staff and Shifts
     fastify.get('/data/export/staff', async (request, reply) => {
-        const { tenantId } = request.query as { tenantId: string };
+        const tenantId = request.tenantId || (request.query as any).tenantId;
+
         if (!tenantId) return reply.code(400).send({ error: 'Missing tenantId' });
 
         try {
