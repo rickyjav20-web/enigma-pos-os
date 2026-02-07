@@ -11,7 +11,10 @@ const fastify = Fastify({
 });
 
 fastify.register(cors, {
-    origin: '*'
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
+    credentials: false
 });
 
 fastify.addHook('onRequest', (req, reply, done) => {
