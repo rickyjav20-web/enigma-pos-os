@@ -218,7 +218,13 @@ export default function InventoryPage() {
                     >
                         <Upload size={16} /> {loading ? 'Importing...' : 'Import CSV'}
                     </button>
-                    <button className="px-4 py-2 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 rounded-lg text-sm text-zinc-300 flex items-center gap-2">
+                    <button
+                        onClick={() => {
+                            const url = `${import.meta.env.VITE_API_URL || 'https://enigma-pos-os-production.up.railway.app/api/v1'}/data/export?tenantId=${CURRENT_TENANT_ID}`;
+                            window.location.href = url;
+                        }}
+                        className="px-4 py-2 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 rounded-lg text-sm text-zinc-300 flex items-center gap-2"
+                    >
                         <FileDown size={16} /> Export
                     </button>
                 </div>
@@ -233,13 +239,13 @@ export default function InventoryPage() {
                 <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
                     <p className="text-zinc-500 text-xs uppercase font-bold">Batches (Preps)</p>
                     <p className="text-2xl font-bold text-amber-500">
-                        {supplyItems.filter(i => i.isProduction && !products.some(p => p.sku === i.sku)).length}
+                        {kitchenItems.length}
                     </p>
                 </div>
                 <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
                     <p className="text-zinc-500 text-xs uppercase font-bold">Raw Ingredients</p>
                     <p className="text-2xl font-bold text-blue-500">
-                        {supplyItems.filter(i => !i.isProduction && !products.some(p => p.sku === i.sku)).length}
+                        {pantryItems.length}
                     </p>
                 </div>
                 <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
