@@ -399,7 +399,7 @@ export default function InventoryPage() {
                                 const isUp = costChange > 0;
                                 const isDown = costChange < 0;
                                 return (
-                                    <tr key={item.id} className="hover:bg-zinc-800/50 group cursor-pointer" onClick={() => navigate(`/purchases/inventory/${item.id}`)}>
+                                    <tr key={item.id} className="hover:bg-zinc-800/50 group cursor-pointer" onClick={() => setViewingItem({ ...item, type: 'SUPPLY' })}>
                                         <td className="p-4 font-medium text-blue-100">{item.name}</td>
                                         <td className="p-4 text-zinc-400">{item.defaultUnit}</td>
                                         <td className="p-4 text-zinc-200 font-bold">{item.stockQuantity || 0}</td>
@@ -427,7 +427,7 @@ export default function InventoryPage() {
                                                 >
                                                     <Search size={16} />
                                                 </button>
-                                                <button onClick={() => navigate(`/purchases/inventory/${item.id}`)} className="text-blue-400 hover:text-white">History</button>
+                                                <button onClick={(e) => { e.stopPropagation(); setViewingItem({ ...item, type: 'SUPPLY' }); }} className="text-blue-400 hover:text-white">History</button>
                                                 <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="text-zinc-500 hover:text-white">Edit</button>
                                             </div>
                                         </td>
@@ -508,6 +508,7 @@ export default function InventoryPage() {
                 <ItemPassport
                     item={viewingItem}
                     onClose={() => setViewingItem(null)}
+                    onEdit={() => { setViewingItem(null); handleEdit(viewingItem); }}
                 />
             )}
 
@@ -517,7 +518,7 @@ export default function InventoryPage() {
 
 // --- SUB-COMPONENTS --- //
 
-function ItemPassport({ item, onClose }) {
+function ItemPassport({ item, onClose, onEdit }) {
     const isProduct = item.type === 'PRODUCT';
     const [history, setHistory] = useState([]);
     const [logs, setLogs] = useState([]);
@@ -551,9 +552,17 @@ function ItemPassport({ item, onClose }) {
                             SKU: {item.sku || 'N/A'}
                         </p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg text-white/50 hover:text-white">
-                        <X size={20} />
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={onEdit}
+                            className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-bold border border-zinc-700"
+                        >
+                            Edit
+                        </button>
+                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg text-white/50 hover:text-white">
+                            <X size={20} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Body */}
