@@ -237,37 +237,49 @@ export default async function setupRoutes(fastify: FastifyInstance) {
             }
 
             // 2. Re-Seed Default Tenant (enigma_hq)
-            const tenantId = 'enigma_hq';
-
-            // Ensure Tenant Exists
-            await prisma.tenant.upsert({
-                where: { id: tenantId },
-                update: {},
-                create: { id: tenantId, name: 'Enigma HQ', slug: 'enigma-hq' }
+            let targetTenantId = 'enigma_hq';
+            const existingTenant = await prisma.tenant.findFirst({
+                where: {
+                    OR: [
+                        { slug: 'enigma-hq' },
+                        { slug: 'enigma_hq' },
+                        { id: 'enigma_hq' }
+                    ]
+                }
             });
+
+            if (existingTenant) {
+                targetTenantId = existingTenant.id;
+                console.log(`[NUKE] Found existing Target Tenant: ${targetTenantId} (${existingTenant.name})`);
+            } else {
+                console.log(`[NUKE] Creating new Target Tenant: ${targetTenantId}`);
+                await prisma.tenant.create({
+                    data: { id: targetTenantId, name: 'Enigma HQ', slug: 'enigma-hq' }
+                });
+            }
 
             // Suppliers
             const sysco = await prisma.supplier.create({
-                data: { tenantId, name: 'Sysco International', category: 'General', email: 'orders@sysco.com', phone: '+1-800-SYSCO' }
+                data: { tenantId: targetTenantId, name: 'Sysco International', category: 'General', email: 'orders@sysco.com', phone: '+1-800-SYSCO' }
             });
             const localFarm = await prisma.supplier.create({
-                data: { tenantId, name: 'Finca La Esperanza', category: 'Frescos', email: 'contacto@laesperanza.com', phone: '+58-414-1234567' }
+                data: { tenantId: targetTenantId, name: 'Finca La Esperanza', category: 'Frescos', email: 'contacto@laesperanza.com', phone: '+58-414-1234567' }
             });
 
             // Inventory
             const flour = await prisma.supplyItem.create({
-                data: { tenantId, name: 'Harina de Trigo (Todo Uso)', category: 'Secos', defaultUnit: 'kg', currentCost: 1.50, averageCost: 1.45, stockQuantity: 50, preferredSupplierId: sysco.id }
+                data: { tenantId: targetTenantId, name: 'Harina de Trigo (Todo Uso)', category: 'Secos', defaultUnit: 'kg', currentCost: 1.50, averageCost: 1.45, stockQuantity: 50, preferredSupplierId: sysco.id }
             });
             const tomatoes = await prisma.supplyItem.create({
-                data: { tenantId, name: 'Tomates Perita', category: 'Vegetales', defaultUnit: 'kg', currentCost: 2.20, averageCost: 2.00, stockQuantity: 15, preferredSupplierId: localFarm.id }
+                data: { tenantId: targetTenantId, name: 'Tomates Perita', category: 'Vegetales', defaultUnit: 'kg', currentCost: 2.20, averageCost: 2.00, stockQuantity: 15, preferredSupplierId: localFarm.id }
             });
             const cheese = await prisma.supplyItem.create({
-                data: { tenantId, name: 'Queso Mozzarella', category: 'Lácteos', defaultUnit: 'kg', currentCost: 8.50, averageCost: 8.20, stockQuantity: 10, preferredSupplierId: sysco.id }
+                data: { tenantId: targetTenantId, name: 'Queso Mozzarella', category: 'Lácteos', defaultUnit: 'kg', currentCost: 8.50, averageCost: 8.20, stockQuantity: 10, preferredSupplierId: sysco.id }
             });
 
             // Products
             const pizza = await prisma.product.create({
-                data: { tenantId, name: 'Pizza Margarita', price: 12.00, cost: 3.50, categoryId: 'Pizzas', isActive: true }
+                data: { tenantId: targetTenantId, name: 'Pizza Margarita', price: 12.00, cost: 3.50, categoryId: 'Pizzas', isActive: true }
             });
 
             // Recipe Links
