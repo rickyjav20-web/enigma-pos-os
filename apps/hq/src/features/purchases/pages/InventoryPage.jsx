@@ -402,9 +402,11 @@ export default function InventoryPage() {
                                     <tr key={item.id} className="hover:bg-zinc-800/50 group cursor-pointer" onClick={() => setViewingItem({ ...item, type: 'SUPPLY' })}>
                                         <td className="p-4 font-medium text-blue-100">{item.name}</td>
                                         <td className="p-4 text-zinc-400">{item.defaultUnit}</td>
-                                        <td className="p-4 text-zinc-200 font-bold">{item.stockQuantity || 0}</td>
                                         <td className="p-4 text-zinc-300">
                                             ${(item.currentCost || 0).toFixed(2)} <span className="text-xs text-zinc-500">last</span>
+                                        </td>
+                                        <td className="p-4 text-zinc-200 font-bold">
+                                            {item.stockQuantity || 0} <span className="text-xs text-zinc-500 font-normal">{item.defaultUnit}</span>
                                         </td>
                                         <td className="p-4 text-zinc-400">
                                             ${(item.averageCost || 0).toFixed(2)} <span className="text-xs text-zinc-500">avg</span>
