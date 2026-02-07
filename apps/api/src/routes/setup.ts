@@ -38,7 +38,9 @@ export default async function setupRoutes(fastify: FastifyInstance) {
     // OPTIONAL: ?keepStaff=true (default) to preserve employees.
     fastify.post('/setup/reset', async (request, reply) => {
         try {
-            const tenantId = request.tenantId || 'enigma_hq';
+            // Middleware now guarantees tenantId (defaults to 'enigma-cafe' if missing)
+            // But we prefer explicit.
+            const tenantId = request.tenantId;
             const { keepStaff = true } = request.query as any;
 
             console.log(`⚠️ RESETTING DATA FOR TENANT: ${tenantId}`);
