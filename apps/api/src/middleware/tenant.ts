@@ -23,7 +23,7 @@ export async function tenantMiddleware(request: FastifyRequest, reply: FastifyRe
     if (!tenantId) {
         const query = request.query as any;
         const body = request.body as any;
-        tenantId = query?.tenant_id || body?.tenant_id;
+        tenantId = query?.tenantId || query?.tenant_id || body?.tenantId || body?.tenant_id;
     }
 
     // Fallback to default "enigma-cafe" if missing (Logic from Legacy App)

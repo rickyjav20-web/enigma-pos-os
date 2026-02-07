@@ -25,7 +25,7 @@ export default async function (fastify: FastifyInstance) {
     // GET /api/v1/data/export
     // Query: ?tenantId=...
     fastify.get('/data/export', async (request, reply) => {
-        const { tenantId } = request.query as { tenantId: string };
+        const tenantId = request.tenantId || (request.query as any).tenantId;
 
         if (!tenantId) {
             return reply.code(400).send({ error: 'Missing tenantId' });
