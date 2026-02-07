@@ -22,9 +22,14 @@ export default function ProductsPage() {
                     <h2 className="text-3xl font-bold tracking-tight">Products</h2>
                     <p className="text-muted-foreground">Manage the master catalog synced from Loyverse.</p>
                 </div>
-                <Button>
-                    <Plus className="mr-2 h-4 w-4" /> Import CSV
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'https://enigma-pos-os-production.up.railway.app/api/v1'}/data/export?tenantId=${CURRENT_TENANT_ID}`, '_blank')}>
+                        Export CSV
+                    </Button>
+                    <Button>
+                        <Plus className="mr-2 h-4 w-4" /> Import CSV
+                    </Button>
+                </div>
             </div>
 
             <div className="border rounded-md bg-white dark:bg-slate-900 overflow-hidden">
