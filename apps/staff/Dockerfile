@@ -29,6 +29,8 @@ RUN rm -rf ./*
 
 # Copy build output
 COPY --from=builder /app/dist .
+# Ensure clean config
+RUN rm -rf /etc/nginx/conf.d/*
 # Copy nginx config (using the one in apps/staff root)
 COPY apps/staff/nginx.conf /etc/nginx/conf.d/default.conf
 
