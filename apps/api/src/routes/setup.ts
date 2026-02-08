@@ -328,5 +328,56 @@ export default async function setupRoutes(fastify: FastifyInstance) {
         };
 
         return { tenantId, counts };
-    });
-}
+        // MANUAL FIX: Create InventoryLog table if missing
+        fastify.get('/setup/fix-inventory-log', async (request, reply) => {
+            try {
+                console.log('🔧 FIXING DB SCHEMA: Creating InventoryLog table...');
+
+                // 1. Create Table
+                await prisma.$executeRawUnsafe(`
+                CREATE TABLE IF NOT EXISTS "InventoryLog" (
+                    "id" TEXT NOT NULL,
+                    "tenantId" TEXT NOT NULL,
+                    "supplyItemId" TEXT NOT NULL,
+                    "previousStock" DOUBLE PRECISION NOT NULL,
+                    "newStock" DOUBLE PRECISION NOT NULL,
+                    "changeAmount" DOUBLE PRECISION NOT NULL,
+                    "reason" TEXT NOT NULL,
+                    "notes" TEXT,
+                    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                    CONSTRAINT "InventoryLog_pkey" PRIMARY KEY ("id")
+                );
+            `);
+
+                // 2. Index
+                await prisma.$executeRawUnsafe(`
+                CREATE INDEX IF NOT EXISTS "InventoryLog_supplyItemId_idx" ON "InventoryLog"("supplyItemId");
+            `);
+
+                // 3. Foreign Keys (Try/Catch to avoid duplicates)
+                try {
+                    await prisma.$executeRawUnsafe(`
+                    ALTER TABLE "InventoryLog" ADD CONSTRAINT "InventoryLog_supplyItemId_fkey" FOREIGN KEY ("supplyItemId") REFERENCES "SupplyItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+                `);
+                } catch (e) {
+                    console.log('FK supplyItemId might already exist');
+                }
+
+                try {
+                    await prisma.$executeRawUnsafe(`
+                    ALTER TABLE "InventoryLog" ADD CONSTRAINT "InventoryLog_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+                `);
+                } catch (e) {
+                    console.log('FK tenantId might already exist');
+                }
+
+                return { success: true, message: 'InventoryLog table created/verified.' };
+
+            } catch (error: any) {
+                fastify.log.error(error);
+                return reply.status(500).send({ error: error.message });
+            }
+        });
+
+    }
