@@ -119,17 +119,47 @@ export default async function (fastify: FastifyInstance) {
             });
 
             const rows = [];
-            rows.push(['ID', 'Name', 'Role', 'Status', 'PIN', 'Last Shift Start', 'Last Shift End'].join(','));
+            // Header
+            rows.push([
+                'ID', 'Name', 'Role', 'Status', 'PIN',
+                'Email', 'Phone', 'Address',
+                'GovID', 'Nationality', 'BirthDate', 'StartDate',
+                'EmergencyContact', 'EmergencyPhone',
+                'PaymentMethod', 'BankName', 'AccountNumber', 'AccountHolder',
+                'SalaryType', 'SalaryAmount', 'Currency',
+                'Notes',
+                'Last Shift Start', 'Last Shift End'
+            ].join(','));
 
             for (const emp of employees) {
-                // Main Row
+                // Helper to safe quote CSV string
+                const q = (str: string | null | undefined) => `"${(str || '').replace(/"/g, '""')}"`;
+                const d = (date: Date | null | undefined) => date ? date.toISOString().split('T')[0] : '';
+
                 const lastShift = emp.shifts[0];
                 rows.push([
                     emp.id,
-                    `"${emp.fullName}"`,
-                    emp.role,
+                    q(emp.fullName),
+                    q(emp.role),
                     emp.status,
-                    emp.pinCode, // Caution: exporting sensitive data? Yes, Owner backup.
+                    emp.pinCode,
+                    q(emp.email),
+                    q(emp.phone),
+                    q(emp.address),
+                    q(emp.govId),
+                    q(emp.nationality),
+                    d(emp.birthDate),
+                    d(emp.startDate),
+                    q(emp.emergencyContact),
+                    q(emp.emergencyPhone),
+                    q(emp.paymentMethod),
+                    q(emp.bankName),
+                    q(emp.accountNumber),
+                    q(emp.accountHolder),
+                    q(emp.salaryType),
+                    emp.salaryAmount?.toString() || '0',
+                    emp.currency,
+                    q(emp.notes),
                     lastShift ? lastShift.clockIn.toISOString() : '',
                     lastShift && lastShift.clockOut ? lastShift.clockOut.toISOString() : ''
                 ].join(','));
