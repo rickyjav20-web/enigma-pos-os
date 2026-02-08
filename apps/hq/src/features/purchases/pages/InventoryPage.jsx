@@ -734,7 +734,14 @@ function ItemPassport({ item, onClose, onEdit }) {
                                                     <td className="p-3 text-right text-zinc-500">{l.previousStock}</td>
                                                     <td className="p-3 text-right text-white font-bold">{l.newStock}</td>
                                                     <td className={`p-3 text-right font-bold ${l.changeAmount < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                                                        {l.changeAmount > 0 ? '+' : ''}{l.changeAmount.toFixed(4)}
+                                                        <div className="flex flex-col items-end">
+                                                            <span>{l.changeAmount > 0 ? '+' : ''}{l.changeAmount.toFixed(4)}</span>
+                                                            {l.previousStock !== 0 && (
+                                                                <span className="text-[10px] opacity-80">
+                                                                    {Math.abs(l.changeAmount / l.previousStock * 100).toFixed(1)}% {l.changeAmount < 0 ? 'Merma' : 'Gain'}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
