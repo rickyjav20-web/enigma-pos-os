@@ -364,11 +364,12 @@ export default async function staffRoutes(fastify: FastifyInstance) {
     fastify.post('/schedules/autofill', async (request, reply) => {
         const schema = z.object({
             start: z.string(), // ISO
-            end: z.string()   // ISO
+            end: z.string(),   // ISO
+            timezoneOffset: z.number().optional().default(0) // Minutes (UTC - Local)
         });
 
         try {
-            const { start, end } = schema.parse(request.body);
+            const { start, end, timezoneOffset } = schema.parse(request.body);
             const startDate = new Date(start);
             const endDate = new Date(end);
 
@@ -408,11 +409,14 @@ export default async function staffRoutes(fastify: FastifyInstance) {
                         const [sh, sm] = pattern.startTime.split(':').map(Number);
                         const [eh, em] = pattern.endTime.split(':').map(Number);
 
+                        // Create Date as UTC then shift by offset to match Client Wall Clock
                         const sTime = new Date(d);
                         sTime.setHours(sh, sm, 0);
+                        sTime.setMinutes(sTime.getMinutes() + timezoneOffset);
 
                         const eTime = new Date(d);
                         eTime.setHours(eh, em, 0);
+                        eTime.setMinutes(eTime.getMinutes() + timezoneOffset);
 
                         // Basic overlap check could go here, but for MVP skipping
                         newSchedules.push({

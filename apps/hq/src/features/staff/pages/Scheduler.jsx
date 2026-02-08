@@ -98,7 +98,8 @@ export default function Scheduler() {
 
             await api.post('/schedules/autofill', {
                 start: start.toISOString(),
-                end: end.toISOString()
+                end: end.toISOString(),
+                timezoneOffset: new Date().getTimezoneOffset()
             });
 
             fetchData();
