@@ -378,6 +378,24 @@ export default async function staffRoutes(fastify: FastifyInstance) {
                 include: { recurring: true }
             });
 
+            // FIX: Prevent Duplicates - Delete existing schedules for these employees in this range
+            const affectedEmployeeIds = employees
+                .filter(e => e.recurring && e.recurring.some(r => r.isActive))
+                .map(e => e.id);
+
+            if (affectedEmployeeIds.length > 0) {
+                await prisma.schedule.deleteMany({
+                    where: {
+                        tenantId: request.tenantId,
+                        employeeId: { in: affectedEmployeeIds },
+                        startTime: {
+                            gte: startDate,
+                            lte: endDate
+                        }
+                    }
+                });
+            }
+
             const newSchedules = [];
 
             // Iterate days
