@@ -291,7 +291,7 @@ export default function PurchasesPage() {
                 normalizedQuantity: calc.normalizedQuantity,
                 costPerBaseUnit: calc.costPerBaseUnit
             };
-        }).filter(c => c.quantity > 0));
+        }));
     };
 
     const removeFromCart = (id: string) => {
@@ -309,7 +309,7 @@ export default function PurchasesPage() {
                 body: JSON.stringify({
                     supplierId: selectedSupplier.id,
                     status: 'confirmed',
-                    items: cart.map(c => ({
+                    items: cart.filter(c => c.quantity > 0).map(c => ({
                         supplyItemId: c.id,
                         quantity: c.normalizedQuantity,  // Send normalized quantity
                         unitCost: c.costPerBaseUnit,     // Send cost per base unit
