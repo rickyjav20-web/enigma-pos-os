@@ -381,4 +381,48 @@ export default async function setupRoutes(fastify: FastifyInstance) {
             return reply.status(500).send({ error: error.message });
         }
     });
+    // MANUAL FIX: Create SystemRole table if missing (Production Fix)
+    fastify.post('/setup/fix-roles-table', async (request, reply) => {
+        try {
+            console.log('🔧 FIXING DB SCHEMA: Creating SystemRole table...');
+
+            // 1. Create Table
+            await prisma.$executeRawUnsafe(`
+                CREATE TABLE IF NOT EXISTS "SystemRole" (
+                    "id" TEXT NOT NULL,
+                    "tenantId" TEXT NOT NULL,
+                    "name" TEXT NOT NULL,
+                    "description" TEXT,
+                    "color" TEXT NOT NULL DEFAULT '#8b5cf6',
+                    "canAccessOps" BOOLEAN NOT NULL DEFAULT false,
+                    "canAccessHq" BOOLEAN NOT NULL DEFAULT false,
+                    "canAccessKiosk" BOOLEAN NOT NULL DEFAULT true,
+                    "isSystem" BOOLEAN NOT NULL DEFAULT false,
+                    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                    CONSTRAINT "SystemRole_pkey" PRIMARY KEY ("id")
+                );
+            `);
+
+            // 2. Index
+            await prisma.$executeRawUnsafe(`
+                CREATE UNIQUE INDEX IF NOT EXISTS "SystemRole_tenantId_name_key" ON "SystemRole"("tenantId", "name");
+            `);
+
+            // 3. Foreign Keys
+            try {
+                await prisma.$executeRawUnsafe(`
+                    ALTER TABLE "SystemRole" ADD CONSTRAINT "SystemRole_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+                `);
+            } catch (e) {
+                console.log('FK tenantId might already exist');
+            }
+
+            return { success: true, message: 'SystemRole table created/verified.' };
+
+        } catch (error: any) {
+            fastify.log.error(error);
+            return reply.status(500).send({ error: error.message });
+        }
+    });
 }
