@@ -11,7 +11,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     });
 
     fastify.post('/auth/employee-login', async (request, reply) => {
-        const tenantId = request.headers['x-tenant-id'] as string;
+        const tenantId = request.tenantId;
         if (!tenantId) return reply.status(400).send({ error: 'Tenant ID required' });
 
         const { pin } = verifyPinSchema.parse(request.body);
