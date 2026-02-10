@@ -71,6 +71,14 @@ export default function SupplierDetails() {
         } catch (e) { console.error(e); }
     };
 
+    const openEditCatalogItem = (entry) => {
+        setSelectedItem(entry.supplyItem);
+        setCatalogPrice(entry.unitCost.toString());
+        setCatalogNotes(entry.notes || '');
+        setCatalogSearch(''); // Don't filter search, just show selected
+        setShowCatalogModal(true);
+    };
+
     const handleAddCatalogItem = async () => {
         if (!selectedItem || !catalogPrice) return;
         setCatalogSaving(true);
@@ -397,8 +405,15 @@ export default function SupplierDetails() {
                                         ? ((entry.unitCost - entry.supplyItem.currentCost) / entry.supplyItem.currentCost * 100).toFixed(1)
                                         : null;
                                     return (
-                                        <tr key={entry.id} className="text-sm hover:bg-white/5 transition-colors">
-                                            <td className="py-3 text-white font-medium">{entry.supplyItem?.name || 'Unknown'}</td>
+                                        <tr key={entry.id} className={`text-sm hover:bg-white/5 transition-colors ${entry.isVirtual ? 'bg-white/[0.02]' : ''}`}>
+                                            <td className="py-3 text-white font-medium flex items-center gap-2">
+                                                {entry.supplyItem?.name || 'Unknown'}
+                                                {entry.isVirtual && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                                        History
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td className="py-3 text-white/40 font-mono text-xs">{entry.supplyItem?.sku || '-'}</td>
                                             <td className="py-3 text-white/40">{entry.supplyItem?.category || '-'}</td>
                                             <td className="py-3 text-enigma-green font-mono font-bold">${entry.unitCost.toFixed(2)}</td>
@@ -411,13 +426,22 @@ export default function SupplierDetails() {
                                                 )}
                                             </td>
                                             <td className="py-3 text-white/30 text-xs italic">{entry.notes || '-'}</td>
-                                            <td className="py-3">
+                                            <td className="py-3 flex gap-2 justify-end">
                                                 <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteCatalogItem(entry.id); }}
-                                                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-colors"
+                                                    onClick={(e) => { e.stopPropagation(); openEditCatalogItem(entry); }}
+                                                    className="p-1.5 rounded-lg hover:bg-blue-500/10 text-white/20 hover:text-blue-400 transition-colors"
+                                                    title={entry.isVirtual ? "Guardar en Catálogo" : "Editar Precio"}
                                                 >
-                                                    <Trash2 className="w-4 h-4" />
+                                                    {entry.isVirtual ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
                                                 </button>
+                                                {!entry.isVirtual && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDeleteCatalogItem(entry.id); }}
+                                                        className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     );

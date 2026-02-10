@@ -214,12 +214,53 @@ export default async function (fastify: FastifyInstance) {
     // GET /suppliers/:id/catalog - Get all catalog prices for a supplier
     fastify.get('/suppliers/:id/catalog', async (request, reply) => {
         const { id } = request.params as any;
+
+        // 1. Get explicit catalog prices
         const catalog = await prisma.supplierPrice.findMany({
             where: { supplierId: id, isActive: true },
             include: { supplyItem: { select: { id: true, name: true, sku: true, category: true, defaultUnit: true, currentCost: true } } },
             orderBy: { supplyItem: { name: 'asc' } }
         });
-        return catalog;
+
+        // 2. Get implicit prices from Purchase History (limit to last 100 items to be safe)
+        // We want the LATEST price for each item bought from this supplier
+        const historyLines = await prisma.purchaseLine.findMany({
+            where: {
+                purchaseOrder: {
+                    supplierId: id,
+                    status: 'confirmed'
+                }
+            },
+            orderBy: { purchaseOrder: { date: 'desc' } },
+            distinct: ['supplyItemId'],
+            include: {
+                supplyItem: { select: { id: true, name: true, sku: true, category: true, defaultUnit: true, currentCost: true } }
+            }
+        });
+
+        // 3. Merge: Catalog takes precedence. If not in catalog, add from history.
+        const catalogItemIds = new Set(catalog.map(c => c.supplyItemId));
+        const virtualItems = historyLines
+            .filter(h => !catalogItemIds.has(h.supplyItemId) && h.supplyItem) // Ensure item exists and not in catalog
+            .map(h => ({
+                id: `virtual-${h.supplyItemId}`, // Virtual ID
+                supplierId: id,
+                supplyItemId: h.supplyItemId,
+                unitCost: h.unitCost,
+                unit: null, // History lines might not have unit stored on line (it's on item), or maybe we should add it?
+                notes: 'Derived from purchase history',
+                isActive: true,
+                isVirtual: true, // Marker for frontend
+                updatedAt: new Date(), // Placeholder
+                supplyItem: h.supplyItem
+            }));
+
+        // Combine and sort by name
+        const combined = [...catalog, ...virtualItems].sort((a, b) =>
+            (a.supplyItem?.name || '').localeCompare(b.supplyItem?.name || '')
+        );
+
+        return combined;
     });
 
     // POST /suppliers/:id/catalog - Add or update a single catalog price (upsert)
