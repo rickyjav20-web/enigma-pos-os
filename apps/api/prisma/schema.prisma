@@ -252,9 +252,10 @@ model Supplier {
   address         String?
   notes           String?
   
-  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
   supplyItems     SupplyItem[]
   purchaseOrders  PurchaseOrder[]
+  priceCatalog    SupplierPrice[]
 }
 
 model SupplyItem {
@@ -279,6 +280,7 @@ model SupplyItem {
   purchaseLines     PurchaseLine[]
   priceHistory      PriceHistory[]
   inventoryLogs     InventoryLog[]
+  supplierPrices    SupplierPrice[]
   productRecipes    ProductRecipe[]
 
   // --- NEW: Kitchen Hierarchy (Batches) ---
@@ -290,6 +292,24 @@ model SupplyItem {
   usedIn          ProductionRecipe[] @relation("ComponentItem") // Recipes WHERE this item is used
   
   @@unique([tenantId, sku])
+}
+
+model SupplierPrice {
+  id            String     @id @default(uuid())
+  supplierId    String
+  supplyItemId  String
+  unitCost      Float
+  unit          String?    // Optional override unit (kg, lt, und)
+  notes         String?    // E.g. "Min 5kg order"
+  isActive      Boolean    @default(true)
+  updatedAt     DateTime   @updatedAt
+  createdAt     DateTime   @default(now())
+
+  supplier      Supplier   @relation(fields: [supplierId], references: [id])
+  supplyItem    SupplyItem @relation(fields: [supplyItemId], references: [id])
+
+  @@unique([supplierId, supplyItemId])
+  @@index([supplyItemId])
 }
 
 model ProductionRecipe {

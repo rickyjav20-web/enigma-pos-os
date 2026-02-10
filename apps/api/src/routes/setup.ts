@@ -496,6 +496,12 @@ export default async function setupRoutes(fastify: FastifyInstance) {
             await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "CashTransaction" ("id" TEXT NOT NULL, "sessionId" TEXT NOT NULL, "amount" DOUBLE PRECISION NOT NULL, "type" TEXT NOT NULL, "description" TEXT, "referenceId" TEXT, "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "CashTransaction_pkey" PRIMARY KEY ("id"));`);
             results.push('CashTransaction ✅');
 
+            // SupplierPrice table (Catalog)
+            await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "SupplierPrice" ("id" TEXT NOT NULL, "supplierId" TEXT NOT NULL, "supplyItemId" TEXT NOT NULL, "unitCost" DOUBLE PRECISION NOT NULL, "unit" TEXT, "notes" TEXT, "isActive" BOOLEAN NOT NULL DEFAULT true, "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "SupplierPrice_pkey" PRIMARY KEY ("id"));`);
+            await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "SupplierPrice_supplierId_supplyItemId_key" ON "SupplierPrice"("supplierId", "supplyItemId");`);
+            await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "SupplierPrice_supplyItemId_idx" ON "SupplierPrice"("supplyItemId");`);
+            results.push('SupplierPrice ✅');
+
             return { success: true, tables: results };
         } catch (error: any) {
             fastify.log.error(error);

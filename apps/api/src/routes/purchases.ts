@@ -209,7 +209,102 @@ export default async function (fastify: FastifyInstance) {
         };
     });
 
-    // --- CATALOG / SUPPLY ITEMS ---
+    // --- SUPPLIER PRICE CATALOG ---
+
+    // GET /suppliers/:id/catalog - Get all catalog prices for a supplier
+    fastify.get('/suppliers/:id/catalog', async (request, reply) => {
+        const { id } = request.params as any;
+        const catalog = await prisma.supplierPrice.findMany({
+            where: { supplierId: id, isActive: true },
+            include: { supplyItem: { select: { id: true, name: true, sku: true, category: true, defaultUnit: true, currentCost: true } } },
+            orderBy: { supplyItem: { name: 'asc' } }
+        });
+        return catalog;
+    });
+
+    // POST /suppliers/:id/catalog - Add or update a single catalog price (upsert)
+    fastify.post('/suppliers/:id/catalog', async (request, reply) => {
+        const { id } = request.params as any;
+        const { supplyItemId, unitCost, unit, notes } = request.body as any;
+
+        if (!supplyItemId || unitCost === undefined) {
+            return reply.status(400).send({ error: 'supplyItemId and unitCost are required' });
+        }
+
+        // Verify supplier and item exist
+        const [supplier, item] = await Promise.all([
+            prisma.supplier.findUnique({ where: { id } }),
+            prisma.supplyItem.findUnique({ where: { id: supplyItemId } })
+        ]);
+        if (!supplier) return reply.status(404).send({ error: 'Supplier not found' });
+        if (!item) return reply.status(404).send({ error: 'Supply item not found' });
+
+        // Upsert: update if exists, create if not
+        const price = await prisma.supplierPrice.upsert({
+            where: { supplierId_supplyItemId: { supplierId: id, supplyItemId } },
+            update: { unitCost: Number(unitCost), unit: unit || null, notes: notes || null, isActive: true },
+            create: {
+                supplierId: id,
+                supplyItemId,
+                unitCost: Number(unitCost),
+                unit: unit || null,
+                notes: notes || null
+            },
+            include: { supplyItem: { select: { id: true, name: true, sku: true, category: true } } }
+        });
+        return price;
+    });
+
+    // POST /suppliers/:id/catalog/bulk - Bulk import prices
+    fastify.post('/suppliers/:id/catalog/bulk', async (request, reply) => {
+        const { id } = request.params as any;
+        const { items } = request.body as any; // [{supplyItemId, unitCost, unit?, notes?}]
+
+        if (!Array.isArray(items) || items.length === 0) {
+            return reply.status(400).send({ error: 'items array is required' });
+        }
+
+        const supplier = await prisma.supplier.findUnique({ where: { id } });
+        if (!supplier) return reply.status(404).send({ error: 'Supplier not found' });
+
+        const results = { created: 0, updated: 0, errors: [] as string[] };
+
+        for (const entry of items) {
+            try {
+                if (!entry.supplyItemId || entry.unitCost === undefined) {
+                    results.errors.push(`Missing supplyItemId or unitCost`);
+                    continue;
+                }
+                await prisma.supplierPrice.upsert({
+                    where: { supplierId_supplyItemId: { supplierId: id, supplyItemId: entry.supplyItemId } },
+                    update: { unitCost: Number(entry.unitCost), unit: entry.unit || null, notes: entry.notes || null, isActive: true },
+                    create: {
+                        supplierId: id,
+                        supplyItemId: entry.supplyItemId,
+                        unitCost: Number(entry.unitCost),
+                        unit: entry.unit || null,
+                        notes: entry.notes || null
+                    }
+                });
+                results.created++;
+            } catch (e: any) {
+                results.errors.push(`Item ${entry.supplyItemId}: ${e.message}`);
+            }
+        }
+
+        return results;
+    });
+
+    // DELETE /suppliers/:id/catalog/:priceId - Remove a catalog price
+    fastify.delete('/suppliers/:id/catalog/:priceId', async (request, reply) => {
+        const { priceId } = request.params as any;
+        try {
+            await prisma.supplierPrice.delete({ where: { id: priceId } });
+            return { success: true };
+        } catch (e: any) {
+            return reply.status(404).send({ error: 'Price entry not found' });
+        }
+    });
 
     // --- CATALOG / SUPPLY ITEMS ---
     // Moved to routes/supply-items.ts
@@ -379,53 +474,67 @@ export default async function (fastify: FastifyInstance) {
             const item = await prisma.supplyItem.findUnique({ where: { id: itemId } });
             if (!item) continue;
 
-            // Logic: Find latest purchase line for this item from EACH supplier
-            // This allows us to see who sold it cheapest recently.
+            // === PRIORITY 1: Check Supplier Price Catalog ===
+            // Catalog prices represent current listed prices and take precedence
+            const catalogPrices = await prisma.supplierPrice.findMany({
+                where: { supplyItemId: itemId, isActive: true },
+                include: { supplier: true }
+            });
 
-            // 1. Get all lines for this item, joined with PurchaseOrder -> Supplier
+            // === PRIORITY 2: Check Purchase History (fallback) ===
             const lines = await prisma.purchaseLine.findMany({
                 where: { supplyItemId: itemId },
                 include: {
                     purchaseOrder: { include: { supplier: true } }
                 },
                 orderBy: { purchaseOrder: { date: 'desc' } },
-                take: 20 // Look at last 20 purchases of this item
+                take: 20
             });
 
-            // 2. Group by Supplier & Find Min Price
-            const supplierPrices: Record<string, { price: number, supplier: any, date: Date }> = {};
+            // Build unified price map: supplierId -> { price, supplier, source, date }
+            const supplierPrices: Record<string, { price: number, supplier: any, source: string, date: Date | null }> = {};
 
+            // Add purchase history prices first (lower priority)
             for (const line of lines) {
-                // Skip if supplier is missing (ghost record)
                 if (!line.purchaseOrder.supplier) continue;
-
                 const sId = line.purchaseOrder.supplierId;
                 if (!supplierPrices[sId]) {
                     supplierPrices[sId] = {
                         price: line.unitCost,
                         supplier: line.purchaseOrder.supplier,
-                        date: line.purchaseOrder.date // Capture date
+                        source: 'purchase',
+                        date: line.purchaseOrder.date
                     };
                 }
             }
 
-            // 3. Select Best Supplier
+            // Overlay catalog prices (higher priority — overwrites purchase history)
+            for (const cp of catalogPrices) {
+                supplierPrices[cp.supplierId] = {
+                    price: cp.unitCost,
+                    supplier: cp.supplier,
+                    source: 'catalog',
+                    date: cp.updatedAt
+                };
+            }
+
+            // 3. Select Best Supplier (lowest price)
             let bestSupplier: any = null;
             let bestPrice = Infinity;
             let bestDate: Date | null = null;
+            let bestSource = 'fallback';
 
             const suppliers = Object.values(supplierPrices);
 
             if (suppliers.length > 0) {
-                // Find min price among recent suppliers
                 for (const s of suppliers) {
                     if (s.price < bestPrice) {
                         bestPrice = s.price;
                         bestSupplier = s.supplier;
                         bestDate = s.date;
+                        bestSource = s.source;
                     }
                 }
-                // Attach date to bestSupplier for usage below (hacky but works for local scope)
                 if (bestSupplier) bestSupplier.lastDate = bestDate;
 
             } else {

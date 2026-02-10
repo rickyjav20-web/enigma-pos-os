@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Truck, ArrowLeft, Package, Calendar, DollarSign, TrendingUp, TrendingDown, ShoppingCart, Clock, BarChart3, Phone, Mail, MapPin, Edit2, X, Save } from 'lucide-react';
+import { Truck, ArrowLeft, Package, Calendar, DollarSign, TrendingUp, TrendingDown, ShoppingCart, Clock, BarChart3, Phone, Mail, MapPin, Edit2, X, Save, Plus, Search, Trash2, Loader2, List } from 'lucide-react';
 import { api } from '@/lib/api';
 
 export default function SupplierDetails() {
@@ -13,24 +13,79 @@ export default function SupplierDetails() {
     const [editForm, setEditForm] = useState({});
     const [saving, setSaving] = useState(false);
 
+    // Catalog state
+    const [catalog, setCatalog] = useState([]);
+    const [showCatalogModal, setShowCatalogModal] = useState(false);
+    const [catalogSaving, setCatalogSaving] = useState(false);
+    const [supplyItems, setSupplyItems] = useState([]);
+    const [catalogSearch, setCatalogSearch] = useState('');
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [catalogPrice, setCatalogPrice] = useState('');
+    const [catalogNotes, setCatalogNotes] = useState('');
+
     useEffect(() => {
         loadData();
     }, [id]);
 
     const loadData = async () => {
         try {
-            const [supplierRes, analyticsRes] = await Promise.all([
+            const [supplierRes, analyticsRes, catalogRes] = await Promise.all([
                 api.get(`/suppliers/${id}`),
-                api.get(`/suppliers/${id}/analytics`)
+                api.get(`/suppliers/${id}/analytics`),
+                api.get(`/suppliers/${id}/catalog`)
             ]);
             setSupplier(supplierRes.data);
             setAnalytics(analyticsRes.data);
+            setCatalog(catalogRes.data || []);
             setEditForm(supplierRes.data);
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const loadCatalog = async () => {
+        try {
+            const res = await api.get(`/suppliers/${id}/catalog`);
+            setCatalog(res.data || []);
+        } catch (e) { console.error(e); }
+    };
+
+    const openCatalogModal = async () => {
+        setSelectedItem(null);
+        setCatalogPrice('');
+        setCatalogNotes('');
+        setCatalogSearch('');
+        setShowCatalogModal(true);
+        // Fetch supply items for search
+        try {
+            const res = await api.get('/supply-items?limit=500');
+            setSupplyItems(res.data?.data || []);
+        } catch (e) { console.error(e); }
+    };
+
+    const handleAddCatalogItem = async () => {
+        if (!selectedItem || !catalogPrice) return;
+        setCatalogSaving(true);
+        try {
+            await api.post(`/suppliers/${id}/catalog`, {
+                supplyItemId: selectedItem.id,
+                unitCost: parseFloat(catalogPrice),
+                notes: catalogNotes || null
+            });
+            setShowCatalogModal(false);
+            loadCatalog();
+        } catch (e) { console.error(e); }
+        finally { setCatalogSaving(false); }
+    };
+
+    const handleDeleteCatalogItem = async (priceId) => {
+        if (!confirm('¿Eliminar este item del catálogo?')) return;
+        try {
+            await api.delete(`/suppliers/${id}/catalog/${priceId}`);
+            loadCatalog();
+        } catch (e) { console.error(e); }
     };
 
     const handleSave = async () => {
@@ -168,6 +223,79 @@ export default function SupplierDetails() {
                         {daysAgo !== null ? (daysAgo === 0 ? 'Hoy' : `${daysAgo}d`) : 'N/A'}
                     </p>
                 </div>
+            </div>
+
+            {/* === CATÁLOGO DE PRECIOS === */}
+            <div className="glass-panel p-6 rounded-3xl">
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <List className="w-5 h-5 text-enigma-green" />
+                        Catálogo de Precios
+                    </h3>
+                    <button
+                        onClick={openCatalogModal}
+                        className="px-4 py-2 bg-enigma-green/20 border border-enigma-green text-enigma-green rounded-xl hover:bg-enigma-green/30 transition-all flex items-center gap-2 text-sm"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Agregar Item
+                    </button>
+                </div>
+
+                {catalog.length > 0 ? (
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="text-left text-white/40 text-xs border-b border-white/5">
+                                    <th className="pb-3">Item</th>
+                                    <th className="pb-3">SKU</th>
+                                    <th className="pb-3">Categoría</th>
+                                    <th className="pb-3">Precio Catálogo</th>
+                                    <th className="pb-3">Precio Actual</th>
+                                    <th className="pb-3">Notas</th>
+                                    <th className="pb-3 w-12"></th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {catalog.map((entry) => {
+                                    const diff = entry.supplyItem?.currentCost > 0
+                                        ? ((entry.unitCost - entry.supplyItem.currentCost) / entry.supplyItem.currentCost * 100).toFixed(1)
+                                        : null;
+                                    return (
+                                        <tr key={entry.id} className="text-sm hover:bg-white/5 transition-colors">
+                                            <td className="py-3 text-white font-medium">{entry.supplyItem?.name || 'Unknown'}</td>
+                                            <td className="py-3 text-white/40 font-mono text-xs">{entry.supplyItem?.sku || '-'}</td>
+                                            <td className="py-3 text-white/40">{entry.supplyItem?.category || '-'}</td>
+                                            <td className="py-3 text-enigma-green font-mono font-bold">${entry.unitCost.toFixed(2)}</td>
+                                            <td className="py-3 text-white/60 font-mono">
+                                                ${entry.supplyItem?.currentCost?.toFixed(2) || '0.00'}
+                                                {diff && (
+                                                    <span className={`ml-2 text-xs ${parseFloat(diff) > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                                                        {parseFloat(diff) > 0 ? '+' : ''}{diff}%
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="py-3 text-white/30 text-xs italic">{entry.notes || '-'}</td>
+                                            <td className="py-3">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteCatalogItem(entry.id); }}
+                                                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="p-8 border border-white/5 rounded-2xl text-center bg-black/20">
+                        <DollarSign className="w-10 h-10 text-white/10 mx-auto mb-3" />
+                        <p className="text-gray-500">No hay items en el catálogo de este proveedor.</p>
+                        <p className="text-gray-600 text-sm mt-1">Agrega los items que este proveedor ofrece con sus precios.</p>
+                    </div>
+                )}
             </div>
 
             {/* Main Content Grid */}
@@ -390,6 +518,112 @@ export default function SupplierDetails() {
                             >
                                 <Save className="w-4 h-4" />
                                 {saving ? 'Guardando...' : 'Guardar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Catalog Item Modal */}
+            {showCatalogModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-enigma-gray rounded-3xl w-full max-w-lg border border-white/10 animate-fade-in">
+                        <div className="flex items-center justify-between p-6 border-b border-white/5">
+                            <h2 className="text-xl font-bold text-white">Agregar Item al Catálogo</h2>
+                            <button onClick={() => setShowCatalogModal(false)} className="p-2 rounded-lg hover:bg-white/5">
+                                <X className="w-5 h-5 text-white/50" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            {/* Item Search */}
+                            <div>
+                                <label className="text-sm text-white/50 block mb-2">Buscar Item *</label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        autoFocus
+                                        value={catalogSearch}
+                                        onChange={e => { setCatalogSearch(e.target.value); setSelectedItem(null); }}
+                                        className="w-full p-3 pl-10 rounded-xl bg-black/30 border border-white/10 text-white focus:outline-none focus:border-enigma-green"
+                                        placeholder="Buscar por nombre..."
+                                    />
+                                </div>
+                                {/* Search Results */}
+                                {catalogSearch.length > 1 && !selectedItem && (
+                                    <div className="mt-2 max-h-40 overflow-y-auto border border-white/10 rounded-xl bg-black/40">
+                                        {supplyItems
+                                            .filter(item => {
+                                                const existingIds = catalog.map(c => c.supplyItemId || c.supplyItem?.id);
+                                                return item.name.toLowerCase().includes(catalogSearch.toLowerCase()) && !existingIds.includes(item.id);
+                                            })
+                                            .slice(0, 10)
+                                            .map(item => (
+                                                <button
+                                                    key={item.id}
+                                                    onClick={() => { setSelectedItem(item); setCatalogSearch(item.name); }}
+                                                    className="w-full text-left px-4 py-2.5 hover:bg-white/10 text-white text-sm flex justify-between items-center border-b border-white/5 last:border-0"
+                                                >
+                                                    <span>{item.name}</span>
+                                                    <span className="text-white/30 text-xs font-mono">{item.sku || ''}</span>
+                                                </button>
+                                            ))
+                                        }
+                                        {supplyItems.filter(i => i.name.toLowerCase().includes(catalogSearch.toLowerCase())).length === 0 && (
+                                            <p className="p-3 text-gray-500 text-sm">No items encontrados</p>
+                                        )}
+                                    </div>
+                                )}
+                                {selectedItem && (
+                                    <div className="mt-2 text-xs text-enigma-green flex items-center gap-1">
+                                        ✅ {selectedItem.name} seleccionado
+                                        <span className="text-white/30 ml-2">(Costo actual: ${selectedItem.currentCost?.toFixed(2) || '0.00'})</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Price */}
+                            <div>
+                                <label className="text-sm text-white/50 block mb-2">Precio de este Proveedor *</label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={catalogPrice}
+                                        onChange={e => setCatalogPrice(e.target.value)}
+                                        className="w-full p-3 pl-10 rounded-xl bg-black/30 border border-white/10 text-white focus:outline-none focus:border-enigma-green"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Notes */}
+                            <div>
+                                <label className="text-sm text-white/50 block mb-2">Notas (opcional)</label>
+                                <input
+                                    type="text"
+                                    value={catalogNotes}
+                                    onChange={e => setCatalogNotes(e.target.value)}
+                                    className="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-white focus:outline-none focus:border-enigma-green"
+                                    placeholder="Ej: Pedido mínimo 5kg"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex gap-3 p-6 border-t border-white/5">
+                            <button
+                                onClick={() => setShowCatalogModal(false)}
+                                className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 hover:bg-white/5 transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleAddCatalogItem}
+                                disabled={catalogSaving || !selectedItem || !catalogPrice}
+                                className="flex-1 py-3 rounded-xl bg-enigma-green font-medium flex items-center justify-center gap-2 hover:bg-enigma-green/80 transition-all disabled:opacity-50"
+                            >
+                                {catalogSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                {catalogSaving ? 'Guardando...' : 'Agregar al Catálogo'}
                             </button>
                         </div>
                     </div>
