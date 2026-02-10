@@ -7,8 +7,9 @@ import {
     formatPriceChange,
     findPurchaseUnit
 } from '../utils/unitConversion';
+import { useAuth } from '../context/AuthContext';
 
-const API_URL = 'https://enigma-pos-os-production.up.railway.app/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 const TENANT_HEADER = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
 
 const CATEGORIES = ['Lácteos', 'Panadería', 'Carnes', 'Vegetales', 'Bebidas', 'Otros'];
@@ -46,6 +47,7 @@ interface CartItem extends SupplyItem {
 }
 
 export default function PurchasesPage() {
+    const { employee } = useAuth();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const preselectedSupplierId = searchParams.get('supplierId');
@@ -57,6 +59,9 @@ export default function PurchasesPage() {
     const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
     const [showNewSupplier, setShowNewSupplier] = useState(false);
     const [newSupplierName, setNewSupplierName] = useState('');
+
+    // Payment State
+    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'credit'>('cash');
 
     // Items State
     const [allItems, setAllItems] = useState<SupplyItem[]>([]);
@@ -307,8 +312,11 @@ export default function PurchasesPage() {
                 method: 'POST',
                 headers: TENANT_HEADER,
                 body: JSON.stringify({
+                    tenantId: 'enigma_hq', // TODO: Get from context/env
                     supplierId: selectedSupplier.id,
                     status: 'confirmed',
+                    paymentMethod,
+                    registeredById: employee?.id,
                     items: cart.filter(c => c.quantity > 0).map(c => ({
                         supplyItemId: c.id,
                         quantity: c.normalizedQuantity,  // Send normalized quantity
@@ -752,6 +760,31 @@ export default function PurchasesPage() {
                         <div className="rounded-2xl bg-enigma-purple/20 border border-enigma-purple/30 p-4 flex justify-between items-center">
                             <span className="font-medium">Total</span>
                             <span className="text-2xl font-bold font-mono">${total.toFixed(2)}</span>
+                        </div>
+
+                        {/* Payment Method Selector */}
+                        <div className="rounded-2xl bg-enigma-gray p-4 border border-white/5 space-y-3">
+                            <p className="text-sm text-white/50">Método de Pago</p>
+                            <div className="grid grid-cols-3 gap-2">
+                                {(['cash', 'transfer', 'credit'] as const).map(method => (
+                                    <button
+                                        key={method}
+                                        onClick={() => setPaymentMethod(method)}
+                                        className={`p-3 rounded-xl border transition-all capitalized ${paymentMethod === method
+                                            ? 'bg-enigma-purple border-enigma-purple text-white font-bold'
+                                            : 'bg-black/30 border-white/10 text-white/50 hover:bg-white/5'
+                                            }`}
+                                    >
+                                        {method === 'cash' ? 'Efectivo' : method === 'transfer' ? 'Transferencia' : 'Crédito'}
+                                    </button>
+                                ))}
+                            </div>
+                            {paymentMethod === 'cash' && (
+                                <p className="text-xs text-amber-400 flex items-center gap-1.5 bg-amber-500/10 p-2 rounded-lg">
+                                    <Info className="w-3 h-3" />
+                                    Se descontará automáticamente de la Caja.
+                                </p>
+                            )}
                         </div>
                     </div>
                 )}

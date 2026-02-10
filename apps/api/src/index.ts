@@ -30,11 +30,15 @@ fastify.register(import('./routes/ingest'), { prefix: '/api/v1' });
 fastify.register(import('./routes/products'), { prefix: '/api/v1' });
 fastify.register(import('./routes/staff'), { prefix: '/api/v1' });
 fastify.register(import('./routes/purchases'), { prefix: '/api/v1' });
+fastify.register(import('./routes/auth'), { prefix: '/api/v1' });
+fastify.register(import('./routes/register'), { prefix: '/api/v1' });
+fastify.register(import('./routes/transactions'), { prefix: '/api/v1' });
 
 fastify.register(import('./routes/supply-items'), { prefix: '/api/v1' });
 fastify.register(import('./routes/production'), { prefix: '/api/v1' });
 fastify.register(import('./routes/data'), { prefix: '/api/v1' });
 fastify.register(import('./routes/setup'), { prefix: '/api/v1' });
+fastify.register(import('./routes/roles'), { prefix: '/api/v1' });
 
 fastify.get('/', async (request, reply) => {
     return { hello: 'Enigma POS OS API', status: 'active', timestamp: Date.now() };

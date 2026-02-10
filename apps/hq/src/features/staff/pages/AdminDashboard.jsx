@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '@/lib/api';
-import { User, Clock, AlertCircle, Database, Users, Calendar, Activity } from 'lucide-react';
+import { User, Clock, AlertCircle, Database, Users, Calendar, Activity, Shield } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -190,6 +190,18 @@ export default function AdminDashboard() {
                                     <div className="flex-1">
                                         <h4 className="text-white font-medium group-hover:text-blue-200 transition-all">Shift Logs</h4>
                                         <p className="text-xs text-enigma-text-secondary">Audit clock-ins and outs</p>
+                                    </div>
+                                </div>
+                            </Link>
+
+                            <Link to="/staff/roles" className="group relative overflow-hidden rounded-xl p-4 bg-white/5 hover:bg-white/10 transition-all border border-white/5 hover:border-enigma-green/30">
+                                <div className="flex items-center gap-4 relative z-10">
+                                    <div className="w-10 h-10 rounded-lg bg-enigma-green/20 flex items-center justify-center text-enigma-green group-hover:scale-110 transition-transform duration-300">
+                                        <Shield className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="text-white font-medium group-hover:text-enigma-green transition-all">Roles & Access</h4>
+                                        <p className="text-xs text-enigma-text-secondary">Manage system permissions</p>
                                     </div>
                                 </div>
                             </Link>

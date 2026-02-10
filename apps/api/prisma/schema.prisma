@@ -25,7 +25,30 @@ model Tenant {
   suppliers       Supplier[]
   supplyItems     SupplyItem[]
   purchaseOrders  PurchaseOrder[]
+  registerSessions RegisterSession[]
   inventoryLogs   InventoryLog[]
+  systemRoles     SystemRole[]
+}
+
+// --- MODULE: ACCESS CONTROL ---
+
+model SystemRole {
+  id          String  @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?
+  color       String  @default("#8b5cf6")
+
+  // System access permissions
+  canAccessOps    Boolean @default(false)   // Cash register (OPS)
+  canAccessHq     Boolean @default(false)   // Back office (HQ)
+  canAccessKiosk  Boolean @default(true)    // Clock-in kiosk
+
+  isSystem    Boolean  @default(false)      // Prevents deletion
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant @relation(fields: [tenantId], references: [id])
+  @@unique([tenantId, name])
 }
 
 // --- MODULE: STAFF ---
@@ -66,10 +89,12 @@ model Employee {
   
   tenant           Tenant    @relation(fields: [tenantId], references: [id])
   shifts           Shift[]
+  registerSessions RegisterSession[]
   schedules        Schedule[]
   recurring        RecurringSchedule[]
   documents        Document[]
   payments         Payment[]
+  registeredPurchases PurchaseOrder[] @relation("RegisteredPurchases")
 }
 
 model Payment {
@@ -140,6 +165,47 @@ model RecurringSchedule {
   tenant     Tenant   @relation(fields: [tenantId], references: [id])
   
   @@unique([employeeId, dayOfWeek])
+}
+
+model RegisterSession {
+  id              String    @id @default(uuid())
+  tenantId        String
+  employeeId      String
+  
+  // Timing
+  startedAt       DateTime  @default(now())
+  endedAt         DateTime?
+  
+  // Opening
+  startingCash    Float     // The "Float" or "Base"
+  
+  // Closing (Manual Entry for now)
+  declaredCash    Float?    // What they counted physically
+  declaredCard    Float?    // Sum of card voucher slips
+  declaredTransfer Float?   // Sum of transfers
+  
+  // Calculated (Future usage with automated sales)
+  expectedCash    Float?    // System calculated cash (not used yet basically)
+  
+  // Audit
+  notes           String?
+  status          String    @default("open") // 'open', 'closed'
+  
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  transactions    CashTransaction[]
+}
+
+model CashTransaction {
+  id          String   @id @default(uuid())
+  sessionId   String
+  amount      Float    // Positive = In, Negative = Out
+  type        String   // 'OPENING', 'SALE', 'PURCHASE', 'EXPENSE', 'WITHDRAWAL', 'DEPOSIT'
+  description String?
+  referenceId String?  // ID of PurchaseOrder or other entity
+  timestamp   DateTime @default(now())
+
+  session     RegisterSession @relation(fields: [sessionId], references: [id])
 }
 
 // --- MODULE: PRODUCTS (Ingest) ---
@@ -251,8 +317,13 @@ model PurchaseOrder {
   status        String   @default("draft") // 'draft', 'confirmed', 'cancelled'
   notes         String?
   
+  // Payment & Audit
+  paymentMethod String   @default("cash") // 'cash', 'transfer', 'credit'
+  registeredById String? // Employee who registered this purchase
+  
   supplier      Supplier       @relation(fields: [supplierId], references: [id])
   tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  registeredBy  Employee?      @relation("RegisteredPurchases", fields: [registeredById], references: [id])
   lines         PurchaseLine[]
 }
 

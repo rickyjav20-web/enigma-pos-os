@@ -34,6 +34,7 @@ export default function EmployeeForm({ employee, onClose, onSuccess }) {
     const [activeTab, setActiveTab] = useState('access'); // access | personal | emergency | schedule
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [availableRoles, setAvailableRoles] = useState([]);
 
     // Recurring Schedule State
     const [recurring, setRecurring] = useState(
@@ -56,6 +57,20 @@ export default function EmployeeForm({ employee, onClose, onSuccess }) {
             console.error("Error loading docs", error);
         }
     };
+
+    useEffect(() => {
+        // Fetch available roles from API
+        api.get('/roles').then(res => {
+            if (res.data.roles?.length > 0) {
+                setAvailableRoles(res.data.roles);
+            }
+        }).catch(() => {
+            // Fallback defaults if roles API not ready
+            setAvailableRoles([
+                { name: 'Barista' }, { name: 'Cajero' }, { name: 'Gerente' }, { name: 'Cocina' }
+            ]);
+        });
+    }, []);
 
     useEffect(() => {
         if (employee) {
@@ -246,10 +261,18 @@ export default function EmployeeForm({ employee, onClose, onSuccess }) {
                                         onChange={handleChange}
                                         className="glass-input w-full rounded-xl p-3 text-white focus:outline-none focus:border-enigma-purple transition-all appearance-none"
                                     >
-                                        <option value="Barista">Barista</option>
-                                        <option value="Cajero">Cajero</option>
-                                        <option value="Gerente">Gerente</option>
-                                        <option value="Cocina">Cocina</option>
+                                        {availableRoles.length > 0 ? (
+                                            availableRoles.map(r => (
+                                                <option key={r.name} value={r.name}>{r.name}</option>
+                                            ))
+                                        ) : (
+                                            <>
+                                                <option value="Barista">Barista</option>
+                                                <option value="Cajero">Cajero</option>
+                                                <option value="Gerente">Gerente</option>
+                                                <option value="Cocina">Cocina</option>
+                                            </>
+                                        )}
                                     </select>
                                 </div>
                                 <div>

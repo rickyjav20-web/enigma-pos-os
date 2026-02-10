@@ -13,6 +13,8 @@ import Scheduler from "./features/staff/pages/Scheduler";
 // @ts-ignore
 import ShiftHistory from "./features/staff/pages/ShiftHistory";
 // @ts-ignore
+import RolesManager from "./features/staff/pages/RolesManager";
+// @ts-ignore
 import KioskAuth from "./features/staff/pages/KioskAuth";
 // @ts-ignore
 import AccountPage from "./features/account/pages/AccountPage";
@@ -28,6 +30,8 @@ import ItemDetails from './features/purchases/pages/ItemDetails';
 import SmartOrderPage from './features/purchases/pages/SmartOrderPage';
 // @ts-ignore
 import PurchaseOrderForm from './features/purchases/pages/PurchaseOrderForm';
+// @ts-ignore
+import RegisterAdminPage from './features/purchases/pages/RegisterAdminPage';
 
 function AppRoot() {
   return (
@@ -48,6 +52,7 @@ function AppRoot() {
               <Route path="staff/employees" element={<EmployeeManager />} />
               <Route path="staff/schedule" element={<Scheduler />} />
               <Route path="staff/history" element={<ShiftHistory />} />
+              <Route path="staff/roles" element={<RolesManager />} />
               {/* REMOVED: KioskAuth moved to standalone route */}
               <Route path="account" element={<AccountPage />} />
               <Route path="settings" element={<Navigate to="/account" replace />} />
@@ -58,6 +63,7 @@ function AppRoot() {
               <Route path="purchases/inventory/:id" element={<ItemDetails />} />
               <Route path="purchases/smart-order" element={<SmartOrderPage />} />
               <Route path="purchases/new" element={<PurchaseOrderForm />} />
+              <Route path="register" element={<RegisterAdminPage />} />
             </Route>
 
             {/* Standalone Apps (No Layout) */}

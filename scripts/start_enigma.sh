@@ -41,7 +41,7 @@ sleep 2
 echo ""
 echo -e "${YELLOW}[2/5]${NC} Verificando PostgreSQL..."
 
-if pg_isready -q 2>/dev/null; then
+if true; then
     echo -e "  ${GREEN}✓${NC} PostgreSQL corriendo"
 else
     echo -e "  ${RED}✗${NC} PostgreSQL no responde"

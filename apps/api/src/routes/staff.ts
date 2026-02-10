@@ -241,6 +241,120 @@ export default async function staffRoutes(fastify: FastifyInstance) {
         }
     });
 
+    // 6.4.1 Import Employees from CSV (same format as export)
+    fastify.post('/employees/import', async (request, reply) => {
+        try {
+            const { csvContent, cleanFirst } = request.body as { csvContent: string; cleanFirst?: boolean };
+            if (!csvContent) return reply.status(400).send({ error: 'csvContent is required' });
+
+            const lines = csvContent.trim().split('\n');
+            const header = lines[0];
+            const rows = lines.slice(1);
+
+            // Parse CSV respecting quoted fields
+            const parseCSVRow = (row: string): string[] => {
+                const fields: string[] = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < row.length; i++) {
+                    const char = row[i];
+                    if (char === '"') {
+                        if (inQuotes && row[i + 1] === '"') {
+                            current += '"';
+                            i++;
+                        } else {
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (char === ',' && !inQuotes) {
+                        fields.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                fields.push(current.trim());
+                return fields;
+            };
+
+            const headers = parseCSVRow(header);
+            const colIdx = (name: string) => headers.indexOf(name);
+
+            if (cleanFirst) {
+                // Delete employees NOT in the CSV (clean test data)
+                const csvIds = rows.map(r => parseCSVRow(r)[colIdx('ID')]).filter(Boolean);
+                await prisma.employee.deleteMany({
+                    where: {
+                        tenantId: request.tenantId,
+                        id: { notIn: csvIds }
+                    }
+                });
+            }
+
+            const results = { created: 0, updated: 0, errors: [] as string[] };
+
+            for (const row of rows) {
+                const fields = parseCSVRow(row);
+                const get = (col: string) => fields[colIdx(col)] || null;
+
+                const id = get('ID');
+                const fullName = get('Name');
+                if (!fullName) continue;
+
+                const prepareDate = (val: string | null) => {
+                    if (!val) return null;
+                    try { return new Date(val); } catch { return null; }
+                };
+
+                const data = {
+                    tenantId: request.tenantId,
+                    fullName,
+                    role: get('Role') || 'Waiter',
+                    pinCode: get('PIN') || Math.floor(1000 + Math.random() * 9000).toString(),
+                    status: get('Status') || 'active',
+                    email: get('Email') || null,
+                    phone: get('Phone') || null,
+                    address: get('Address') || null,
+                    govId: get('GovID') || null,
+                    nationality: get('Nationality') || null,
+                    birthDate: prepareDate(get('BirthDate')),
+                    startDate: prepareDate(get('StartDate')),
+                    emergencyContact: get('EmergencyContact') || null,
+                    emergencyPhone: get('EmergencyPhone') || null,
+                    paymentMethod: get('PaymentMethod') || 'transfer',
+                    bankName: get('BankName') || null,
+                    accountNumber: get('AccountNumber') || null,
+                    accountHolder: get('AccountHolder') || null,
+                    salaryType: get('SalaryType') || 'fixed',
+                    salaryAmount: parseFloat(get('SalaryAmount') || '0') || 0,
+                    currency: get('Currency') || 'USD',
+                    notes: get('Notes') || null,
+                };
+
+                try {
+                    if (id) {
+                        await prisma.employee.upsert({
+                            where: { id },
+                            create: { id, ...data },
+                            update: data,
+                        });
+                        // Check if this was a create or update
+                        results.updated++;
+                    } else {
+                        await prisma.employee.create({ data });
+                        results.created++;
+                    }
+                } catch (err: any) {
+                    results.errors.push(`${fullName}: ${err.message}`);
+                }
+            }
+
+            return { success: true, ...results, total: rows.length };
+        } catch (error: any) {
+            fastify.log.error(error);
+            return reply.status(500).send({ error: 'Import failed', details: error.message });
+        }
+    });
+
     // 6.5 Update Employee
     fastify.patch<{ Params: { id: string } }>('/employees/:id', async (request, reply) => {
         const { id } = request.params;
