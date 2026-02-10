@@ -29,13 +29,25 @@ export default async function authRoutes(fastify: FastifyInstance) {
             return reply.status(401).send({ error: 'Invalid PIN' });
         }
 
-        // Check for Active Register Session
-        const activeSession = await prisma.registerSession.findFirst({
-            where: {
-                employeeId: employee.id,
-                status: 'open'
+        // Check for Active Register Session (resilient: table may not exist yet)
+        let activeSession: any = null;
+        try {
+            const session = await prisma.registerSession.findFirst({
+                where: {
+                    employeeId: employee.id,
+                    status: 'open'
+                }
+            });
+            if (session) {
+                activeSession = {
+                    id: session.id,
+                    startedAt: session.startedAt,
+                    startingCash: session.startingCash
+                };
             }
-        });
+        } catch (e) {
+            console.warn('[AUTH] RegisterSession table not available, skipping session check:', (e as any).code);
+        }
 
         return {
             employee: {
@@ -43,11 +55,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
                 name: employee.fullName,
                 role: employee.role
             },
-            activeSession: activeSession ? {
-                id: activeSession.id,
-                startedAt: activeSession.startedAt,
-                startingCash: activeSession.startingCash
-            } : null
+            activeSession
         };
     });
 }

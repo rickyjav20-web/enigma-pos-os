@@ -425,4 +425,81 @@ export default async function setupRoutes(fastify: FastifyInstance) {
             return reply.status(500).send({ error: error.message });
         }
     });
+
+    // MANUAL FIX: Create RegisterSession + CashTransaction tables
+    fastify.post('/setup/fix-register-tables', async (request, reply) => {
+        try {
+            console.log('🔧 FIXING DB SCHEMA: Creating RegisterSession table...');
+            await prisma.$executeRawUnsafe(`
+                CREATE TABLE IF NOT EXISTS "RegisterSession" (
+                    "id" TEXT NOT NULL,
+                    "tenantId" TEXT NOT NULL,
+                    "employeeId" TEXT NOT NULL,
+                    "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    "endedAt" TIMESTAMP(3),
+                    "startingCash" DOUBLE PRECISION NOT NULL,
+                    "declaredCash" DOUBLE PRECISION,
+                    "declaredCard" DOUBLE PRECISION,
+                    "declaredTransfer" DOUBLE PRECISION,
+                    "expectedCash" DOUBLE PRECISION,
+                    "notes" TEXT,
+                    "status" TEXT NOT NULL DEFAULT 'open',
+                    CONSTRAINT "RegisterSession_pkey" PRIMARY KEY ("id")
+                );
+            `);
+            try {
+                await prisma.$executeRawUnsafe(`ALTER TABLE "RegisterSession" ADD CONSTRAINT "RegisterSession_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE RESTRICT ON UPDATE CASCADE;`);
+            } catch (e) { console.log('FK already exists'); }
+            try {
+                await prisma.$executeRawUnsafe(`ALTER TABLE "RegisterSession" ADD CONSTRAINT "RegisterSession_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;`);
+            } catch (e) { console.log('FK already exists'); }
+
+            console.log('🔧 FIXING DB SCHEMA: Creating CashTransaction table...');
+            await prisma.$executeRawUnsafe(`
+                CREATE TABLE IF NOT EXISTS "CashTransaction" (
+                    "id" TEXT NOT NULL,
+                    "sessionId" TEXT NOT NULL,
+                    "amount" DOUBLE PRECISION NOT NULL,
+                    "type" TEXT NOT NULL,
+                    "description" TEXT,
+                    "referenceId" TEXT,
+                    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT "CashTransaction_pkey" PRIMARY KEY ("id")
+                );
+            `);
+            try {
+                await prisma.$executeRawUnsafe(`ALTER TABLE "CashTransaction" ADD CONSTRAINT "CashTransaction_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "RegisterSession"("id") ON DELETE RESTRICT ON UPDATE CASCADE;`);
+            } catch (e) { console.log('FK already exists'); }
+
+            return { success: true, message: 'RegisterSession + CashTransaction tables created/verified.' };
+        } catch (error: any) {
+            fastify.log.error(error);
+            return reply.status(500).send({ error: error.message });
+        }
+    });
+
+    // MASTER FIX: Run all table fixes at once
+    fastify.post('/setup/fix-all-tables', async (request, reply) => {
+        const results: string[] = [];
+        // Trigger each fix endpoint internally
+        try {
+            // SystemRole table
+            await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "SystemRole" ("id" TEXT NOT NULL, "tenantId" TEXT NOT NULL, "name" TEXT NOT NULL, "description" TEXT, "color" TEXT NOT NULL DEFAULT '#8b5cf6', "canAccessOps" BOOLEAN NOT NULL DEFAULT false, "canAccessHq" BOOLEAN NOT NULL DEFAULT false, "canAccessKiosk" BOOLEAN NOT NULL DEFAULT true, "isSystem" BOOLEAN NOT NULL DEFAULT false, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "SystemRole_pkey" PRIMARY KEY ("id"));`);
+            await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "SystemRole_tenantId_name_key" ON "SystemRole"("tenantId", "name");`);
+            results.push('SystemRole ✅');
+
+            // RegisterSession table
+            await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "RegisterSession" ("id" TEXT NOT NULL, "tenantId" TEXT NOT NULL, "employeeId" TEXT NOT NULL, "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "endedAt" TIMESTAMP(3), "startingCash" DOUBLE PRECISION NOT NULL, "declaredCash" DOUBLE PRECISION, "declaredCard" DOUBLE PRECISION, "declaredTransfer" DOUBLE PRECISION, "expectedCash" DOUBLE PRECISION, "notes" TEXT, "status" TEXT NOT NULL DEFAULT 'open', CONSTRAINT "RegisterSession_pkey" PRIMARY KEY ("id"));`);
+            results.push('RegisterSession ✅');
+
+            // CashTransaction table
+            await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "CashTransaction" ("id" TEXT NOT NULL, "sessionId" TEXT NOT NULL, "amount" DOUBLE PRECISION NOT NULL, "type" TEXT NOT NULL, "description" TEXT, "referenceId" TEXT, "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "CashTransaction_pkey" PRIMARY KEY ("id"));`);
+            results.push('CashTransaction ✅');
+
+            return { success: true, tables: results };
+        } catch (error: any) {
+            fastify.log.error(error);
+            return reply.status(500).send({ error: error.message, partialResults: results });
+        }
+    });
 }
