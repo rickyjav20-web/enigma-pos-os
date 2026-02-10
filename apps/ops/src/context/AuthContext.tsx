@@ -38,12 +38,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Load from localStorage on mount
     useEffect(() => {
-        const stored = localStorage.getItem('ops_employee');
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            setEmployee(parsed);
-            checkSessionStatus(parsed.id);
-        } else {
+        try {
+            const stored = localStorage.getItem('ops_employee');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                setEmployee(parsed);
+                checkSessionStatus(parsed.id);
+            } else {
+                setIsLoading(false);
+            }
+        } catch (e) {
+            console.error('Failed to restore session from localStorage:', e);
+            localStorage.removeItem('ops_employee');
             setIsLoading(false);
         }
     }, []);
