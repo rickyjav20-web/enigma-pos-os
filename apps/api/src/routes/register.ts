@@ -5,8 +5,8 @@ import prisma from '../lib/prisma';
 
 export default async function registerRoutes(fastify: FastifyInstance) {
 
-    // Helper: Get Tenant
-    const getTenant = (req: any) => req.headers['x-tenant-id'] as string;
+    // Helper: Get Tenant (uses middleware-resolved UUID, not raw header)
+    const getTenant = (req: any) => req.tenantId as string;
 
     // --- OPEN REGISTER ---
     const openSchema = z.object({
