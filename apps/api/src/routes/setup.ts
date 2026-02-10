@@ -502,6 +502,11 @@ export default async function setupRoutes(fastify: FastifyInstance) {
             await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "SupplierPrice_supplyItemId_idx" ON "SupplierPrice"("supplyItemId");`);
             results.push('SupplierPrice ✅');
 
+            // Fix PurchaseOrder missing columns
+            await prisma.$executeRawUnsafe(`ALTER TABLE "PurchaseOrder" ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT DEFAULT 'cash';`);
+            await prisma.$executeRawUnsafe(`ALTER TABLE "PurchaseOrder" ADD COLUMN IF NOT EXISTS "registeredById" TEXT;`);
+            results.push('PurchaseOrder Columns ✅');
+
             return { success: true, tables: results };
         } catch (error: any) {
             fastify.log.error(error);
