@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Truck, ArrowLeft, Package, Calendar, DollarSign, TrendingUp, TrendingDown, ShoppingCart, Clock, BarChart3, Phone, Mail, MapPin, Edit2, X, Save, Plus, Search, Trash2, Loader2, List } from 'lucide-react';
+import { Truck, ArrowLeft, Package, Calendar, DollarSign, TrendingUp, TrendingDown, ShoppingCart, Clock, BarChart3, Phone, Mail, MapPin, Edit2, X, Save, Plus, Search, Trash2, Loader2, List, Upload, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 
 export default function SupplierDetails() {
@@ -22,6 +22,12 @@ export default function SupplierDetails() {
     const [selectedItem, setSelectedItem] = useState(null);
     const [catalogPrice, setCatalogPrice] = useState('');
     const [catalogNotes, setCatalogNotes] = useState('');
+
+    // Bulk Import state
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [importPreview, setImportPreview] = useState([]);
+    const [importing, setImporting] = useState(false);
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         loadData();
@@ -87,6 +93,120 @@ export default function SupplierDetails() {
             loadCatalog();
         } catch (e) { console.error(e); }
     };
+
+    // --- BULK IMPORT LOGIC ---
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            const text = evt.target.result;
+            processCSV(text);
+        };
+        reader.readAsText(file);
+    };
+
+    const processCSV = async (text) => {
+        // Fetch items if not already loaded
+        let items = supplyItems;
+        if (items.length === 0) {
+            try {
+                const res = await api.get('/supply-items?limit=1000');
+                items = res.data?.data || [];
+                setSupplyItems(items);
+            } catch (e) { console.error(e); return; }
+        }
+
+        const lines = text.split(/\r?\n/);
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+
+        // Identify columns
+        const colMap = {
+            sku: headers.findIndex(h => h.includes('ref') || h.includes('sku') || h.includes('handle')),
+            name: headers.findIndex(h => h.includes('nombre') || h.includes('name') || h.includes('item')),
+            cost: headers.findIndex(h => h.includes('cost') || h.includes('precio') || h.includes('price'))
+        };
+
+        if (colMap.cost === -1) {
+            alert('No se encontró columna de Costo/Precio en el CSV');
+            return;
+        }
+
+        const preview = [];
+        // Regex to split by comma but ignore commas inside quotes
+        const splitRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const cols = lines[i].split(splitRegex).map(c => c.trim().replace(/^"|"$/g, ''));
+
+            const rawSku = colMap.sku > -1 ? cols[colMap.sku] : '';
+            const rawName = colMap.name > -1 ? cols[colMap.name] : '';
+            const rawCost = parseFloat(cols[colMap.cost]);
+
+            if (isNaN(rawCost) || rawCost <= 0) continue;
+
+            // Try to match Supply Item
+            let match = null;
+            let matchType = null;
+
+            // 1. Exact SKU match
+            if (rawSku) {
+                match = items.find(item => item.sku === rawSku);
+                if (match) matchType = 'SKU Exacto';
+            }
+
+            // 2. Name match (if no SKU match)
+            if (!match && rawName) {
+                match = items.find(item => item.name.toLowerCase() === rawName.toLowerCase());
+                if (match) matchType = 'Nombre Exacto';
+            }
+
+            // 3. Fuzzy Name match
+            if (!match && rawName) {
+                match = items.find(item => item.name.toLowerCase().includes(rawName.toLowerCase()) || rawName.toLowerCase().includes(item.name.toLowerCase()));
+                if (match) matchType = 'Nombre Similar';
+            }
+
+            if (match) {
+                preview.push({
+                    supplyItemId: match.id,
+                    supplyItemName: match.name,
+                    supplyItemSku: match.sku,
+                    oldCost: match.currentCost,
+                    newCost: rawCost,
+                    matchType
+                });
+            }
+        }
+
+        setImportPreview(preview);
+        setShowImportModal(true);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const confirmImport = async () => {
+        if (importPreview.length === 0) return;
+        setImporting(true);
+        try {
+            const payload = importPreview.map(p => ({
+                supplyItemId: p.supplyItemId,
+                unitCost: p.newCost,
+                notes: 'Importado via CSV'
+            }));
+            await api.post(`/suppliers/${id}/catalog/bulk`, { items: payload });
+            setShowImportModal(false);
+            loadCatalog();
+            alert(`${payload.length} precios importados correctamente.`);
+        } catch (e) {
+            console.error(e);
+            alert('Error al importar: ' + e.message);
+        } finally {
+            setImporting(false);
+        }
+    };
+
 
     const handleSave = async () => {
         setSaving(true);
@@ -232,13 +352,29 @@ export default function SupplierDetails() {
                         <List className="w-5 h-5 text-enigma-green" />
                         Catálogo de Precios
                     </h3>
-                    <button
-                        onClick={openCatalogModal}
-                        className="px-4 py-2 bg-enigma-green/20 border border-enigma-green text-enigma-green rounded-xl hover:bg-enigma-green/30 transition-all flex items-center gap-2 text-sm"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Agregar Item
-                    </button>
+                    <div className="flex gap-2">
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                            accept=".csv"
+                            className="hidden"
+                        />
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-3 py-2 bg-white/5 border border-white/10 text-white rounded-xl hover:bg-white/10 transition-all flex items-center gap-2 text-sm"
+                        >
+                            <Upload className="w-4 h-4" />
+                            Importar CSV
+                        </button>
+                        <button
+                            onClick={openCatalogModal}
+                            className="px-4 py-2 bg-enigma-green/20 border border-enigma-green text-enigma-green rounded-xl hover:bg-enigma-green/30 transition-all flex items-center gap-2 text-sm"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Agregar Item
+                        </button>
+                    </div>
                 </div>
 
                 {catalog.length > 0 ? (
@@ -624,6 +760,84 @@ export default function SupplierDetails() {
                             >
                                 {catalogSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                 {catalogSaving ? 'Guardando...' : 'Agregar al Catálogo'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Import Preview Modal */}
+            {showImportModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-enigma-gray rounded-3xl w-full max-w-3xl border border-white/10 animate-fade-in flex flex-col max-h-[90vh]">
+                        <div className="flex items-center justify-between p-6 border-b border-white/5">
+                            <div>
+                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <FileSpreadsheet className="w-5 h-5 text-enigma-green" />
+                                    Confirmar Importación
+                                </h2>
+                                <p className="text-sm text-white/50 mt-1">Se encontraron {importPreview.length} items coincidentes.</p>
+                            </div>
+                            <button onClick={() => setShowImportModal(false)} className="p-2 rounded-lg hover:bg-white/5">
+                                <X className="w-5 h-5 text-white/50" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6">
+                            {importPreview.length > 0 ? (
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="text-left text-white/30 text-xs border-b border-white/5">
+                                            <th className="pb-3">Item (Sistema)</th>
+                                            <th className="pb-3">SKU</th>
+                                            <th className="pb-3">Match</th>
+                                            <th className="pb-3 text-right">Costo Actual</th>
+                                            <th className="pb-3 text-right">Nuevo Costo</th>
+                                            <th className="pb-3 w-8"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {importPreview.map((item, idx) => (
+                                            <tr key={idx} className="text-sm">
+                                                <td className="py-3 text-white font-medium">{item.supplyItemName}</td>
+                                                <td className="py-3 text-white/40 font-mono text-xs">{item.supplyItemSku || '-'}</td>
+                                                <td className="py-3">
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded border ${item.matchType.includes('Exacto') ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'}`}>
+                                                        {item.matchType}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 text-white/50 text-right font-mono">${item.oldCost?.toFixed(2)}</td>
+                                                <td className="py-3 text-enigma-green text-right font-mono font-bold">${item.newCost.toFixed(2)}</td>
+                                                <td className="py-3 text-center">
+                                                    <CheckCircle className="w-4 h-4 text-enigma-green mx-auto" />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <div className="text-center py-12 text-gray-500">
+                                    <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                                    <p>No se encontraron coincidencias en el archivo CSV.</p>
+                                    <p className="text-sm mt-2">Asegúrate de que las columnas tengan nombres como "SKU", "Nombre" y "Costo".</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3 p-6 border-t border-white/5">
+                            <button
+                                onClick={() => setShowImportModal(false)}
+                                className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 hover:bg-white/5 transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmImport}
+                                disabled={importing || importPreview.length === 0}
+                                className="flex-1 py-3 rounded-xl bg-enigma-green font-medium flex items-center justify-center gap-2 hover:bg-enigma-green/80 transition-all disabled:opacity-50"
+                            >
+                                {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                {importing ? 'Importando...' : `Importar ${importPreview.length} Items`}
                             </button>
                         </div>
                     </div>

@@ -345,7 +345,17 @@ function OptimizerView() {
                                                 </div>
                                                 <span className="text-gray-200">{item.name}</span>
                                             </div>
-                                            <span className="font-mono text-enigma-green text-sm">
+                                            <span className="font-mono text-enigma-green text-sm flex items-center gap-2">
+                                                {item.source === 'catalog' && (
+                                                    <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/30">
+                                                        CATALOG
+                                                    </span>
+                                                )}
+                                                {item.source === 'purchase' && (
+                                                    <span className="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 text-[10px] font-bold border border-orange-500/30">
+                                                        HISTORY
+                                                    </span>
+                                                )}
                                                 ${item.estCost.toFixed(2)}
                                             </span>
                                         </div>

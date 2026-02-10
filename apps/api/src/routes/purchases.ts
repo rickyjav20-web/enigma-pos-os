@@ -577,7 +577,8 @@ export default async function (fastify: FastifyInstance) {
                 sku: item.sku,
                 lastDate: bestSupplier.lastDate,
                 averageCost: item.averageCost || 0,
-                currentCost: item.currentCost || 0
+                currentCost: item.currentCost || 0,
+                source: bestSource
             });
             plan[bestSupplier.id].totalEst += bestPrice;
         }
