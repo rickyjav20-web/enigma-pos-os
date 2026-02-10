@@ -19,7 +19,9 @@ export default async function (fastify: FastifyInstance) {
     });
 
     fastify.post('/suppliers', async (request, reply) => {
-        const { name, category, email, phone } = request.body as any;
+        const { name, category, email, phone, address, notes } = request.body as any;
+        if (!name || !name.trim()) return reply.status(400).send({ error: 'Supplier name is required' });
+
         const normalized = name.toLowerCase().replace(/[^a-z0-9]/g, '');
         const tenantId = request.tenantId || 'enigma_hq';
 
@@ -28,19 +30,39 @@ export default async function (fastify: FastifyInstance) {
             where: { normalizedName: normalized, tenantId }
         });
 
-        if (existing) return existing;
+        if (existing) return reply.status(409).send({ error: 'A supplier with this name already exists', supplier: existing });
 
         const supplier = await prisma.supplier.create({
             data: {
-                name,
+                name: name.trim(),
                 normalizedName: normalized,
                 category: category || 'General',
-                email,
-                phone,
+                email: email || null,
+                phone: phone || null,
+                address: address || null,
+                notes: notes || null,
                 tenantId
             }
         });
         return supplier;
+    });
+
+    // --- DELETE SUPPLIER ---
+    fastify.delete('/suppliers/:id', async (request, reply) => {
+        const { id } = request.params as any;
+        const existing = await prisma.supplier.findUnique({ where: { id } });
+        if (!existing) return reply.status(404).send({ error: 'Supplier not found' });
+
+        // Check if supplier has purchase orders
+        const orderCount = await prisma.purchaseOrder.count({ where: { supplierId: id } });
+        if (orderCount > 0) {
+            return reply.status(400).send({
+                error: `Cannot delete supplier with ${orderCount} purchase orders. Remove purchase history first.`
+            });
+        }
+
+        await prisma.supplier.delete({ where: { id } });
+        return { success: true, deleted: id };
     });
 
     fastify.get('/suppliers/:id', async (request, reply) => {
@@ -230,7 +252,7 @@ export default async function (fastify: FastifyInstance) {
     });
 
     fastify.post('/purchases', async (request, reply) => {
-        const { supplierId, items, tenantId, status } = request.body as any;
+        const { supplierId, items = [], tenantId, status, paymentMethod, registeredById } = request.body as any;
         // items = [{ supplyItemId, quantity, unitCost }]
 
         const totalAmount = items.reduce((acc: number, item: any) => acc + (item.quantity * item.unitCost), 0);
@@ -240,6 +262,8 @@ export default async function (fastify: FastifyInstance) {
                 supplierId,
                 tenantId: tenantId || 'enigma_hq',
                 status: status || 'draft',
+                paymentMethod: paymentMethod || 'cash',
+                registeredById,
                 totalAmount,
                 lines: {
                     create: items.map((item: any) => ({
@@ -250,7 +274,7 @@ export default async function (fastify: FastifyInstance) {
                     }))
                 }
             },
-            include: { lines: true }
+            include: { lines: true, supplier: true }
         });
 
         // Loop for Logic: Update Costs if Confirmed
@@ -312,6 +336,29 @@ export default async function (fastify: FastifyInstance) {
                 metadata: { purchaseOrderId: purchase.id },
                 version: 1
             });
+
+            // AUTOMATED CASH TRANSACTION (If Cash)
+            if (purchase.paymentMethod === 'cash' && purchase.registeredById) {
+                // Find active session for this user
+                const activeSession = await prisma.registerSession.findFirst({
+                    where: {
+                        employeeId: purchase.registeredById,
+                        status: 'open'
+                    }
+                });
+
+                if (activeSession) {
+                    await prisma.cashTransaction.create({
+                        data: {
+                            sessionId: activeSession.id,
+                            amount: -purchase.totalAmount, // Negative for outflow
+                            type: 'PURCHASE',
+                            description: `Compra Proveedor: ${purchase.supplier?.name || 'Desconocido'}`,
+                            referenceId: purchase.id
+                        }
+                    });
+                }
+            }
         }
 
         return purchase;
