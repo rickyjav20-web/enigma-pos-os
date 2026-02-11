@@ -42,5 +42,8 @@ COPY --from=builder /app/apps/ops/dist .
 # Copy custom nginx config
 COPY apps/ops/nginx.conf /etc/nginx/conf.d/default.conf
 
+EXPOSE 8080
+EXPOSE 80
+
 # Use sed to inject PORT and start nginx
 CMD ["/bin/sh", "-c", "sed -i \"s/\\$PORT/$PORT/g\" /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
