@@ -39,8 +39,8 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 # Copy static assets from builder stage
 COPY --from=builder /app/apps/ops/dist .
-# Copy custom nginx config template
-COPY apps/ops/nginx.conf /etc/nginx/conf.d/default.conf.template
+# Copy custom nginx config
+COPY apps/ops/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Use sed to inject PORT and start nginx (safer than envsubst)
+# Use sed to inject PORT and start nginx
 CMD ["/bin/sh", "-c", "sed -i \"s/\\$PORT/$PORT/g\" /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
