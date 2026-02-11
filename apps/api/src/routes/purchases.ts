@@ -222,9 +222,10 @@ export default async function (fastify: FastifyInstance) {
             orderBy: { supplyItem: { name: 'asc' } }
         });
 
-        // 2. Get implicit prices from Purchase History (limit to last 100 items to be safe)
+        // 2. Get implicit prices from Purchase History (limit to last 200 items to be safe)
         // We want the LATEST price for each item bought from this supplier
-        const historyLines = await prisma.purchaseLine.findMany({
+        // FIX: Avoid using 'distinct' with relation orderBy as it can crash the DB driver/server
+        const rawHistoryLines = await prisma.purchaseLine.findMany({
             where: {
                 purchaseOrder: {
                     supplierId: id,
@@ -232,11 +233,20 @@ export default async function (fastify: FastifyInstance) {
                 }
             },
             orderBy: { purchaseOrder: { date: 'desc' } },
-            distinct: ['supplyItemId'],
+            take: 200,
             include: {
                 supplyItem: { select: { id: true, name: true, sku: true, category: true, defaultUnit: true, currentCost: true } }
             }
         });
+
+        // Manual distinct by supplyItemId
+        const historyMap = new Map();
+        for (const line of rawHistoryLines) {
+            if (!historyMap.has(line.supplyItemId)) {
+                historyMap.set(line.supplyItemId, line);
+            }
+        }
+        const historyLines = Array.from(historyMap.values());
 
         // 3. Merge: Catalog takes precedence. If not in catalog, add from history.
         const catalogItemIds = new Set(catalog.map(c => c.supplyItemId));
