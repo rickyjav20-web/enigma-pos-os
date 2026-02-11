@@ -42,5 +42,5 @@ COPY --from=builder /app/apps/ops/dist .
 # Copy custom nginx config template
 COPY apps/ops/nginx.conf /etc/nginx/conf.d/default.conf.template
 
-# Use envsubst to inject PORT and start nginx
-CMD ["/bin/sh", "-c", "envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
+# Use sed to inject PORT and start nginx (safer than envsubst)
+CMD ["/bin/sh", "-c", "sed -i \"s/\\$PORT/$PORT/g\" /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
