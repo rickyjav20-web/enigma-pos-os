@@ -50,7 +50,7 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
                 skip_empty_lines: true,
                 trim: true,
                 relax_column_count: true
-            });
+            }) as any[];
 
             if (records.length === 0) {
                 return reply.status(400).send({ error: "CSV is empty or could not be parsed." });
