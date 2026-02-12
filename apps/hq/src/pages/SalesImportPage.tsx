@@ -1,6 +1,6 @@
 
 import { useState, useRef } from 'react';
-import { Upload, FileText, Check, AlertCircle, RefreshCw, FileSpreadsheet, Settings } from 'lucide-react';
+import { Upload, FileText, Check, AlertCircle, RefreshCw, FileSpreadsheet, Settings, Calendar, Package } from 'lucide-react';
 import { api } from '../lib/api';
 
 export default function SalesImportPage() {
