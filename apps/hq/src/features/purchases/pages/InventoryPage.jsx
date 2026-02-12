@@ -319,10 +319,10 @@ export default function InventoryPage() {
                                 <th className="p-4 font-medium border-b border-zinc-800">
                                     {zone === 'MENU' ? 'Calc Cost' : zone === 'KITCHEN' ? 'Unit Cost' : 'Last Cost'}
                                 </th>
-                                {zone === 'PANTRY' && (
+                                {(zone === 'PANTRY' || zone === 'KITCHEN') && (
                                     <>
                                         <th className="p-4 font-medium border-b border-zinc-800">Stock</th>
-                                        <th className="p-4 font-medium border-b border-zinc-800">Avg Cost</th>
+                                        <th className="p-4 font-medium border-b border-zinc-800">Total Value</th>
                                     </>
                                 )}
                                 <th className="p-4 font-medium border-b border-zinc-800">
@@ -371,6 +371,12 @@ export default function InventoryPage() {
                                     <td className="p-4 text-zinc-300">
                                         ${item.currentCost.toFixed(2)} <span className="text-xs text-zinc-500">/ batch</span>
                                     </td>
+                                    <td className="p-4 text-zinc-200 font-bold">
+                                        {item.stockQuantity || 0} <span className="text-xs text-zinc-500 font-normal">{item.yieldUnit}</span>
+                                    </td>
+                                    <td className="p-4 text-emerald-400 font-bold">
+                                        ${((item.stockQuantity || 0) * (item.currentCost || 0)).toFixed(2)}
+                                    </td>
                                     <td className="p-4 text-center">
                                         <div className="w-2 h-2 rounded-full bg-zinc-600 mx-auto" title="Not linked to POS"></div>
                                     </td>
@@ -408,8 +414,8 @@ export default function InventoryPage() {
                                         <td className="p-4 text-zinc-200 font-bold">
                                             {item.stockQuantity || 0} <span className="text-xs text-zinc-500 font-normal">{item.defaultUnit}</span>
                                         </td>
-                                        <td className="p-4 text-zinc-400">
-                                            ${(item.averageCost || 0).toFixed(2)} <span className="text-xs text-zinc-500">avg</span>
+                                        <td className="p-4 text-emerald-400 font-bold">
+                                            ${((item.stockQuantity || 0) * (item.averageCost || 0)).toFixed(2)}
                                         </td>
                                         <td className="p-4">
                                             {Math.abs(costChange) > 1 ? (
