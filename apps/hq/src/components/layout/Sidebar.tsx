@@ -20,6 +20,7 @@ export function Sidebar({ className }: SidebarProps) {
         { icon: Package, label: 'Inventory', href: '/purchases/inventory', color: 'text-enigma-green' },
         { icon: Brain, label: 'Smart Order', href: '/purchases/smart-order', color: 'text-pink-400' },
         { icon: ShoppingCart, label: 'New Purchase', href: '/purchases/new', color: 'text-amber-400' },
+        { icon: Package, label: 'Import Sales', href: '/purchases/import-sales', color: 'text-purple-400' },
         { icon: Wallet, label: 'Caja (Admin)', href: '/register', color: 'text-emerald-400' },
         { icon: Settings, label: 'Organization', href: '/account', color: 'text-gray-400' },
     ];

@@ -24,12 +24,8 @@ export default function ProductsPage() {
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = `${import.meta.env.VITE_API_URL || 'https://enigma-pos-os-production.up.railway.app/api/v1'}/data/export?tenantId=${CURRENT_TENANT_ID}`;
-                        link.setAttribute('download', 'enigma_inventory.csv'); // Hint filename
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
+                        const url = `${import.meta.env.VITE_API_URL || 'https://enigma-pos-os-production.up.railway.app/api/v1'}/data/export?tenantId=${CURRENT_TENANT_ID}`;
+                        window.location.href = url;
                     }}>
                         Export CSV
                     </Button>

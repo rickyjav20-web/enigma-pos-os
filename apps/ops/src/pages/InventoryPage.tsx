@@ -315,14 +315,26 @@ export default function InventoryPage() {
                                     <span className="flex items-center gap-1">
                                         <Scale className="w-3 h-3" /> {item.defaultUnit}
                                     </span>
+                                    {item.stockQuantity !== undefined && (
+                                        <span className={`flex items-center gap-1 ${item.stockQuantity > 0 ? 'text-enigma-green' : 'text-white/20'}`}>
+                                            <Package className="w-3 h-3" /> {item.stockQuantity}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                             <div className="text-right">
                                 <p className="font-mono text-enigma-green">${item.currentCost.toFixed(2)}</p>
                                 {item.isProduction && (
-                                    <p className="text-[10px] text-orange-400 flex items-center justify-end gap-1">
-                                        <Flame className="w-3 h-3" /> Producción
-                                    </p>
+                                    <div className="flex flex-col items-end">
+                                        <p className="text-[10px] text-orange-400 flex items-center justify-end gap-1">
+                                            <Flame className="w-3 h-3" /> Producción
+                                        </p>
+                                        {item.stockQuantity && item.stockQuantity > 0 ? (
+                                            <p className="text-[10px] text-white/40">
+                                                Val: ${(item.stockQuantity * item.currentCost).toFixed(2)}
+                                            </p>
+                                        ) : null}
+                                    </div>
                                 )}
                             </div>
                             <ChevronRight className="w-5 h-5 text-white/20" />

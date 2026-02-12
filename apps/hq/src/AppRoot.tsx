@@ -32,6 +32,8 @@ import SmartOrderPage from './features/purchases/pages/SmartOrderPage';
 import PurchaseOrderForm from './features/purchases/pages/PurchaseOrderForm';
 // @ts-ignore
 import RegisterAdminPage from './features/purchases/pages/RegisterAdminPage';
+// @ts-ignore
+import SalesImportPage from './pages/SalesImportPage';
 
 function AppRoot() {
   return (
@@ -63,6 +65,7 @@ function AppRoot() {
               <Route path="purchases/inventory/:id" element={<ItemDetails />} />
               <Route path="purchases/smart-order" element={<SmartOrderPage />} />
               <Route path="purchases/new" element={<PurchaseOrderForm />} />
+              <Route path="purchases/import-sales" element={<SalesImportPage />} />
               <Route path="register" element={<RegisterAdminPage />} />
             </Route>
 
