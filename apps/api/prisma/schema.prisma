@@ -486,6 +486,8 @@ model SaleEvent {
   productName     String   // Snapshot/Fallback
   
   quantity        Float
+  unitPrice       Float    @default(0)
+  totalPrice      Float    @default(0)
   // Processing Status
   status          String   @default("PENDING") // PENDING, CONSUMED, ERROR
   
