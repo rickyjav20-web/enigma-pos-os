@@ -15,7 +15,7 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
         const result = SalesImportSchema.safeParse(request.body);
 
         if (!result.success) {
-            return reply.status(400).send({ error: "Invalid format", details: result.error.errors });
+            return reply.status(400).send({ error: "Invalid format", details: (result as any).error.errors });
         }
 
         const { sales } = result.data;
@@ -42,7 +42,7 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
                     include: {
                         recipes: {
                             include: {
-                                ingredients: { include: { supplyItem: true } }
+                                supplyItem: true
                             }
                         }
                     }
@@ -54,24 +54,22 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
                     continue;
                 }
 
-                // 2. Find Active Recipe
-                // For MVP, take the first recipe. 
-                const recipe = product.recipes[0];
+                const ingredients = product.recipes;
 
-                if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) {
+                if (!ingredients || ingredients.length === 0) {
                     report.failedCount++;
-                    report.errors.push(`No recipe for: ${sale.productName}`);
+                    report.errors.push(`No recipe ingredients for: ${sale.productName}`);
                     continue;
                 }
 
                 // 3. Deduct Inventory
-                for (const ingredient of recipe.ingredients) {
-                    if (!ingredient.supplyItemId) continue;
+                for (const recipeItem of ingredients) {
+                    if (!recipeItem.supplyItemId) continue;
 
-                    const quantityToDeduct = ingredient.quantity * sale.quantity;
+                    const quantityToDeduct = recipeItem.quantity * sale.quantity;
 
                     await prisma.supplyItem.update({
-                        where: { id: ingredient.supplyItemId },
+                        where: { id: recipeItem.supplyItemId },
                         data: {
                             stockQuantity: { decrement: quantityToDeduct }
                         }
@@ -80,7 +78,7 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
                     // Log movement
                     await prisma.inventoryLog.create({
                         data: {
-                            supplyItemId: ingredient.supplyItemId,
+                            supplyItemId: recipeItem.supplyItemId,
                             changeAmount: -quantityToDeduct,
                             reason: `SALE_IMPORT: ${sale.productName} x${sale.quantity}`,
                             tenantId,
@@ -90,9 +88,9 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
                     });
 
                     report.deductions.push({
-                        item: ingredient.supplyItem?.name || ingredient.supplyItemId,
+                        item: recipeItem.supplyItem?.name || recipeItem.supplyItemId,
                         deducted: quantityToDeduct,
-                        unit: ingredient.unit
+                        unit: recipeItem.unit
                     });
                 }
 

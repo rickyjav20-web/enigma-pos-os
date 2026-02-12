@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Upload, FileText, Check, AlertCircle, RefreshCw } from 'lucide-react';
 import { CURRENT_TENANT_ID } from '../lib/api';
 
