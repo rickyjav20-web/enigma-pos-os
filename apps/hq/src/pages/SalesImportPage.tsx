@@ -1,6 +1,6 @@
 
 import { useState, useRef } from 'react';
-import { Upload, FileText, Check, AlertCircle, RefreshCw, FileSpreadsheet, ArrowRight } from 'lucide-react';
+import { Upload, FileText, Check, AlertCircle, RefreshCw, FileSpreadsheet, ArrowRight, Settings } from 'lucide-react';
 import { api } from '../lib/api';
 
 export default function SalesImportPage() {
@@ -70,6 +70,24 @@ export default function SalesImportPage() {
         } catch (e: any) {
             console.error(e);
             alert(`Failed to save batch: ${e.response?.data?.message || e.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleProcessBatch = async () => {
+        if (!batchId) return;
+        setLoading(true);
+        try {
+            const res = await api.post('/sales/process-batch', { batchId });
+            if (res.data.success) {
+                alert(`¡Éxito! Inventario descontado correctly.\nItems procesados: ${res.data.stats.itemsDeducted}`);
+                // Optional: Redirect or reset
+                reset();
+            }
+        } catch (e: any) {
+            console.error(e);
+            alert(`Error procesando inventario: ${e.response?.data?.message || e.message}`);
         } finally {
             setLoading(false);
         }
@@ -236,15 +254,30 @@ export default function SalesImportPage() {
                             Se ha registrado el Batch ID: <span className="font-mono bg-black/20 px-2 rounded">{batchId?.split('-')[0]}...</span>
                         </p>
 
-                        <div className="flex justify-center gap-4">
+                        <div className="bg-enigma-gray/50 p-6 rounded-xl border border-white/5 mb-8 max-w-lg mx-auto">
+                            <h4 className="font-bold text-white mb-2 flex items-center justify-center gap-2">
+                                <RefreshCw className="w-4 h-4 text-enigma-purple" /> Siguiente Paso: Consumo
+                            </h4>
+                            <p className="text-sm text-gray-400">
+                                Los datos de ventas están seguros. Ahora debes procesar el consumo para descontar los ingredientes del inventario base.
+                            </p>
+                        </div>
+
+                        <div className="flex justify-center gap-4 flex-wrap">
                             <button
                                 onClick={reset}
-                                className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold"
+                                className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-gray-300"
                             >
                                 Subir Otro Archivo
                             </button>
-                            <button className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-xl font-bold flex items-center gap-2">
-                                Ir al Historial <ArrowRight className="w-4 h-4" />
+
+                            <button
+                                onClick={handleProcessBatch}
+                                disabled={loading}
+                                className="px-8 py-3 bg-enigma-purple hover:bg-enigma-purple/80 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-enigma-purple/20 text-white"
+                            >
+                                {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Settings className="w-5 h-5" />}
+                                PROCESAR INVENTARIO
                             </button>
                         </div>
                     </div>
