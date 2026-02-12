@@ -1,7 +1,7 @@
 
 import { useState, useRef } from 'react';
 import { Upload, FileText, Check, AlertCircle, RefreshCw, FileSpreadsheet, ArrowRight } from 'lucide-react';
-import { CURRENT_TENANT_ID, api } from '../lib/api';
+import { api } from '../lib/api';
 
 export default function SalesImportPage() {
     const [step, setStep] = useState<'upload' | 'preview' | 'success'>('upload');

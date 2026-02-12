@@ -87,11 +87,12 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
                 nameMap.set(p.name.toLowerCase(), p);
             });
 
-            for (const row of records) {
-                const rawSku = row[colSku]?.trim();
-                const rawName = row[colName]?.trim();
-                const qty = parseFloat(row[colQty] || '0');
-                const price = parseFloat(row[colPrice] || '0'); // Usually Total Price in Loyverse
+            for (const r of records) {
+                const row = r as any;
+                const rawSku = (row[colSku] as string)?.trim();
+                const rawName = (row[colName] as string)?.trim();
+                const qty = parseFloat((row[colQty] as string) || '0');
+                const price = parseFloat((row[colPrice] as string) || '0'); // Usually Total Price in Loyverse
 
                 if (!rawName && !rawSku) continue; // Skip empty rows
 
@@ -121,8 +122,8 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
                     quantity: qty,
                     total: price,
                     uPrice: qty > 0 ? price / qty : 0,
-                    externalId: row[colRef] || null,
-                    timestamp: row[colTime] ? new Date(row[colTime]).toISOString() : new Date().toISOString(),
+                    externalId: (row[colRef] as string) || null,
+                    timestamp: row[colTime] ? new Date(row[colTime] as string).toISOString() : new Date().toISOString(),
                     status,
                     matchedId: match?.id || null
                 });
