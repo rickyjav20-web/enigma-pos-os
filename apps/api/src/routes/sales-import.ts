@@ -164,10 +164,12 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
         const result = CommitSchema.safeParse(request.body);
 
         if (!result.success) {
+            console.error("Validation Error Details:", JSON.stringify((result as any).error.errors, null, 2));
             return reply.status(400).send({ error: "Invalid data", details: (result as any).error.errors });
         }
 
         const { events, fileName, source } = result.data;
+        console.log(`Committing batch with ${events.length} events`);
 
         // Calculate totals
         const totalSales = events.reduce((acc, e) => acc + (e.total || 0), 0);
@@ -211,8 +213,8 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
             return { success: true, batchId: batch.id, message: "Batch saved successfully. Ready for consumption." };
 
         } catch (e: any) {
-            console.error("Commit Error", e);
-            return reply.status(500).send({ error: "Failed to save batch", message: e.message });
+            console.error("Detailed Commit Error", e);
+            return reply.status(500).send({ error: "Failed to save batch", message: e.message, stack: e.stack });
         }
     });
 }
