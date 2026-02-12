@@ -132,6 +132,10 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
             // 4. Sync Recipe (if provided)
             if (ingredients !== undefined && Array.isArray(ingredients)) {
                 await recipeService.syncRecipe(id, ingredients);
+            } else if (yieldQuantity !== undefined) {
+                // If Yield changed but ingredients didn't (e.g. updating definition), we MUST recalculate cost
+                // because Unit Cost = Total Ingredients / Yield
+                await recipeService.recalculateSupplyItemCost(id);
             }
 
             return updatedItem;

@@ -119,17 +119,21 @@ export default function RecipeEditor({ product, onUpdate }) {
 
             {/* ADD FORM */}
             <div className="grid grid-cols-12 gap-2 bg-gray-800/50 p-4 rounded-lg">
-                <div className="col-span-6">
+                <div className="col-span-5">
                     <label className="text-xs text-gray-500 block mb-1">Ingredient</label>
                     <select
                         value={selectedItem}
-                        onChange={e => setSelectedItem(e.target.value)}
+                        onChange={e => {
+                            setSelectedItem(e.target.value);
+                            const item = supplyItems.find(i => i.id === e.target.value);
+                            if (item) setUnit(item.yieldUnit || item.defaultUnit || 'und');
+                        }}
                         className="w-full bg-black border border-gray-700 text-white rounded p-2 text-sm"
                     >
                         <option value="">Select Ingredient...</option>
                         {supplyItems.map(item => (
                             <option key={item.id} value={item.id}>
-                                {item.name} (${item.currentCost})
+                                {item.name} (${item.currentCost?.toFixed(2)} / {item.yieldUnit || item.defaultUnit || 'und'})
                             </option>
                         ))}
                     </select>
@@ -144,13 +148,19 @@ export default function RecipeEditor({ product, onUpdate }) {
                         placeholder="0.00"
                     />
                 </div>
-                <div className="col-span-3 flex items-end">
+                <div className="col-span-2">
+                    <label className="text-xs text-gray-500 block mb-1">Unit</label>
+                    <div className="p-2 text-sm text-gray-400 bg-gray-900 border border-gray-700 rounded select-none">
+                        {unit}
+                    </div>
+                </div>
+                <div className="col-span-2 flex items-end">
                     <button
                         onClick={handleAddIngredient}
                         disabled={!selectedItem || !quantity}
                         className="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-2 rounded text-sm font-bold disabled:opacity-50"
                     >
-                        + Add Check
+                        + Add
                     </button>
                 </div>
             </div>

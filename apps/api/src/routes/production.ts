@@ -6,8 +6,8 @@ export default async function productionRoutes(fastify: FastifyInstance) {
 
     // POST /production (Execute Production Run)
     fastify.post('/production', async (request, reply) => {
-        const { supplyItemId, quantity, unit, tenantId } = request.body as any;
-        const activeTenant = tenantId || 'enigma_hq';
+        const { supplyItemId, quantity, unit } = request.body as any;
+        const activeTenant = request.tenantId || 'enigma_hq';
 
         console.log(`🍳 Executing Production: Item ${supplyItemId}, Qty ${quantity} ${unit}`);
 

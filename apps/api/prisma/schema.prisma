@@ -412,3 +412,40 @@ model InventoryLog {
 
   @@index([supplyItemId])
 }
+
+// --- MODULE: SALES (POS) ---
+
+model SalesOrder {
+  id              String   @id @default(uuid())
+  tenantId        String
+  sessionId       String   // Linked to Register Session
+  
+  totalAmount     Float
+  paymentMethod   String   // 'cash', 'card', 'transfer'
+  status          String   @default("completed") // 'completed', 'cancelled'
+  
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  session         RegisterSession @relation(fields: [sessionId], references: [id])
+  items           SalesItem[]
+}
+
+model SalesItem {
+  id            String   @id @default(uuid())
+  salesOrderId  String
+  productId     String
+  
+  quantity      Int
+  unitPrice     Float
+  totalPrice    Float
+  
+  // Snapshots
+  productNameSnapshot String
+  
+  // Relations
+  salesOrder    SalesOrder @relation(fields: [salesOrderId], references: [id])
+  product       Product    @relation(fields: [productId], references: [id])
+}
+
