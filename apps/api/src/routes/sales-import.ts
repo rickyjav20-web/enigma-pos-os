@@ -44,19 +44,28 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
         const { csvContent } = result.data;
 
         try {
-            // 1. Parse CSV
-            const records = parse(csvContent, {
+            // 1. Parse CSV (Handle BOM and Multiple Delimiters)
+            // Remove BOM if present
+            const cleanContent = csvContent.replace(/^\uFEFF/, '');
+
+            const records = parse(cleanContent, {
                 columns: true,
                 skip_empty_lines: true,
                 trim: true,
-                relax_column_count: true
+                relax_column_count: true,
+                delimiter: [',', ';', '\t'] // Try comma, semicolon, tab
             }) as any[];
 
             if (records.length === 0) {
+                // Try to see what we got
+                console.log("CSV Content Preview:", cleanContent.substring(0, 200));
                 return reply.status(400).send({ error: "CSV is empty or could not be parsed." });
             }
 
-            // 2. Identify Columns (Auto-detect if not provided)
+            // 1.5 Clean keys (sometimes keys have BOM or whitespace)
+            // We'll normalize the first row's keys to be sure
+            const firstRow = records[0];
+            const cleanHeaders = Object.keys(firstRow).map(k => k.trim());
             // Loyverse Defaults: "SKU", "Item", "Quantity", "Gross Sales"
             const headers = Object.keys(records[0]);
 
