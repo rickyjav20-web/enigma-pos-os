@@ -477,7 +477,7 @@ model SaleBatch {
 model SaleEvent {
   id              String   @id @default(uuid())
   tenantId        String
-  batchId         String
+  batchId         String   // Link to Batch
   
   // Core Data (Mapped from CSV)
   externalId      String?  // Receipt ID / Transaction ID
