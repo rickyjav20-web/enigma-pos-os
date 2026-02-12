@@ -486,14 +486,8 @@ model SaleEvent {
   productName     String   // Snapshot/Fallback
   
   quantity        Float
-  unitPrice       Float    @default(0)
-  totalPrice      Float    @default(0)
-  
-  paymentMethod   String?
-  
   // Processing Status
   status          String   @default("PENDING") // PENDING, CONSUMED, ERROR
-  consumptionLog  String?  // ID/Link to InventoryLog group if needed later
   
   saleBatch       SaleBatch @relation(fields: [batchId], references: [id])
   tenant          Tenant    @relation(fields: [tenantId], references: [id])
