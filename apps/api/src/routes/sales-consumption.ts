@@ -13,7 +13,7 @@ export default async function salesConsumptionRoutes(fastify: FastifyInstance) {
         const result = ProcessBatchSchema.safeParse(request.body);
 
         if (!result.success) {
-            return reply.status(400).send({ error: "Invalid Batch ID", details: result.error.errors });
+            return reply.status(400).send({ error: "Invalid Batch ID", details: (result as any).error.errors });
         }
 
         const { batchId } = result.data;
@@ -100,10 +100,15 @@ export default async function salesConsumptionRoutes(fastify: FastifyInstance) {
 
                 // A. Deduct Inventory & Log
                 for (const [supplyItemId, { amount, supplyItemName }] of consumptions.entries()) {
+                    // Fetch current stock first to log history
+                    const item = await tx.supplyItem.findUnique({ where: { id: supplyItemId } });
+                    const currentStock = item?.stockQuantity || 0;
+                    const newStock = currentStock - amount;
+
                     // Update Stock
                     await tx.supplyItem.update({
                         where: { id: supplyItemId },
-                        data: { stockQuantity: { decrement: amount } }
+                        data: { stockQuantity: newStock }
                     });
 
                     // Log it
@@ -111,10 +116,11 @@ export default async function salesConsumptionRoutes(fastify: FastifyInstance) {
                         data: {
                             tenantId,
                             supplyItemId,
+                            previousStock: currentStock,
+                            newStock: newStock,
                             changeAmount: -amount,
-                            reason: `Batch ${batch.fileName || batchId}`,
-                            type: 'SALE_DEDUCTION',
-                            referenceId: batchId
+                            reason: `Batch ${batch.fileName || batchId} (Sales)`,
+                            notes: `Deducted ${amount} of ${supplyItemName} for sales batch`
                         }
                     });
                 }
