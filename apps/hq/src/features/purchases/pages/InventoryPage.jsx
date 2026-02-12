@@ -16,6 +16,7 @@ export default function InventoryPage() {
     const [zone, setZone] = useState('MENU'); // MENU | KITCHEN | PANTRY
     const [products, setProducts] = useState([]);
     const [supplyItems, setSupplyItems] = useState([]);
+    const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Modal State
@@ -117,6 +118,12 @@ export default function InventoryPage() {
             ]);
             setProducts(prodRes.data.data || []);
             setSupplyItems(supplyRes.data.data || []);
+
+            // Fetch Logs if needed or lazily
+            if (true) {
+                const logRes = await api.get('/inventory/logs?limit=100');
+                if (logRes.data.success) setLogs(logRes.data.data);
+            }
         } catch (e) {
             console.error("Failed to fetch inventory", e);
         } finally {
@@ -150,6 +157,7 @@ export default function InventoryPage() {
 
     // --- ACTIONS ---
     const handleOpenCreate = () => {
+        if (zone === 'LOGS') { fetchData(); return; } // Refresh action
         setEditingItem(null);
         if (zone === 'MENU') setModalType('PRODUCT');
         if (zone === 'KITCHEN') setModalType('BATCH');
@@ -185,6 +193,12 @@ export default function InventoryPage() {
                 desc: "Raw Ingredients from Suppliers.",
                 color: "text-blue-400",
                 btnText: "Register Supply Item"
+            };
+            case 'LOGS': return {
+                title: "Zone 4: Activity Logs (Audit)",
+                desc: "Recent inventory movements and deductions.",
+                color: "text-purple-400",
+                btnText: "Refresh Logs"
             };
             default: return {};
         }
@@ -276,6 +290,12 @@ export default function InventoryPage() {
                 >
                     <ShoppingCart size={18} /> Zone 3: Pantry (Procurement)
                 </button>
+                <button
+                    onClick={() => setZone('LOGS')}
+                    className={`px-6 py-3 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors ${zone === 'LOGS' ? 'border-purple-500 text-purple-400 bg-purple-900/10' : 'border-transparent text-zinc-400 hover:text-white'}`}
+                >
+                    <TrendingUp size={18} /> Zone 4: Logs
+                </button>
             </div>
 
             {/* ZONE CONTENT HEADER */}
@@ -299,7 +319,7 @@ export default function InventoryPage() {
                         onClick={handleOpenCreate}
                         className="px-4 py-2 bg-white text-black hover:bg-zinc-200 rounded-lg text-sm font-bold flex items-center gap-2 shadow-lg shadow-white/10"
                     >
-                        <Plus size={16} /> {headerParams.btnText}
+                        <Plus size={16} /> {zone === 'LOGS' ? 'Refresh' : headerParams.btnText}
                     </button>
                 </div>
             </div>
@@ -317,18 +337,20 @@ export default function InventoryPage() {
                                     {zone === 'MENU' ? 'Sales Price' : zone === 'KITCHEN' ? 'Yield' : 'Purchase Unit'}
                                 </th>
                                 <th className="p-4 font-medium border-b border-zinc-800">
-                                    {zone === 'MENU' ? 'Calc Cost' : zone === 'KITCHEN' ? 'Unit Cost' : 'Last Cost'}
+                                    {zone === 'MENU' ? 'Calc Cost' : zone === 'KITCHEN' ? 'Unit Cost' : zone === 'LOGS' ? 'Reason' : 'Last Cost'}
                                 </th>
-                                {(zone === 'PANTRY' || zone === 'KITCHEN') && (
+                                {(zone === 'PANTRY' || zone === 'KITCHEN' || zone === 'LOGS') && (
                                     <>
-                                        <th className="p-4 font-medium border-b border-zinc-800">Stock</th>
-                                        <th className="p-4 font-medium border-b border-zinc-800">Total Value</th>
+                                        <th className="p-4 font-medium border-b border-zinc-800 text-right">{zone === 'LOGS' ? 'Previous' : 'Stock'}</th>
+                                        <th className="p-4 font-medium border-b border-zinc-800 text-right">{zone === 'LOGS' ? 'New' : 'Total Value'}</th>
                                     </>
                                 )}
-                                <th className="p-4 font-medium border-b border-zinc-800">
-                                    {zone === 'MENU' ? 'Margin %' : zone === 'KITCHEN' ? 'POS Link' : 'Trend'}
+                                <th className="p-4 font-medium border-b border-zinc-800 text-right">
+                                    {zone === 'MENU' ? 'Margin %' : zone === 'KITCHEN' ? 'POS Link' : zone === 'LOGS' ? 'Change' : 'Trend'}
                                 </th>
-                                <th className="p-4 font-medium border-b border-zinc-800 text-right">Actions</th>
+                                <th className="p-4 font-medium border-b border-zinc-800 text-right">
+                                    {zone === 'LOGS' ? 'Notes' : 'Actions'}
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="text-sm divide-y divide-zinc-800">
@@ -785,8 +807,28 @@ function ItemPassport({ item, onClose, onEdit }) {
                         <span>Tenant: {item.tenantId || 'Enigma HQ'}</span>
                     </div>
 
-                </div>
-            </div>
+                    {zone === 'LOGS' && logs.map(log => (
+                        <tr key={log.id} className="hover:bg-zinc-800/50">
+                            <td className="p-4">
+                                <div className="font-medium text-white">{log.supplyItem?.name || 'Unknown Item'}</div>
+                                <div className="text-xs text-zinc-500">{new Date(log.createdAt).toLocaleString()}</div>
+                            </td>
+                            <td className="p-4 text-zinc-400">{log.supplyItem?.defaultUnit || '-'}</td>
+                            <td className="p-4 text-zinc-300 uppercase text-xs font-bold">{log.reason}</td>
+                            <td className="p-4 text-zinc-400 text-right">{log.previousStock}</td>
+                            <td className="p-4 text-white font-bold text-right">{log.newStock}</td>
+                            <td className={`p-4 text-right font-bold ${log.changeAmount < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                {log.changeAmount > 0 ? '+' : ''}{log.changeAmount.toFixed(4)}
+                            </td>
+                            <td className="p-4 text-right text-zinc-500 text-xs">
+                                {log.notes || '-'}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+            </div >
         </div >
     );
 }
