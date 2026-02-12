@@ -489,7 +489,6 @@ model SaleEvent {
   unitPrice       Float    @default(0)
   totalPrice      Float    @default(0)
   
-  channel         String?  // 'In-Store', 'UberEats'
   paymentMethod   String?
   
   // Processing Status
