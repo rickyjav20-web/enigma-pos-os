@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { FileSpreadsheet, Check, AlertCircle, Clock, ArrowRight, RefreshCw, Calendar, Package } from 'lucide-react';
+import { FileSpreadsheet, Check, AlertCircle, Clock, RefreshCw, Calendar, Package } from 'lucide-react';
 import { api } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
