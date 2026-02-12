@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, DollarSign, CreditCard, ArrowRight, Save, Loader2, Check, Wallet, Search, Trash2, ShoppingCart, GripHorizontal, List } from 'lucide-react';
+import { ArrowLeft, Loader2, Check, Search, Trash2, ShoppingCart, GripHorizontal, List } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
@@ -251,6 +251,15 @@ export default function ManualSalePage() {
                                     </button>
                                 ))}
                             </div>
+
+                            {/* Notes Field to use setNotes */}
+                            <textarea
+                                value={notes}
+                                onChange={e => setNotes(e.target.value)}
+                                placeholder="Notas de venta (opcional)..."
+                                className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-enigma-purple resize-none h-16"
+                            />
+
                             <button
                                 onClick={handleCheckout}
                                 disabled={isLoading}
