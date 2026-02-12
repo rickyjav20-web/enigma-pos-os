@@ -27,6 +27,7 @@ model Tenant {
   purchaseOrders  PurchaseOrder[]
   registerSessions RegisterSession[]
   inventoryLogs   InventoryLog[]
+  salesOrders     SalesOrder[]
   systemRoles     SystemRole[]
 }
 
@@ -194,6 +195,7 @@ model RegisterSession {
   employee        Employee  @relation(fields: [employeeId], references: [id])
   tenant          Tenant    @relation(fields: [tenantId], references: [id])
   transactions    CashTransaction[]
+  salesOrders     SalesOrder[]
 }
 
 model CashTransaction {
@@ -223,6 +225,7 @@ model Product {
   
   variants    Variant[]
   recipes     ProductRecipe[]
+  salesItems  SalesItem[]
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, loyverseId])
