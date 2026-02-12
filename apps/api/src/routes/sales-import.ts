@@ -19,13 +19,13 @@ const CommitSchema = z.object({
     fileName: z.string().optional(),
     source: z.string().optional(),
     events: z.array(z.object({
-        sku: z.string().optional().nullable(),
+        sku: z.string().nullable().optional(),
         productName: z.string(),
         quantity: z.number(),
-        timestamp: z.string().optional(), // ISO string
-        uPrice: z.number().optional(),
-        total: z.number().optional(),
-        externalId: z.string().optional()
+        timestamp: z.string().optional().nullable(), // ISO string
+        uPrice: z.number().optional().nullable(),
+        total: z.number().optional().nullable(),
+        externalId: z.string().optional().nullable()
     }))
 });
 
@@ -195,12 +195,12 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
                         data: events.map(e => ({
                             tenantId,
                             batchId: newBatch.id,
-                            sku: e.sku,
+                            sku: e.sku || null,
                             productName: e.productName,
                             quantity: e.quantity,
-                            totalPrice: e.total,
-                            unitPrice: e.uPrice,
-                            externalId: e.externalId,
+                            totalPrice: e.total || 0,
+                            unitPrice: e.uPrice || 0,
+                            externalId: e.externalId || null,
                             timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
                             status: 'PENDING'
                         }))
