@@ -78,7 +78,6 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
                     });
 
                     // Log movement
-                    // Log movement
                     await prisma.inventoryLog.create({
                         data: {
                             supplyItemId: ingredient.supplyItemId,

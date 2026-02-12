@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { Upload, FileText, Check, AlertCircle, RefreshCw } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+
+import { useAuth } from '../components/providers/AuthProvider';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://enigma-pos-os-production.up.railway.app/api/v1';
 
