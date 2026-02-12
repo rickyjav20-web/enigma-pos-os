@@ -67,9 +67,9 @@ export default function SalesImportPage() {
                 setBatchId(res.data.batchId);
                 setStep('success');
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            alert("Failed to save batch.");
+            alert(`Failed to save batch: ${e.response?.data?.message || e.message}`);
         } finally {
             setLoading(false);
         }
