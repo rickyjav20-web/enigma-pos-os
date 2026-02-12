@@ -144,7 +144,8 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
                 totalSales,
                 rows: processedRows, // Send all for now, or slice for pagination if massive
                 unknownItems: Array.from(unknownSkus),
-                detectedColumns: { colSku, colName, colQty, colPrice }
+                detectedColumns: { colSku, colName, colQty, colPrice },
+                debugHeaders: Object.keys(records[0])
             };
 
         } catch (e: any) {
