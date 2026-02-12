@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Package, ChevronRight, Scale, Tag, DollarSign, X, TrendingUp, TrendingDown, History, ShoppingCart, Edit3, ChefHat, Utensils, Flame, ArrowRight } from 'lucide-react';
+import { Search, Plus, Package, ChevronRight, Scale, Tag, DollarSign, X, ShoppingCart, Edit3, ChefHat, Utensils, Flame } from 'lucide-react';
 
 const API_URL = 'https://enigma-pos-os-production.up.railway.app/api/v1';
 const TENANT_HEADER = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
@@ -30,14 +30,6 @@ interface SupplyItem {
     ingredients?: Ingredient[];
 }
 
-interface PriceHistoryEntry {
-    id: string;
-    oldCost: number;
-    newCost: number;
-    createdAt: string;
-    supplier?: { name: string };
-}
-
 const CATEGORIES = ['Lácteos', 'Panadería', 'Carnes', 'Vegetales', 'Bebidas', 'Secos', 'Frescos', 'Postres', 'Salsas', 'Preparaciones', 'Otros'];
 const UNITS = ['kg', 'g', 'L', 'ml', 'und', 'docena', 'caja'];
 
@@ -50,8 +42,6 @@ export default function InventoryPage() {
 
     // Item Detail
     const [selectedItem, setSelectedItem] = useState<SupplyItem | null>(null);
-    const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
-    const [loadingHistory, setLoadingHistory] = useState(false);
 
     // Edit Mode
     const [editMode, setEditMode] = useState(false);
@@ -97,30 +87,11 @@ export default function InventoryPage() {
         }
     };
 
-    const loadPriceHistory = async (itemId: string) => {
-        setLoadingHistory(true);
-        try {
-            const res = await fetch(`${API_URL}/supply-items/${itemId}/price-history`);
-            if (res.ok) {
-                const data = await res.json();
-                setPriceHistory(data || []);
-            } else {
-                setPriceHistory([]);
-            }
-        } catch (e) {
-            console.error(e);
-            setPriceHistory([]);
-        } finally {
-            setLoadingHistory(false);
-        }
-    };
-
     const openItemDetail = (item: SupplyItem) => {
         setSelectedItem(item);
         setEditedItem({ ...item });
         setRecipeIngredients(item.ingredients || []);
         setEditMode(false);
-        loadPriceHistory(item.id);
     };
 
     const handleSaveEdit = async () => {
@@ -161,7 +132,6 @@ export default function InventoryPage() {
 
                 setSelectedItem(freshData);
                 setEditMode(false);
-                loadPriceHistory(freshData.id);
             }
         } catch (e) {
             console.error(e);
@@ -267,11 +237,6 @@ export default function InventoryPage() {
         i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         i.category.toLowerCase().includes(searchQuery.toLowerCase())
     );
-
-    const priceChange = selectedItem ?
-        (selectedItem.currentCost - (selectedItem.averageCost || selectedItem.currentCost)) : 0;
-    const priceChangePercent = selectedItem?.averageCost && selectedItem.averageCost > 0 ?
-        ((priceChange / selectedItem.averageCost) * 100) : 0;
 
     return (
         <div className="min-h-screen bg-enigma-black p-4 pb-24">
@@ -785,3 +750,4 @@ export default function InventoryPage() {
         </div>
     );
 }
+
