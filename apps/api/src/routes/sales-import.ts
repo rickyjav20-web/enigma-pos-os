@@ -217,4 +217,23 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
             return reply.status(500).send({ error: "Failed to save batch", message: e.message, stack: e.stack });
         }
     });
+
+    fastify.get('/sales/batches', async (request, reply) => {
+        const tenantId = request.tenantId || 'enigma_hq';
+        try {
+            const batches = await prisma.saleBatch.findMany({
+                where: { tenantId },
+                orderBy: { importedAt: 'desc' },
+                include: {
+                    _count: {
+                        select: { events: true }
+                    }
+                }
+            });
+            return { success: true, batches };
+        } catch (e: any) {
+            console.error(e);
+            return reply.status(500).send({ error: "Failed to fetch batches" });
+        }
+    });
 }
