@@ -29,6 +29,8 @@ model Tenant {
   inventoryLogs   InventoryLog[]
   salesOrders     SalesOrder[]
   systemRoles     SystemRole[]
+  saleBatches     SaleBatch[]
+  saleEvents      SaleEvent[]
 }
 
 // --- MODULE: ACCESS CONTROL ---
@@ -450,5 +452,55 @@ model SalesItem {
   // Relations
   salesOrder    SalesOrder @relation(fields: [salesOrderId], references: [id])
   product       Product    @relation(fields: [productId], references: [id])
+}
+
+// --- MODULE: SALES IMPORT V2 ---
+
+model SaleBatch {
+  id          String   @id @default(uuid())
+  tenantId    String
+  
+  status      String   @default("PENDING") // PENDING, PROCESSED, FAILED
+  fileName    String?
+  source      String?  // 'Loyverse', 'Generic CSV'
+  
+  totalSales  Float    @default(0)
+  totalItems  Float    @default(0)
+  
+  importedAt  DateTime @default(now())
+  processedAt DateTime?
+  
+  events      SaleEvent[]
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model SaleEvent {
+  id              String   @id @default(uuid())
+  tenantId        String
+  batchId         String
+  
+  // Core Data (Mapped from CSV)
+  externalId      String?  // Receipt ID / Transaction ID
+  timestamp       DateTime // Date of sale
+  sku             String?  // The key identifier
+  productName     String   // Snapshot/Fallback
+  
+  quantity        Float
+  unitPrice       Float    @default(0)
+  totalPrice      Float    @default(0)
+  
+  channel         String?  // 'In-Store', 'UberEats'
+  paymentMethod   String?
+  
+  // Processing Status
+  status          String   @default("PENDING") // PENDING, CONSUMED, ERROR
+  consumptionLog  String?  // ID/Link to InventoryLog group if needed later
+  
+  saleBatch       SaleBatch @relation(fields: [batchId], references: [id])
+  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  
+  @@index([batchId])
+  @@index([sku])
+  @@index([timestamp])
 }
 

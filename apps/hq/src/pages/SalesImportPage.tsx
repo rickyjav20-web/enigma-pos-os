@@ -1,163 +1,254 @@
 
-import { useState } from 'react';
-import { Upload, FileText, Check, AlertCircle, RefreshCw } from 'lucide-react';
-import { CURRENT_TENANT_ID } from '../lib/api';
-
-const API_URL = import.meta.env.VITE_API_URL || 'https://enigma-pos-os-production.up.railway.app/api/v1';
+import { useState, useRef } from 'react';
+import { Upload, FileText, Check, AlertCircle, RefreshCw, FileSpreadsheet, ArrowRight } from 'lucide-react';
+import { CURRENT_TENANT_ID, api } from '../lib/api';
 
 export default function SalesImportPage() {
-    // const { tenant } = useAuth();
-    const [rawText, setRawText] = useState('');
-    const [previewData, setPreviewData] = useState<any[]>([]);
+    const [step, setStep] = useState<'upload' | 'preview' | 'success'>('upload');
+    const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<any>(null);
 
-    const parseText = () => {
-        // Simple parser: Name, Quantity (Tab or Comma separated)
-        const lines = rawText.split('\n').filter(l => l.trim());
-        const parsed = lines.map(line => {
-            // Try comma first, then tab
-            let parts = line.split(',');
-            if (parts.length < 2) parts = line.split('\t');
+    // Preview Data
+    const [stats, setStats] = useState({ validCount: 0, warningCount: 0, totalSales: 0 });
+    const [rows, setRows] = useState<any[]>([]);
+    const [unknownItems, setUnknownItems] = useState<string[]>([]);
+    const [columns, setColumns] = useState<any>({});
 
-            if (parts.length >= 2) {
-                return {
-                    productName: parts[0].trim(),
-                    quantity: parseFloat(parts[1].trim()) || 0
-                };
-            }
-            return null;
-        }).filter(Boolean);
+    // Success Data
+    const [batchId, setBatchId] = useState<string | null>(null);
 
-        setPreviewData(parsed);
-        setResult(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
+            handlePreview(e.target.files[0]);
+        }
     };
 
-    const executeImport = async () => {
+    const handlePreview = async (uploadedFile: File) => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_URL}/sales/import`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-tenant-id': CURRENT_TENANT_ID
-                },
-                body: JSON.stringify({ sales: previewData })
+            const text = await uploadedFile.text();
+
+            const res = await api.post('/sales/preview', {
+                csvContent: text
             });
 
-            const data = await res.json();
-            setResult(data);
+            const data = res.data;
+            setStats({
+                validCount: data.validCount,
+                warningCount: data.warningCount,
+                totalSales: data.totalSales
+            });
+            setRows(data.rows);
+            setUnknownItems(data.unknownItems || []);
+            setColumns(data.detectedColumns || {});
+            setStep('preview');
         } catch (e) {
             console.error(e);
-            alert("Error importing sales");
+            alert("Error parsing CSV. Please check the format.");
+            setFile(null);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleCommit = async () => {
+        setLoading(true);
+        try {
+            const res = await api.post('/sales/commit', {
+                fileName: file?.name,
+                source: 'Browser Upload',
+                events: rows
+            });
+
+            if (res.data.success) {
+                setBatchId(res.data.batchId);
+                setStep('success');
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Failed to save batch.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const reset = () => {
+        setStep('upload');
+        setFile(null);
+        setRows([]);
+        setBatchId(null);
     };
 
     return (
         <div className="p-6 text-white min-h-screen">
             <header className="mb-8">
                 <h1 className="text-3xl font-bold flex items-center gap-3">
-                    <Upload className="text-enigma-purple" />
-                    Importar Ventas Diarias
+                    <FileSpreadsheet className="text-enigma-purple w-8 h-8" />
+                    Importar Ventas (V2)
                 </h1>
                 <p className="text-gray-400 mt-2">
-                    Copia y pega tu reporte de ventas (Producto, Cantidad) para descontar inventario masivamente.
+                    Sube tu reporte de ventas (Loyverse CSV) para procesar el inventario.
                 </p>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Input Section */}
-                <div className="bg-enigma-gray/50 p-6 rounded-2xl border border-white/10">
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                        <FileText className="w-5 h-5" /> Datos de Venta
-                    </h2>
-                    <textarea
-                        value={rawText}
-                        onChange={e => setRawText(e.target.value)}
-                        placeholder={`Ejemplo:\nBrownie, 20\nGalleta, 5\nLatte, 10`}
-                        className="w-full h-64 bg-black/30 border border-white/10 rounded-xl p-4 font-mono text-sm text-white focus:outline-none focus:border-enigma-purple resize-none"
-                    />
-                    <button
-                        onClick={parseText}
-                        disabled={!rawText.trim()}
-                        className="mt-4 w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold transition-all disabled:opacity-50"
+            <div className="max-w-4xl mx-auto">
+                {/* STEP 1: UPLOAD */}
+                {step === 'upload' && (
+                    <div
+                        className="bg-enigma-gray/50 border-2 border-dashed border-white/10 rounded-3xl p-12 text-center hover:border-enigma-purple/50 transition-colors cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
                     >
-                        Previsualizar
-                    </button>
-                </div>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept=".csv"
+                            onChange={handleFileChange}
+                        />
+                        <div className="w-20 h-20 bg-enigma-purple/20 rounded-full flex items-center justify-center mx-auto mb-6 text-enigma-purple">
+                            {loading ? <RefreshCw className="w-8 h-8 animate-spin" /> : <Upload className="w-8 h-8" />}
+                        </div>
+                        <h3 className="text-2xl font-bold mb-2">Sube tu CSV de Ventas</h3>
+                        <p className="text-gray-400">Arrastra el archivo aquí o haz clic para buscar</p>
+                        <p className="text-xs text-gray-500 mt-4">Soporta exportaciones de Loyverse y CSV genéricos</p>
+                    </div>
+                )}
 
-                {/* Preview & Result Section */}
-                <div className="bg-enigma-gray/50 p-6 rounded-2xl border border-white/10">
-                    {result ? (
-                        <div className="space-y-4 animate-fade-in">
-                            <div className="flex items-center gap-2 text-green-400 text-lg font-bold">
-                                <Check className="w-6 h-6" /> Importación Completada
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 bg-green-500/10 rounded-xl border border-green-500/20 text-center">
-                                    <p className="text-2xl font-bold text-green-400">{result.successCount}</p>
-                                    <p className="text-sm text-green-200/50">Productos Procesados</p>
+                {/* STEP 2: PREVIEW */}
+                {step === 'preview' && (
+                    <div className="space-y-6">
+                        {/* Summary Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-enigma-gray/50 p-6 rounded-2xl border border-white/10">
+                                <span className="text-gray-400 text-sm">Total Ventas Detectadas</span>
+                                <div className="text-3xl font-bold text-white mt-2">
+                                    ${stats.totalSales.toFixed(2)}
                                 </div>
-                                <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20 text-center">
-                                    <p className="text-2xl font-bold text-red-400">{result.failedCount}</p>
-                                    <p className="text-sm text-red-200/50">Errores</p>
+                            </div>
+                            <div className="bg-green-500/10 p-6 rounded-2xl border border-green-500/20">
+                                <span className="text-green-400 text-sm">Productos Reconocidos</span>
+                                <div className="text-3xl font-bold text-green-400 mt-2">
+                                    {stats.validCount}
                                 </div>
                             </div>
+                            <div className={`p-6 rounded-2xl border ${stats.warningCount > 0 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-enigma-gray/50 border-white/10'}`}>
+                                <span className={`${stats.warningCount > 0 ? 'text-amber-400' : 'text-gray-400'} text-sm`}>Productos Desconocidos</span>
+                                <div className={`text-3xl font-bold mt-2 ${stats.warningCount > 0 ? 'text-amber-400' : 'text-gray-400'}`}>
+                                    {stats.warningCount}
+                                </div>
+                            </div>
+                        </div>
 
-                            {result.errors.length > 0 && (
-                                <div className="p-4 bg-red-500/5 rounded-xl border border-red-500/10 max-h-48 overflow-y-auto">
-                                    <h4 className="text-xs font-bold text-red-400 mb-2 uppercase">Detalle de Errores</h4>
-                                    <ul className="space-y-1">
-                                        {result.errors.map((err: string, i: number) => (
-                                            <li key={i} className="text-xs text-red-300 flex items-start gap-2">
-                                                <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                                                {err}
-                                            </li>
+                        {/* Unknown Items Warning */}
+                        {unknownItems.length > 0 && (
+                            <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
+                                <div className="flex items-center gap-2 mb-2 text-amber-400 font-bold">
+                                    <AlertCircle className="w-5 h-5" />
+                                    <span>Atención: {unknownItems.length} SKUs no encontrados en el catálogo</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {unknownItems.slice(0, 10).map((sku, i) => (
+                                        <span key={i} className="px-2 py-1 bg-amber-500/20 rounded text-amber-300 text-xs font-mono">
+                                            {sku || 'N/A'}
+                                        </span>
+                                    ))}
+                                    {unknownItems.length > 10 && <span className="text-xs text-amber-400 pt-1">...y {unknownItems.length - 10} más</span>}
+                                </div>
+                                <p className="text-xs text-amber-400/70 mt-2">
+                                    Estos productos se guardarán en el historial pero <strong>NO descontarán inventario</strong> hasta que se configuren.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Valid Rows Preview */}
+                        <div className="bg-enigma-gray/50 rounded-2xl border border-white/10 overflow-hidden">
+                            <div className="p-4 border-b border-white/10 flex justify-between items-center">
+                                <h3 className="font-bold flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-gray-400" /> Vista Previa (Top 50)
+                                </h3>
+                                <div className="text-xs text-gray-500 font-mono">
+                                    SKU Col: {columns.colSku} | Qty Col: {columns.colQty}
+                                </div>
+                            </div>
+                            <div className="max-h-96 overflow-y-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="text-xs text-gray-400 uppercase bg-white/5 sticky top-0">
+                                        <tr>
+                                            <th className="px-4 py-3">SKU</th>
+                                            <th className="px-4 py-3">Producto</th>
+                                            <th className="px-4 py-3 text-right">Cant.</th>
+                                            <th className="px-4 py-3 text-right">Total</th>
+                                            <th className="px-4 py-3 text-center">Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {rows.slice(0, 50).map((row, i) => (
+                                            <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                                <td className="px-4 py-3 font-mono text-xs text-gray-400">{row.sku || '-'}</td>
+                                                <td className="px-4 py-3 font-medium text-white">{row.productName}</td>
+                                                <td className="px-4 py-3 text-right">{row.quantity}</td>
+                                                <td className="px-4 py-3 text-right">${row.total.toFixed(2)}</td>
+                                                <td className="px-4 py-3 text-center">
+                                                    {row.status === 'VALID' ? (
+                                                        <span className="inline-block w-2 h-2 rounded-full bg-green-500" title="Válido"></span>
+                                                    ) : (
+                                                        <span className="inline-block w-2 h-2 rounded-full bg-amber-500" title="Desconocido"></span>
+                                                    )}
+                                                </td>
+                                            </tr>
                                         ))}
-                                    </ul>
-                                </div>
-                            )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
 
+                        {/* Actions */}
+                        <div className="flex gap-4">
                             <button
-                                onClick={() => { setResult(null); setRawText(''); setPreviewData([]); }}
-                                className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+                                onClick={reset}
+                                className="px-6 py-4 rounded-xl font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all"
                             >
-                                <RefreshCw className="w-4 h-4" /> Nueva Importación
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleCommit}
+                                disabled={loading}
+                                className="flex-1 px-6 py-4 rounded-xl font-bold bg-enigma-purple hover:bg-enigma-purple/80 text-white shadow-lg shadow-enigma-purple/20 transition-all flex items-center justify-center gap-2"
+                            >
+                                {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                                CONFIRMAR IMPORTACIÓN
                             </button>
                         </div>
-                    ) : (
-                        <div>
-                            <h2 className="text-xl font-bold mb-4">Vista Previa</h2>
-                            {previewData.length > 0 ? (
-                                <>
-                                    <div className="mb-4 max-h-64 overflow-y-auto space-y-2">
-                                        {previewData.map((item, i) => (
-                                            <div key={i} className="flex justify-between p-3 bg-black/20 rounded-lg border border-white/5">
-                                                <span>{item.productName}</span>
-                                                <span className="font-mono text-enigma-green">x{item.quantity}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <button
-                                        onClick={executeImport}
-                                        disabled={loading}
-                                        className="w-full py-4 bg-enigma-purple hover:bg-enigma-purple/80 rounded-xl font-bold transition-all shadow-lg shadow-enigma-purple/20 disabled:opacity-50 flex items-center justify-center gap-2"
-                                    >
-                                        {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
-                                        EJECUTAR DESCUENTO DE INVENTARIO
-                                    </button>
-                                </>
-                            ) : (
-                                <div className="text-center py-12 text-white/20 italic">
-                                    Pega los datos para visualizar la tabla...
-                                </div>
-                            )}
+                    </div>
+                )}
+
+                {/* STEP 3: SUCCESS */}
+                {step === 'success' && (
+                    <div className="bg-green-500/10 border border-green-500/20 rounded-3xl p-12 text-center animate-fade-in">
+                        <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-green-400">
+                            <Check className="w-10 h-10" />
                         </div>
-                    )}
-                </div>
+                        <h3 className="text-3xl font-bold text-white mb-2">¡Lote Guardado!</h3>
+                        <p className="text-green-200/70 mb-8">
+                            Se ha registrado el Batch ID: <span className="font-mono bg-black/20 px-2 rounded">{batchId?.split('-')[0]}...</span>
+                        </p>
+
+                        <div className="flex justify-center gap-4">
+                            <button
+                                onClick={reset}
+                                className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold"
+                            >
+                                Subir Otro Archivo
+                            </button>
+                            <button className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-xl font-bold flex items-center gap-2">
+                                Ir al Historial <ArrowRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
