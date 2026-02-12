@@ -4,6 +4,21 @@ import { recipeService } from '../services/RecipeService';
 
 export default async function supplyItemRoutes(fastify: FastifyInstance) {
 
+    // GET /inventory/logs (Global Activity)
+    fastify.get<{ Querystring: { limit?: string } }>('/inventory/logs', async (request, reply) => {
+        const { limit } = request.query;
+        const tenantId = request.tenantId || 'enigma_hq';
+        const take = limit ? parseInt(limit) : 50;
+
+        const logs = await prisma.inventoryLog.findMany({
+            where: { tenantId },
+            take,
+            orderBy: { createdAt: 'desc' },
+            include: { supplyItem: { select: { name: true, defaultUnit: true } } }
+        });
+        return { success: true, data: logs };
+    });
+
     // GET /supply-items (Search & List)
     fastify.get<{ Querystring: { search?: string; tenant_id?: string; limit?: string } }>('/supply-items', async (request, reply) => {
         const { search, limit } = request.query;
