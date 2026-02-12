@@ -1,13 +1,12 @@
 
 import React, { useState } from 'react';
 import { Upload, FileText, Check, AlertCircle, RefreshCw } from 'lucide-react';
-
-import { useAuth } from '../components/providers/AuthProvider';
+import { CURRENT_TENANT_ID } from '../lib/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://enigma-pos-os-production.up.railway.app/api/v1';
 
 export default function SalesImportPage() {
-    const { tenant } = useAuth();
+    // const { tenant } = useAuth();
     const [rawText, setRawText] = useState('');
     const [previewData, setPreviewData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -41,7 +40,7 @@ export default function SalesImportPage() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-tenant-id': tenant?.id || 'enigma_hq'
+                    'x-tenant-id': CURRENT_TENANT_ID
                 },
                 body: JSON.stringify({ sales: previewData })
             });
