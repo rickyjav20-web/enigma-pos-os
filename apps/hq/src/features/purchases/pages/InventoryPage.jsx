@@ -42,7 +42,7 @@ export default function InventoryPage() {
         try {
             await api.post('/production', {
                 supplyItemId: productionItem.id,
-                quantity: parseFloat(productionQty),
+                quantity: parseFloat(productionQty) * (productionItem.yieldQuantity || 1),
                 unit: productionItem.yieldUnit || 'und'
             });
             setIsProductionModalOpen(false);
@@ -458,6 +458,7 @@ export default function InventoryPage() {
             />
 
             {/* PRODUCTION MODAL */}
+            {/* PRODUCTION MODAL */}
             {isProductionModalOpen && productionItem && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4">
@@ -471,12 +472,12 @@ export default function InventoryPage() {
                         <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg">
                             <p className="text-amber-400 font-bold">{productionItem.name}</p>
                             <p className="text-xs text-zinc-400">
-                                One Batch = {productionItem.yieldQuantity} {productionItem.yieldUnit}
+                                1 Tandas (Batch) = {productionItem.yieldQuantity} {productionItem.yieldUnit}
                             </p>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-medium text-zinc-400 mb-1">Quantity to Produce</label>
+                            <label className="block text-xs font-medium text-zinc-400 mb-1">Número de Tandas (Batches)</label>
                             <div className="flex gap-2">
                                 <input
                                     type="number"
@@ -484,13 +485,31 @@ export default function InventoryPage() {
                                     className="flex-1 bg-zinc-800 border-zinc-700 rounded-lg p-2 text-white focus:ring-2 focus:ring-amber-500 outline-none"
                                     value={productionQty}
                                     onChange={e => setProductionQty(e.target.value)}
-                                    placeholder="e.g. 10"
+                                    placeholder="e.g. 1"
                                 />
                                 <div className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-400 flex items-center">
-                                    {productionItem.yieldUnit || 'und'}
+                                    Tandas
                                 </div>
                             </div>
                         </div>
+
+                        {/* CALCULATION PREVIEW */}
+                        {productionQty && !isNaN(productionQty) && (
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="bg-zinc-800 p-2 rounded">
+                                    <span className="block text-zinc-500">Total a Producir</span>
+                                    <span className="block text-white font-bold text-lg">
+                                        {(parseFloat(productionQty) * (productionItem.yieldQuantity || 1)).toFixed(0)} {productionItem.yieldUnit}
+                                    </span>
+                                </div>
+                                <div className="bg-zinc-800 p-2 rounded">
+                                    <span className="block text-zinc-500">Nuevo Stock Estimado</span>
+                                    <span className="block text-emerald-400 font-bold text-lg">
+                                        {(parseFloat(productionItem.stockQuantity || 0) + (parseFloat(productionQty) * (productionItem.yieldQuantity || 1))).toFixed(0)}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="flex justify-end gap-2 pt-2">
                             <button
@@ -504,7 +523,7 @@ export default function InventoryPage() {
                                 disabled={!productionQty}
                                 className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg text-sm flex items-center gap-2 disabled:opacity-50"
                             >
-                                <ChefHat size={16} /> Confirm
+                                <ChefHat size={16} /> Confirmar Producción
                             </button>
                         </div>
                     </div>
