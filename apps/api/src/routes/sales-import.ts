@@ -69,12 +69,15 @@ export default async function salesImportRoutes(fastify: FastifyInstance) {
             // Loyverse Defaults: "SKU", "Item", "Quantity", "Gross Sales"
             const headers = Object.keys(records[0]);
 
-            const colSku = headers.find(h => /sku/i.test(h)) || 'SKU';
-            const colName = headers.find(h => /item|product|name|nombre/i.test(h)) || 'Item';
-            const colQty = headers.find(h => /qty|quantity|cantidad/i.test(h)) || 'Quantity';
-            const colPrice = headers.find(h => /gross|price|total|venta/i.test(h)) || 'Gross Sales';
-            const colTime = headers.find(h => /date|time|fecha/i.test(h)) || 'Date';
-            const colRef = headers.find(h => /receipt|ref|ticket/i.test(h)) || 'Receipt number';
+            // Helper to find column names
+            const findKey = (regex: RegExp) => headers.find(h => regex.test(h));
+
+            const colSku = findKey(/sku|ref|referencia/i) || 'SKU';
+            const colName = findKey(/item|product|name|nombre|article|artículo/i) || 'Item';
+            const colQty = findKey(/qty|quantity|cantidad|sold|vendidos/i) || 'Quantity';
+            const colPrice = findKey(/gross|price|total|venta/i) || 'Gross Sales';
+            const colTime = findKey(/date|time|fecha/i) || 'Date';
+            const colRef = findKey(/receipt|ticket|recibo|comprobante/i) || 'Receipt number';
 
             // 3. Process & Validate Rows
             const processedRows = [];
