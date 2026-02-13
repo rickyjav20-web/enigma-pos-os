@@ -464,6 +464,24 @@ export default function InventoryPage() {
                                     </tr>
                                 );
                             })}
+                            {zone === 'LOGS' && logs.map(log => (
+                                <tr key={log.id} className="hover:bg-zinc-800/50">
+                                    <td className="p-4">
+                                        <div className="font-medium text-white">{log.supplyItem?.name || 'Unknown Item'}</div>
+                                        <div className="text-xs text-zinc-500">{new Date(log.createdAt).toLocaleString()}</div>
+                                    </td>
+                                    <td className="p-4 text-zinc-400">{log.supplyItem?.defaultUnit || '-'}</td>
+                                    <td className="p-4 text-zinc-300 uppercase text-xs font-bold">{log.reason}</td>
+                                    <td className="p-4 text-zinc-400 text-right">{log.previousStock}</td>
+                                    <td className="p-4 text-white font-bold text-right">{log.newStock}</td>
+                                    <td className={`p-4 text-right font-bold ${log.changeAmount < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                        {log.changeAmount > 0 ? '+' : ''}{log.changeAmount.toFixed(4)}
+                                    </td>
+                                    <td className="p-4 text-right text-zinc-500 text-xs">
+                                        {log.notes || '-'}
+                                    </td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>
@@ -807,28 +825,8 @@ function ItemPassport({ item, onClose, onEdit }) {
                         <span>Tenant: {item.tenantId || 'Enigma HQ'}</span>
                     </div>
 
-                    {zone === 'LOGS' && logs.map(log => (
-                        <tr key={log.id} className="hover:bg-zinc-800/50">
-                            <td className="p-4">
-                                <div className="font-medium text-white">{log.supplyItem?.name || 'Unknown Item'}</div>
-                                <div className="text-xs text-zinc-500">{new Date(log.createdAt).toLocaleString()}</div>
-                            </td>
-                            <td className="p-4 text-zinc-400">{log.supplyItem?.defaultUnit || '-'}</td>
-                            <td className="p-4 text-zinc-300 uppercase text-xs font-bold">{log.reason}</td>
-                            <td className="p-4 text-zinc-400 text-right">{log.previousStock}</td>
-                            <td className="p-4 text-white font-bold text-right">{log.newStock}</td>
-                            <td className={`p-4 text-right font-bold ${log.changeAmount < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                                {log.changeAmount > 0 ? '+' : ''}{log.changeAmount.toFixed(4)}
-                            </td>
-                            <td className="p-4 text-right text-zinc-500 text-xs">
-                                {log.notes || '-'}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+                </div>
+            </div>
         </div>
-            </div >
-        </div >
     );
 }
