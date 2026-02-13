@@ -20,6 +20,8 @@ interface AuditData {
         sales: number;
         purchases: number;
         expenses: number;
+        deposits?: number;
+        withdrawals?: number;
         other: number;
     };
     transactionCount: number;
@@ -91,7 +93,8 @@ export default function HomePage() {
                     </div>
 
                     {/* Breakdown Row */}
-                    <div className="grid grid-cols-3 border-t border-white/5">
+                    {/* Breakdown Row */}
+                    <div className="grid grid-cols-4 border-t border-white/5">
                         <div className="p-3 text-center border-r border-white/5">
                             <p className="text-xs text-white/40">Fondo</p>
                             <p className="font-mono text-sm text-white/70">${auditData.startingCash.toFixed(2)}</p>
@@ -99,13 +102,23 @@ export default function HomePage() {
                         <div className="p-3 text-center border-r border-white/5">
                             <p className="text-xs text-white/40">Ventas</p>
                             <p className="font-mono text-sm text-emerald-400">
-                                +${(auditData.breakdown?.sales || Math.max(0, auditData.transactionsTotal)).toFixed(2)}
+                                +${(auditData.breakdown?.sales || 0).toFixed(2)}
+                            </p>
+                        </div>
+                        <div className="p-3 text-center border-r border-white/5">
+                            <p className="text-xs text-white/40">Entradas</p>
+                            <p className="font-mono text-sm text-blue-400">
+                                +${(auditData.breakdown?.deposits || 0).toFixed(2)}
                             </p>
                         </div>
                         <div className="p-3 text-center">
                             <p className="text-xs text-white/40">Salidas</p>
                             <p className="font-mono text-sm text-red-400">
-                                ${((auditData.breakdown?.expenses || 0) + (auditData.breakdown?.purchases || 0)).toFixed(2)}
+                                ${(
+                                    (auditData.breakdown?.expenses || 0) +
+                                    (auditData.breakdown?.purchases || 0) +
+                                    (auditData.breakdown?.withdrawals || 0)
+                                ).toFixed(2)}
                             </p>
                         </div>
                     </div>

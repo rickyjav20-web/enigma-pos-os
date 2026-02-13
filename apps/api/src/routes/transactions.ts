@@ -82,36 +82,45 @@ export default async function transactionRoutes(fastify: FastifyInstance) {
 
         if (!session) return reply.status(404).send({ error: "Session not found" });
 
-        // Calculate System Expected Cash
-        let expectedCash = session.startingCash;
-
         // Categorize transactions 
         let salesTotal = 0;
         let purchasesTotal = 0;
         let expensesTotal = 0;
-        let otherTotal = 0;
+        let depositsTotal = 0;
+        let withdrawalsTotal = 0;
 
         for (const tx of session.transactions) {
-            expectedCash += tx.amount;
             switch (tx.type) {
                 case 'SALE': salesTotal += tx.amount; break;
                 case 'PURCHASE': purchasesTotal += tx.amount; break;
                 case 'EXPENSE': expensesTotal += tx.amount; break;
-                default: otherTotal += tx.amount; break;
+                case 'DEPOSIT': depositsTotal += tx.amount; break;
+                case 'WITHDRAWAL': withdrawalsTotal += tx.amount; break;
+                // 'OPENING' is usually ignored here as we start from startingCash
             }
+        }
+
+        // Expected Cash = Starting + (Sales + Deposits) - (Purchases + Expenses + Withdrawals)
+        // Since amounts for outflows are typically negative in transactions, simple summation works if logic is consistent
+        // However, let's verify if the stored 'amount' is signed.
+
+        let calculatedExpected = session.startingCash;
+        for (const tx of session.transactions) {
+            calculatedExpected += tx.amount;
         }
 
         return {
             startingCash: session.startingCash,
-            transactionsTotal: expectedCash - session.startingCash,
-            expectedCash,
+            transactionsTotal: calculatedExpected - session.startingCash,
+            expectedCash: calculatedExpected,
             declaredCash: session.declaredCash || 0,
-            difference: (session.declaredCash || 0) - expectedCash,
+            difference: (session.declaredCash || 0) - calculatedExpected,
             breakdown: {
                 sales: salesTotal,
-                purchases: purchasesTotal,
-                expenses: expensesTotal,
-                other: otherTotal
+                deposits: depositsTotal,
+                purchases: Math.abs(purchasesTotal), // Return positive for display logic
+                expenses: Math.abs(expensesTotal),
+                withdrawals: Math.abs(withdrawalsTotal)
             },
             transactionCount: session.transactions.length
         };
