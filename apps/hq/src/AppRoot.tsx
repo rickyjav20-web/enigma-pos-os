@@ -34,6 +34,8 @@ import PurchaseOrderForm from './features/purchases/pages/PurchaseOrderForm';
 import RegisterAdminPage from './features/purchases/pages/RegisterAdminPage';
 // @ts-ignore
 import SalesImportPage from './pages/SalesImportPage';
+// @ts-ignore
+import MenuIntelligencePage from './pages/MenuIntelligencePage';
 
 function AppRoot() {
   return (
@@ -61,6 +63,7 @@ function AppRoot() {
               {/* Purchase Module */}
               <Route path="purchases/suppliers" element={<SupplierDirectory />} />
               <Route path="purchases/suppliers/:id" element={<SupplierDetails />} />
+              <Route path="purchases/menu-intelligence" element={<MenuIntelligencePage />} />
               <Route path="purchases/inventory" element={<InventoryPage />} />
               <Route path="purchases/inventory/:id" element={<ItemDetails />} />
               <Route path="purchases/smart-order" element={<SmartOrderPage />} />

@@ -126,10 +126,14 @@ export class RecipeService {
         }
     }
 
+
     /**
      * Re-sums the cost of a product based on its DIRECT ingredients.
      */
     public async recalculateProductCost(productId: string) {
+        const product = await prisma.product.findUnique({ where: { id: productId } });
+        if (!product) return;
+
         const recipes = await prisma.productRecipe.findMany({
             where: { productId },
             include: { supplyItem: true }
@@ -142,13 +146,35 @@ export class RecipeService {
         for (const r of recipes) {
             // Use Average Cost (WAC) if available.
             const ingredientCost = r.supplyItem.averageCost || r.supplyItem.currentCost || 0;
+            // Handle unit conversions if necessary (simplified for now)
             newTotalCost += r.quantity * ingredientCost;
         }
 
-        await prisma.product.update({
-            where: { id: productId },
-            data: { cost: newTotalCost }
-        });
+        // Check for change
+        const oldCost = product.cost || 0;
+        const diff = Math.abs(newTotalCost - oldCost);
+
+        // Only update if difference is significant (e.g. > $0.001 to avoid float drift)
+        if (diff > 0.001) {
+            console.log(`💰 Cost Change Detected for ${product.name}: $${oldCost} -> $${newTotalCost}`);
+
+            await prisma.$transaction([
+                // 1. Update Product
+                prisma.product.update({
+                    where: { id: productId },
+                    data: { cost: newTotalCost }
+                }),
+                // 2. Log History
+                prisma.productCostHistory.create({
+                    data: {
+                        productId,
+                        oldCost: oldCost,
+                        newCost: newTotalCost,
+                        reason: 'Auto-Recalculation (Ingredient Price Change)'
+                    }
+                })
+            ]);
+        }
     }
 
     /**

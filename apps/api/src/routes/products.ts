@@ -25,7 +25,11 @@ export default async function productRoutes(fastify: FastifyInstance) {
         const { id } = request.params;
         const product = await prisma.product.findUnique({
             where: { id },
-            include: { variants: true, recipes: { include: { supplyItem: true } } }
+            include: {
+                variants: true,
+                recipes: { include: { supplyItem: true } },
+                costHistory: { orderBy: { changeDate: 'desc' } }
+            }
         });
         if (!product) return reply.status(404).send({ error: "Product not found" });
         return product;

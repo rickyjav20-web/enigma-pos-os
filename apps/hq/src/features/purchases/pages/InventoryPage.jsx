@@ -590,9 +590,17 @@ function ItemPassport({ item, onClose, onEdit }) {
     const [history, setHistory] = useState([]);
     const [logs, setLogs] = useState([]);
 
-    // Fetch history if it's a supply item
+    // Fetch fully enriched data (History, Logs, etc)
     useEffect(() => {
-        if (!isProduct) {
+        if (isProduct) {
+            api.get(`/products/${item.id}`)
+                .then(res => {
+                    // API returns the object directly for /products/:id
+                    const data = res.data || res;
+                    if (data.costHistory) setHistory(data.costHistory);
+                })
+                .catch(console.error);
+        } else {
             api.get(`/supply-items/${item.id}`)
                 .then(res => {
                     const data = res.data;
@@ -601,7 +609,7 @@ function ItemPassport({ item, onClose, onEdit }) {
                 })
                 .catch(console.error);
         }
-    }, [item]);
+    }, [item, isProduct]);
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-fade-in">
@@ -736,6 +744,43 @@ function ItemPassport({ item, onClose, onEdit }) {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* COST HISTORY (Shared View) */}
+                            <div>
+                                <h3 className="font-bold text-lg flex items-center gap-2 mb-3">
+                                    <TrendingUp size={18} className="text-emerald-500" /> Cost History
+                                </h3>
+                                {history.length > 0 ? (
+                                    <div className="border border-zinc-700 rounded-xl overflow-hidden max-h-40 overflow-y-auto">
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="bg-zinc-800 text-zinc-400 sticky top-0">
+                                                <tr>
+                                                    <th className="p-3 font-medium">Date</th>
+                                                    <th className="p-3 font-medium text-right">Old</th>
+                                                    <th className="p-3 font-medium text-right">New</th>
+                                                    <th className="p-3 font-medium text-right">Change</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-zinc-800">
+                                                {history.map(h => (
+                                                    <tr key={h.id} className="hover:bg-white/5">
+                                                        <td className="p-3 text-zinc-300">{new Date(h.changeDate).toLocaleDateString()}</td>
+                                                        <td className="p-3 text-right text-zinc-500">${h.oldCost.toFixed(2)}</td>
+                                                        <td className="p-3 text-right text-white font-bold">${h.newCost.toFixed(2)}</td>
+                                                        <td className={`p-3 text-right font-medium ${h.newCost > h.oldCost ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                            {h.newCost > h.oldCost ? '↑' : '↓'} {h.oldCost > 0 ? (((h.newCost - h.oldCost) / h.oldCost) * 100).toFixed(1) : 0}%
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <p className="text-zinc-500 italic text-sm border-l-2 border-zinc-700 pl-4 py-2">
+                                        No cost changes recorded since history tracking began.
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     ) : (
                         <div className="space-y-3">
@@ -827,6 +872,6 @@ function ItemPassport({ item, onClose, onEdit }) {
 
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

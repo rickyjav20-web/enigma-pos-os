@@ -4,7 +4,7 @@
 import { useLocation, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Settings, LogOut, Package, Brain, LayoutDashboard, Users, Calendar, ShoppingCart, Building2, Wallet } from "lucide-react";
+import { Settings, LogOut, Package, Brain, LayoutDashboard, Users, Calendar, ShoppingCart, Building2, Wallet, TrendingUp } from "lucide-react";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> { }
 
@@ -21,6 +21,7 @@ export function Sidebar({ className }: SidebarProps) {
         { icon: Brain, label: 'Smart Order', href: '/purchases/smart-order', color: 'text-pink-400' },
         { icon: ShoppingCart, label: 'New Purchase', href: '/purchases/new', color: 'text-amber-400' },
         { icon: Package, label: 'Import Sales', href: '/purchases/import-sales', color: 'text-purple-400' },
+        { icon: TrendingUp, label: 'Menu Intelligence', href: '/purchases/menu-intelligence', color: 'text-red-400' },
         { icon: Wallet, label: 'Caja (Admin)', href: '/register', color: 'text-emerald-400' },
         { icon: Settings, label: 'Organization', href: '/account', color: 'text-gray-400' },
     ];

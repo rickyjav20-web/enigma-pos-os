@@ -228,6 +228,7 @@ model Product {
   variants    Variant[]
   recipes     ProductRecipe[]
   salesItems  SalesItem[]
+  costHistory ProductCostHistory[]
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, loyverseId])
@@ -499,3 +500,20 @@ model SaleEvent {
   @@index([timestamp])
 }
 
+
+model ProductCostHistory {
+  id          String   @id @default(uuid())
+  productId   String
+  
+  oldCost     Float    // Snapshot of cost before update
+  newCost     Float    // New calculated cost
+  changeDate  DateTime @default(now())
+  
+  // Context
+  reason      String?  // 'Ingredient Price Change', 'Recipe Change', 'Manual Update'
+  
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@index([productId])
+  @@index([changeDate])
+}
