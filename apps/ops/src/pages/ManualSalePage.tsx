@@ -43,7 +43,9 @@ export default function ManualSalePage() {
                 headers: { 'x-tenant-id': 'enigma_hq' }
             });
             const data = await res.json();
-            setProducts(data.products || data || []); // Handle different API response structures
+            // Handle { success: true, data: [...] } format from API
+            const productList = Array.isArray(data) ? data : (data.data || data.products || []);
+            setProducts(Array.isArray(productList) ? productList : []);
         } catch (e) {
             console.error(e);
         }
@@ -118,7 +120,7 @@ export default function ManualSalePage() {
         }
     };
 
-    const filteredProducts = products.filter(p =>
+    const filteredProducts = (products || []).filter(p =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
