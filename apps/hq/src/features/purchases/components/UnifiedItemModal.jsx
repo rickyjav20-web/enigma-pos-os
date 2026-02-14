@@ -120,7 +120,7 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
             name: item.name,
             cost: item.currentCost || 0,
             quantity: 1, // Default
-            unit: item.defaultUnit || 'und'
+            unit: item.recipeUnit || item.yieldUnit || item.defaultUnit || 'und'
         }]);
         setSearchTerm(''); // Clear search
     };
@@ -280,7 +280,15 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                                 <select
                                     className="w-full bg-zinc-800 border-zinc-700 rounded-lg p-2 text-white outline-none"
                                     value={formData.unitOfMeasure}
-                                    onChange={e => setFormData({ ...formData, unitOfMeasure: e.target.value })}
+                                    onChange={e => {
+                                        const newUnit = e.target.value;
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            unitOfMeasure: newUnit,
+                                            // Auto-sync recipeUnit if it's not set or was same as old default
+                                            recipeUnit: (!prev.recipeUnit || prev.recipeUnit === 'und' || prev.recipeUnit === prev.unitOfMeasure) ? newUnit : prev.recipeUnit
+                                        }));
+                                    }}
                                 >
                                     <option value="und">Units (und)</option>
                                     <option value="kg">Kilograms (kg)</option>
