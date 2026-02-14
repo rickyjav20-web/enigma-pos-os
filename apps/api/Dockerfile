@@ -68,5 +68,5 @@ ENV PORT=4000
 EXPOSE 4000
 
 # Start command
-# We run from root to mirror the dev structure, but pointing to the compiled dist
-CMD ["node", "apps/api/dist/index.js"]
+# We use npm start to leverage the 'prisma db push' logic defined in package.json
+CMD ["npm", "run", "start", "-w", "apps/api"]
