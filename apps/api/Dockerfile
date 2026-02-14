@@ -68,5 +68,6 @@ ENV PORT=4000
 EXPOSE 4000
 
 # Start command
-# We use npm start to leverage the 'prisma db push' logic defined in package.json
-CMD ["npm", "run", "start", "-w", "apps/api"]
+# We use explicit shell command to avoid npm workspace resolution issues
+# and ensure we are in the right directory with access to the schema.
+CMD ["/bin/sh", "-c", "cd apps/api && npx prisma db push --accept-data-loss --skip-generate && node dist/index.js"]
