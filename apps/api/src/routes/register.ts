@@ -436,7 +436,6 @@ export default async function registerRoutes(fastify: FastifyInstance) {
             // 2. Inventory Logic
             if (data.supplyItemId && data.quantity) {
                 const item = await tx.supplyItem.findUnique({ where: { id: data.supplyItemId } });
-
                 if (item) {
                     const newStock = (item.stockQuantity || 0) + data.quantity;
 
@@ -450,6 +449,19 @@ export default async function registerRoutes(fastify: FastifyInstance) {
                         }
                     });
 
+                    // Track Price History for Smart Shopper (if cost is provided)
+                    if (data.unitCost && item.currentCost !== data.unitCost) {
+                        await tx.priceHistory.create({
+                            data: {
+                                supplyItemId: data.supplyItemId,
+                                oldCost: item.currentCost || 0,
+                                newCost: data.unitCost,
+                                changeDate: new Date(),
+                                supplierId: item.preferredSupplierId
+                            }
+                        });
+                    }
+
                     // Log
                     await tx.inventoryLog.create({
                         data: {
@@ -462,14 +474,6 @@ export default async function registerRoutes(fastify: FastifyInstance) {
                             notes: `Compra Caja: ${data.description}`
                         }
                     });
-
-                    // 3. Trigger Recipe Cost Update (Zone 1)
-                    // We must do this AFTER the transaction so the new cost is committed (or use the one we just set)
-                    // Since we are inside a transaction, we should probably do this AFTER the transaction commits
-                    // BUT, recalculateSupplyItemCost might need to be awaited.
-                    // For now, let's just update the item cost history if needed.
-                    // Actually, recalculateSupplyItemCost relies on the DB state.
-                    // Ideally we run this after the transaction block.
                 }
             }
             return transaction;
