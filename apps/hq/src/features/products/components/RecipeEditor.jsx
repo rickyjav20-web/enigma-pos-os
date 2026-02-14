@@ -126,7 +126,12 @@ export default function RecipeEditor({ product, onUpdate }) {
                         onChange={e => {
                             setSelectedItem(e.target.value);
                             const item = supplyItems.find(i => i.id === e.target.value);
-                            if (item) setUnit(item.recipeUnit || item.yieldUnit || item.defaultUnit || 'und');
+                            if (item) {
+                                // Logic: Use recipeUnit only if it's specific (not 'und' or empty). Fallback to defaultUnit (Purchase Unit).
+                                const bestUnit = (item.recipeUnit && item.recipeUnit !== 'und') ? item.recipeUnit : (item.defaultUnit || 'und');
+                                console.log(`[RecipeEditor] Selected ${item.name}. Default: ${item.defaultUnit}, Recipe: ${item.recipeUnit} -> Using: ${bestUnit}`);
+                                setUnit(bestUnit);
+                            }
                         }}
                         className="w-full bg-black border border-gray-700 text-white rounded p-2 text-sm"
                     >

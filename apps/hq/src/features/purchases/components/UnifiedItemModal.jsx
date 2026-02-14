@@ -120,8 +120,10 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
             name: item.name,
             cost: item.currentCost || 0,
             quantity: 1, // Default
-            unit: item.recipeUnit || item.yieldUnit || item.defaultUnit || 'und'
+            // UX Fix: If recipeUnit is 'und' or empty, use 'defaultUnit' (KG/LT) for coherence.
+            unit: (item.recipeUnit && item.recipeUnit !== 'und') ? item.recipeUnit : (item.defaultUnit || 'und')
         }]);
+        console.log(`[RecipeBuilder] Added ${item.name}. Unit Selection: Recipe(${item.recipeUnit}) vs Default(${item.defaultUnit}) -> Result: ${(item.recipeUnit && item.recipeUnit !== 'und') ? item.recipeUnit : (item.defaultUnit || 'und')}`);
         setSearchTerm(''); // Clear search
     };
 
@@ -411,7 +413,7 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                                                     <AlertCircle size={10} className="text-zinc-500 cursor-help" />
                                                     <div className="absolute bottom-full right-0 mb-1 w-48 bg-black border border-zinc-700 p-2 rounded text-[10px] text-zinc-300 hidden group-hover:block z-50">
                                                         ¿Cuántos {formData.recipeUnit || 'items'} caben en 1 {formData.unitOfMeasure}?
-                                                        <br />Ej: 1 Kg = 1000 g -> Factor 1000
+                                                        <br />Ej: 1 Kg = 1000 g → Factor 1000
                                                     </div>
                                                 </div>
                                             </div>
