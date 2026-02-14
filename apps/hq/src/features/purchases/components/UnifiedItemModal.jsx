@@ -24,6 +24,10 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
         // Batch Specific
         yieldQuantity: '',
         yieldUnit: 'und',
+        // Smart Yield (Supply)
+        yieldPercentage: 1.0,
+        recipeUnit: '',
+        stockCorrectionFactor: 1,
         // Common
         preferredSupplierId: null
     });
@@ -45,6 +49,11 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                 unitOfMeasure: initialData.defaultUnit || 'und', // Supply
                 yieldQuantity: initialData.yieldQuantity || '', // Batch
                 yieldUnit: initialData.yieldUnit || 'und', // Batch
+                // Smart Yield
+                yieldPercentage: initialData.yieldPercentage || 1.0,
+                recipeUnit: initialData.recipeUnit || '',
+                stockCorrectionFactor: initialData.stockCorrectionFactor || 1,
+
                 preferredSupplierId: initialData.preferredSupplierId || null
             });
 
@@ -139,6 +148,10 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
             // API PUT /supply-items expects 'defaultUnit'
             if (type !== 'PRODUCT') {
                 payload.defaultUnit = formData.unitOfMeasure;
+                // Smart Yield
+                payload.yieldPercentage = parseFloat(formData.yieldPercentage) || 1.0;
+                payload.recipeUnit = formData.recipeUnit;
+                payload.stockCorrectionFactor = parseFloat(formData.stockCorrectionFactor) || 1;
             }
 
             // Attach Recipe
@@ -305,33 +318,95 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                             </>
                         )}
 
-                        {/* Pantry Cost & Stock */}
-                        {type === 'SUPPLY' && (
-                            <>
-                                <div className="col-span-2 sm:col-span-1">
-                                    <label className="block text-xs font-medium text-zinc-400 mb-1">Direct Cost ($)</label>
+                        <>
+                            <div className="col-span-2 sm:col-span-1">
+                                <label className="block text-xs font-medium text-zinc-400 mb-1">Direct Cost ($)</label>
+                                <input
+                                    type="number"
+                                    className="w-full bg-zinc-800 border-zinc-700 rounded-lg p-2 text-white outline-none"
+                                    value={formData.currentCost}
+                                    onChange={e => setFormData({ ...formData, currentCost: e.target.value })}
+                                />
+                            </div>
+                            <div className="col-span-2 sm:col-span-1 bg-blue-900/10 p-2 rounded-lg border border-blue-500/20">
+                                <label className="block text-xs font-medium text-blue-300 mb-1">Current Stock (Physical)</label>
+                                <div className="flex items-center gap-2">
                                     <input
                                         type="number"
                                         className="w-full bg-zinc-800 border-zinc-700 rounded-lg p-2 text-white outline-none"
-                                        value={formData.currentCost}
-                                        onChange={e => setFormData({ ...formData, currentCost: e.target.value })}
+                                        value={formData.stockQuantity}
+                                        onChange={e => setFormData({ ...formData, stockQuantity: e.target.value })}
+                                        placeholder="0.00"
                                     />
+                                    <span className="text-xs text-zinc-500">{formData.unitOfMeasure}</span>
                                 </div>
-                                <div className="col-span-2 sm:col-span-1 bg-blue-900/10 p-2 rounded-lg border border-blue-500/20">
-                                    <label className="block text-xs font-medium text-blue-300 mb-1">Current Stock (Physical)</label>
-                                    <div className="flex items-center gap-2">
+                            </div>
+
+                            {/* PROTOCOLO SMART YIELD (Nuevo) */}
+                            <div className="col-span-2 bg-zinc-800/30 p-3 rounded-lg border border-zinc-700/50 space-y-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                                    <h4 className="text-xs font-bold text-zinc-300 uppercase">Protocolo Smart Yield</h4>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-3">
+                                    {/* 1. Yield % */}
+                                    <div className="col-span-1">
+                                        <label className="block text-[10px] font-medium text-zinc-400 mb-1">Rendimiento (%)</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white outline-none focus:border-amber-500"
+                                                value={parseInt(formData.yieldPercentage || 1) * 100} // Display as 100, stored as 1.0
+                                                onChange={e => {
+                                                    const val = parseFloat(e.target.value) / 100;
+                                                    setFormData({ ...formData, yieldPercentage: val });
+                                                }}
+                                                placeholder="100"
+                                            />
+                                            <span className="absolute right-2 top-2 text-xs text-zinc-500">%</span>
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Recipe Unit */}
+                                    <div className="col-span-1">
+                                        <label className="block text-[10px] font-medium text-zinc-400 mb-1">Unidad Receta</label>
+                                        <input
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white outline-none"
+                                            value={formData.recipeUnit || ''}
+                                            onChange={e => setFormData({ ...formData, recipeUnit: e.target.value })}
+                                            placeholder="g, ml"
+                                        />
+                                    </div>
+
+                                    {/* 3. Factor */}
+                                    <div className="col-span-1">
+                                        <label className="block text-[10px] font-medium text-zinc-400 mb-1">Factor (1 {formData.unitOfMeasure} = ?)</label>
                                         <input
                                             type="number"
-                                            className="w-full bg-zinc-800 border-zinc-700 rounded-lg p-2 text-white outline-none"
-                                            value={formData.stockQuantity}
-                                            onChange={e => setFormData({ ...formData, stockQuantity: e.target.value })}
-                                            placeholder="0.00"
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white outline-none"
+                                            value={formData.stockCorrectionFactor}
+                                            onChange={e => setFormData({ ...formData, stockCorrectionFactor: e.target.value })}
+                                            placeholder="1000"
                                         />
-                                        <span className="text-xs text-zinc-500">{formData.unitOfMeasure}</span>
                                     </div>
                                 </div>
-                            </>
-                        )}
+
+                                {/* Preview Calculation */}
+                                <div className="text-[10px] text-zinc-500 bg-zinc-900/50 p-2 rounded border border-zinc-800">
+                                    <p>
+                                        Costo Real: <span className="text-amber-400 font-mono">
+                                            ${(
+                                                (parseFloat(formData.currentCost) || 0) /
+                                                (parseFloat(formData.stockCorrectionFactor) || 1) /
+                                                (parseFloat(formData.yieldPercentage) || 1)
+                                            ).toFixed(4)}
+                                        </span> / {formData.recipeUnit || formData.unitOfMeasure}
+                                    </p>
+                                </div>
+                            </div>
+                        </>
+
                     </div>
 
                     {/* RECIPE BUILDER (Product or Batch) */}

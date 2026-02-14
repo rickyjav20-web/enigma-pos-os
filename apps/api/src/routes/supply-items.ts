@@ -70,7 +70,7 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
     // POST /supply-items (Create)
     fastify.post('/supply-items', async (request, reply) => {
         try {
-            const { name, sku, category, currentCost, unitOfMeasure, preferredSupplierId, tenantId, yieldQuantity, yieldUnit, ingredients } = request.body as any;
+            const { name, sku, category, currentCost, unitOfMeasure, preferredSupplierId, tenantId, yieldQuantity, yieldUnit, yieldPercentage, recipeUnit, stockCorrectionFactor, ingredients } = request.body as any;
 
             const item = await prisma.supplyItem.create({
                 data: {
@@ -82,7 +82,11 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
                     preferredSupplierId,
                     tenantId: request.tenantId || 'enigma_hq',
                     yieldQuantity: yieldQuantity ? Number(yieldQuantity) : null,
-                    yieldUnit
+                    yieldUnit,
+                    // Smart Yield
+                    yieldPercentage: yieldPercentage ? Number(yieldPercentage) : 1.0,
+                    recipeUnit,
+                    stockCorrectionFactor: stockCorrectionFactor ? Number(stockCorrectionFactor) : 1.0
                 }
             });
 
@@ -102,7 +106,7 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
     fastify.put<{ Params: { id: string } }>('/supply-items/:id', async (request, reply) => {
         try {
             const { id } = request.params;
-            const { name, sku, category, currentCost, defaultUnit, preferredSupplierId, stockQuantity, yieldQuantity, yieldUnit, ingredients } = request.body as any;
+            const { name, sku, category, currentCost, defaultUnit, preferredSupplierId, stockQuantity, yieldQuantity, yieldUnit, yieldPercentage, recipeUnit, stockCorrectionFactor, ingredients } = request.body as any;
 
             // 1. Fetch current item for Audit
             const currentItem = await prisma.supplyItem.findUnique({ where: { id } });
@@ -140,7 +144,11 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
                     preferredSupplierId,
                     stockQuantity: stockQuantity !== undefined ? Number(stockQuantity) : undefined,
                     yieldQuantity: yieldQuantity !== undefined ? Number(yieldQuantity) : undefined,
-                    yieldUnit
+                    yieldUnit,
+                    // Smart Yield
+                    yieldPercentage: yieldPercentage !== undefined ? Number(yieldPercentage) : undefined,
+                    recipeUnit,
+                    stockCorrectionFactor: stockCorrectionFactor !== undefined ? Number(stockCorrectionFactor) : undefined
                 }
             });
 

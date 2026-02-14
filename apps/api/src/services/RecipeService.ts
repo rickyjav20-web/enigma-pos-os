@@ -42,8 +42,16 @@ export class RecipeService {
             let totalBatchCost = 0;
             for (const r of recipes) {
                 // Use Average Cost (WAC) for accurate inventory valuation. Fallback to currentCost (Last Price) if 0.
-                const componentCost = r.component.averageCost || r.component.currentCost || 0;
-                totalBatchCost += r.quantity * componentCost;
+                const component = r.component;
+                const rawCost = component.averageCost || component.currentCost || 0;
+
+                // SMART YIELD LOGIC:
+                const factor = component.stockCorrectionFactor || 1;
+                const yieldPct = component.yieldPercentage || 1;
+
+                const effectiveUnitCost = rawCost / (factor * yieldPct);
+
+                totalBatchCost += r.quantity * effectiveUnitCost;
             }
 
             // Unit Cost = Total Cost / Yield
@@ -145,9 +153,17 @@ export class RecipeService {
 
         for (const r of recipes) {
             // Use Average Cost (WAC) if available.
-            const ingredientCost = r.supplyItem.averageCost || r.supplyItem.currentCost || 0;
-            // Handle unit conversions if necessary (simplified for now)
-            newTotalCost += r.quantity * ingredientCost;
+            const ingredient = r.supplyItem;
+            const rawCost = ingredient.averageCost || ingredient.currentCost || 0;
+
+            // SMART YIELD LOGIC:
+            // Effective Cost = RawCost / (Factor * Yield)
+            const factor = ingredient.stockCorrectionFactor || 1;
+            const yieldPct = ingredient.yieldPercentage || 1;
+
+            const effectiveUnitCost = rawCost / (factor * yieldPct);
+
+            newTotalCost += r.quantity * effectiveUnitCost;
         }
 
         // Check for change

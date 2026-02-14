@@ -277,6 +277,11 @@ model SupplyItem {
   stockQuantity   Float    @default(0) // Current stock for WAC
   isByWeight      Boolean  @default(false)
   
+  // Smart Yield & Conversion Protocol
+  yieldPercentage Float    @default(1.0) // 1.0 = 100% (No loss). 0.4 = 40% yield.
+  recipeUnit      String?  // Unit used in recipes (e.g. 'g', 'ml')
+  stockCorrectionFactor Float @default(1) // Multiplier from Default Unit to Recipe Unit (e.g. 1kg -> 1000g, factor=1000)
+  
   // Relations
   preferredSupplierId String?
   loyverseId          String? // Link to Sales Product if 1:1 match

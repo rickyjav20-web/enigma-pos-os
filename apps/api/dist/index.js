@@ -40,15 +40,39 @@ const fastify_1 = __importDefault(require("fastify"));
 const cors_1 = __importDefault(require("@fastify/cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
+// Force Reload Trigger (Step 1100) - Retry API Build
 const fastify = (0, fastify_1.default)({
     logger: true
 });
 fastify.register(cors_1.default, {
-    origin: '*'
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
+    credentials: false
 });
+fastify.addHook('onRequest', (req, reply, done) => {
+    console.log(`[REQUEST] ${req.method} ${req.url}`);
+    done();
+});
+const tenant_1 = require("./middleware/tenant");
+fastify.addHook('onRequest', tenant_1.tenantMiddleware);
 fastify.register(Promise.resolve().then(() => __importStar(require('./routes/command'))), { prefix: '/api/v1' });
 fastify.register(Promise.resolve().then(() => __importStar(require('./routes/ingest'))), { prefix: '/api/v1' });
 fastify.register(Promise.resolve().then(() => __importStar(require('./routes/products'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/staff'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/purchases'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/auth'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/register'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/transactions'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/supply-items'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/production'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/data'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/setup'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/roles'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/sales-import'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/test-simulation'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/system-init'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/sales-consumption'))), { prefix: '/api/v1' });
 fastify.get('/', async (request, reply) => {
     return { hello: 'Enigma POS OS API', status: 'active', timestamp: Date.now() };
 });
@@ -57,6 +81,7 @@ const start = async () => {
         const PORT = process.env.PORT || 3000;
         await fastify.listen({ port: Number(PORT), host: '0.0.0.0' });
         console.log(`🚀 API Server running on port ${PORT}`);
+        console.log(fastify.printRoutes()); // DEBUG: Dump Routes
     }
     catch (err) {
         fastify.log.error(err);

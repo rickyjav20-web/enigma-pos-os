@@ -4,13 +4,22 @@ exports.default = ingestRoutes;
 const ProductIngestService_1 = require("../services/ProductIngestService");
 async function ingestRoutes(fastify) {
     fastify.post('/ingest/products', async (request, reply) => {
-        const { csv_content, tenant_id, actor_id } = request.body;
-        if (!csv_content || !tenant_id) {
-            return reply.status(400).send({ error: 'Missing csv_content or tenant_id' });
+        const { csv_content, tenant_id: bodyTenantId, actor_id } = request.body;
+        // Prioritize Auth Context Tenant, fallback to body
+        const activeTenant = request.tenantId || bodyTenantId;
+        if (!csv_content || !activeTenant) {
+            return reply.status(400).send({ error: 'Missing csv_content or tenant_id resolution failed' });
         }
         try {
-            const count = await ProductIngestService_1.productIngestService.ingestCsv(csv_content, tenant_id, actor_id || 'system');
-            return { success: true, count, message: `Successfully ingested ${count} products for tenant ${tenant_id}` };
+            const result = await ProductIngestService_1.productIngestService.ingestLoyverseExport(csv_content, activeTenant);
+            return {
+                success: true,
+                nodes: result.nodes,
+                totalParsed: result.totalParsed,
+                links: result.links,
+                errors: result.errors,
+                message: `Successfully processed for tenant ${activeTenant}`
+            };
         }
         catch (error) {
             request.log.error(error);
