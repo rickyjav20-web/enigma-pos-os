@@ -357,11 +357,14 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                                             <div className="relative">
                                                 <input
                                                     type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    step="1"
                                                     className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white outline-none focus:border-amber-500"
-                                                    value={parseInt(formData.yieldPercentage || 1) * 100} // Display as 100, stored as 1.0
+                                                    value={Math.round((parseFloat(formData.yieldPercentage) || 0) * 100)}
                                                     onChange={e => {
-                                                        const val = parseFloat(e.target.value) / 100;
-                                                        setFormData({ ...formData, yieldPercentage: val });
+                                                        const val = parseFloat(e.target.value);
+                                                        setFormData({ ...formData, yieldPercentage: isNaN(val) ? 0 : val / 100 });
                                                     }}
                                                     placeholder="100"
                                                 />
@@ -372,17 +375,38 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                                         {/* 2. Recipe Unit */}
                                         <div className="col-span-1">
                                             <label className="block text-[10px] font-medium text-zinc-400 mb-1">Unidad Receta</label>
-                                            <input
+                                            <select
                                                 className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white outline-none"
                                                 value={formData.recipeUnit || ''}
-                                                onChange={e => setFormData({ ...formData, recipeUnit: e.target.value })}
-                                                placeholder="g, ml"
-                                            />
+                                                onChange={e => {
+                                                    const unit = e.target.value;
+                                                    // Auto-set factor for known conversions
+                                                    let newFactor = formData.stockCorrectionFactor;
+                                                    if (formData.unitOfMeasure === 'kg' && unit === 'g') newFactor = 1000;
+                                                    if (formData.unitOfMeasure === 'lt' && unit === 'ml') newFactor = 1000;
+                                                    setFormData({ ...formData, recipeUnit: unit, stockCorrectionFactor: newFactor });
+                                                }}
+                                            >
+                                                <option value="">Select Unit</option>
+                                                <option value="g">Grams (g)</option>
+                                                <option value="ml">Milliliters (ml)</option>
+                                                <option value="oz">Ounces (oz)</option>
+                                                <option value="und">Units (und)</option>
+                                            </select>
                                         </div>
 
                                         {/* 3. Factor */}
                                         <div className="col-span-1">
-                                            <label className="block text-[10px] font-medium text-zinc-400 mb-1">Factor (1 {formData.unitOfMeasure} = ?)</label>
+                                            <div className="flex items-center gap-1 mb-1">
+                                                <label className="block text-[10px] font-medium text-zinc-400">Factor</label>
+                                                <div className="group relative">
+                                                    <AlertCircle size={10} className="text-zinc-500 cursor-help" />
+                                                    <div className="absolute bottom-full right-0 mb-1 w-48 bg-black border border-zinc-700 p-2 rounded text-[10px] text-zinc-300 hidden group-hover:block z-50">
+                                                        ¿Cuántos {formData.recipeUnit || 'items'} caben en 1 {formData.unitOfMeasure}?
+                                                        <br />Ej: 1 Kg = 1000 g -> Factor 1000
+                                                    </div>
+                                                </div>
+                                            </div>
                                             <input
                                                 type="number"
                                                 className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white outline-none"
