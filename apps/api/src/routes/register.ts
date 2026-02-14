@@ -199,7 +199,20 @@ export default async function registerRoutes(fastify: FastifyInstance) {
                     select: { id: true, fullName: true, role: true }
                 },
                 transactions: {
-                    select: { id: true, amount: true, type: true, description: true, timestamp: true }
+                    select: {
+                        id: true,
+                        amount: true,
+                        type: true,
+                        description: true,
+                        timestamp: true,
+                        // Inventory Link
+                        supplyItemId: true,
+                        quantity: true,
+                        unitCost: true,
+                        supplyItem: {
+                            select: { name: true, defaultUnit: true }
+                        }
+                    }
                 }
             },
             orderBy: { startedAt: 'desc' }
@@ -406,7 +419,7 @@ export default async function registerRoutes(fastify: FastifyInstance) {
         });
         if (!session) return reply.status(404).send({ error: 'Session not found' });
 
-        return await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx) => {
             // 1. Create Transaction
             const transaction = await tx.cashTransaction.create({
                 data: {
@@ -449,9 +462,33 @@ export default async function registerRoutes(fastify: FastifyInstance) {
                             notes: `Compra Caja: ${data.description}`
                         }
                     });
+
+                    // 3. Trigger Recipe Cost Update (Zone 1)
+                    // We must do this AFTER the transaction so the new cost is committed (or use the one we just set)
+                    // Since we are inside a transaction, we should probably do this AFTER the transaction commits
+                    // BUT, recalculateSupplyItemCost might need to be awaited.
+                    // For now, let's just update the item cost history if needed.
+                    // Actually, recalculateSupplyItemCost relies on the DB state.
+                    // Ideally we run this after the transaction block.
                 }
             }
             return transaction;
         });
+
+        // 3. Post-Transaction: Recalculate Recipe Costs (Async/Safe)
+        if (data.supplyItemId && data.unitCost) {
+            try {
+                // Import locally to avoid circular dependency issues if any, though likely fine at top
+                const { recipeService } = require('../services/RecipeService');
+                // We can run this without awaiting if we don't want to block the UI, 
+                // but for data integrity usually better to await or use a job queue.
+                // Given the scale, awaiting is fine (~50ms).
+                await recipeService.recalculateSupplyItemCost(data.supplyItemId);
+            } catch (e) {
+                console.error("[Register] Failed to recalculate recipe costs", e);
+            }
+        }
+
+        return result;
     });
 }
