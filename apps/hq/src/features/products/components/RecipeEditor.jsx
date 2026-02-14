@@ -126,14 +126,14 @@ export default function RecipeEditor({ product, onUpdate }) {
                         onChange={e => {
                             setSelectedItem(e.target.value);
                             const item = supplyItems.find(i => i.id === e.target.value);
-                            if (item) setUnit(item.yieldUnit || item.defaultUnit || 'und');
+                            if (item) setUnit(item.recipeUnit || item.yieldUnit || item.defaultUnit || 'und');
                         }}
                         className="w-full bg-black border border-gray-700 text-white rounded p-2 text-sm"
                     >
                         <option value="">Select Ingredient...</option>
                         {supplyItems.map(item => (
                             <option key={item.id} value={item.id}>
-                                {item.name} (${item.currentCost?.toFixed(2)} / {item.yieldUnit || item.defaultUnit || 'und'})
+                                {item.name} (${item.currentCost?.toFixed(2)} / {item.recipeUnit || item.yieldUnit || item.defaultUnit || 'und'})
                             </option>
                         ))}
                     </select>
