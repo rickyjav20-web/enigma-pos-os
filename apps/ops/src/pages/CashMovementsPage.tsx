@@ -28,10 +28,18 @@ export default function CashMovementsPage() {
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Inventory State
+    const [linkInventory, setLinkInventory] = useState(false);
+    const [supplyItems, setSupplyItems] = useState<any[]>([]);
+    const [selectedSupplyItem, setSelectedSupplyItem] = useState('');
+    const [purchaseQuantity, setPurchaseQuantity] = useState('');
+    const [purchaseUnitCost, setPurchaseUnitCost] = useState('');
+
     useEffect(() => {
         if (session?.id) {
             fetchTransactions();
             fetchAudit();
+            fetchSupplyItems();
         }
     }, [session]);
 
@@ -61,6 +69,16 @@ export default function CashMovementsPage() {
         }
     };
 
+    const fetchSupplyItems = async () => {
+        try {
+            const res = await fetch(`${API_URL}/products/supply-items`, { headers: TENANT_HEADER });
+            const data = await res.json();
+            setSupplyItems(data);
+        } catch (e) {
+            console.error("Failed to load supply items", e);
+        }
+    };
+
     const handleTransaction = async () => {
         if (!amount || !description) return;
         setIsSubmitting(true);
@@ -76,12 +94,18 @@ export default function CashMovementsPage() {
                     sessionId: session?.id,
                     amount: finalAmount,
                     type: txType,
-                    description: description
+                    description: description,
+                    // Inventory Link
+                    supplyItemId: (linkInventory && txType === 'EXPENSE') ? selectedSupplyItem : undefined,
+                    quantity: (linkInventory && txType === 'EXPENSE') ? parseFloat(purchaseQuantity) : undefined,
+                    unitCost: (linkInventory && txType === 'EXPENSE') ? parseFloat(purchaseUnitCost) : undefined
                 })
             });
             setShowModal(false);
             setAmount('');
             setDescription('');
+            setLinkInventory(false);
+            setPurchaseQuantity('');
             fetchTransactions();
             fetchAudit(); // Refresh balance
         } catch (e) {
@@ -90,6 +114,14 @@ export default function CashMovementsPage() {
             setIsSubmitting(false);
         }
     };
+
+    // Auto-calc amount from inventory fields
+    useEffect(() => {
+        if (linkInventory && purchaseQuantity && purchaseUnitCost) {
+            const total = (parseFloat(purchaseQuantity) * parseFloat(purchaseUnitCost)).toFixed(2);
+            setAmount(total);
+        }
+    }, [purchaseQuantity, purchaseUnitCost, linkInventory]);
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -187,9 +219,12 @@ export default function CashMovementsPage() {
                                     </div>
                                     <div>
                                         <p className="font-medium">{tx.description || 'Movimiento'}</p>
-                                        <p className={`text-xs ${style.text} capitalize`}>
-                                            {style.label}
-                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <p className={`text-xs ${style.text} capitalize`}>
+                                                {style.label}
+                                            </p>
+                                            {tx.supplyItemId && <span className="text-[10px] bg-white/10 px-1.5 rounded text-white/50">STOCK</span>}
+                                        </div>
                                         <p className="text-xs text-white/30 font-mono mt-1">
                                             {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </p>
@@ -215,7 +250,7 @@ export default function CashMovementsPage() {
             {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-                    <div className="w-full max-w-sm bg-enigma-gray rounded-3xl p-6 space-y-4 border border-white/10 shadow-2xl">
+                    <div className="w-full max-w-sm bg-enigma-gray rounded-3xl p-6 space-y-4 border border-white/10 shadow-2xl overflow-y-auto max-h-[90vh]">
                         <div className="flex justify-between items-center">
                             <h3 className="font-bold text-lg">
                                 {txType === 'EXPENSE' ? '📤 Registrar Salida' : '📥 Registrar Entrada'}
@@ -234,28 +269,85 @@ export default function CashMovementsPage() {
                         )}
 
                         <div className="space-y-4">
-                            <div>
-                                <label className="text-xs text-white/50 block mb-1">Monto</label>
-                                <div className="relative">
-                                    <DollarSign className="absolute left-3 top-3.5 w-5 h-5 text-white/30" />
-                                    <input
-                                        type="number"
-                                        autoFocus
-                                        value={amount}
-                                        onChange={e => setAmount(e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-xl p-3 pl-10 text-lg font-mono"
-                                        placeholder="0.00"
-                                    />
+
+                            {/* Inventory Toggle */}
+                            {txType === 'EXPENSE' && (
+                                <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+                                    <div className="flex items-center gap-2">
+                                        <ShoppingCart className="w-4 h-4 text-amber-400" />
+                                        <span className="text-sm font-medium">¿Es Compra de Insumo?</span>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" checked={linkInventory} onChange={e => setLinkInventory(e.target.checked)} className="sr-only peer" />
+                                        <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                                    </label>
                                 </div>
-                                {/* Preview new balance */}
-                                {amount && auditData && (
-                                    <p className="text-xs text-white/30 mt-1 text-right">
-                                        Nuevo saldo: <span className="font-mono text-white/50">
-                                            ${(auditData.expectedCash + (txType === 'EXPENSE' ? -Math.abs(parseFloat(amount)) : Math.abs(parseFloat(amount)))).toFixed(2)}
-                                        </span>
-                                    </p>
-                                )}
-                            </div>
+                            )}
+
+                            {linkInventory && txType === 'EXPENSE' ? (
+                                <div className="space-y-3 animate-fade-in">
+                                    {/* Supply Selector */}
+                                    <div>
+                                        <label className="text-xs text-white/50 block mb-1">Insumo / Producto</label>
+                                        <select
+                                            value={selectedSupplyItem}
+                                            onChange={e => setSelectedSupplyItem(e.target.value)}
+                                            className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm"
+                                        >
+                                            <option value="">Seleccionar Insumo...</option>
+                                            {supplyItems.map(item => (
+                                                <option key={item.id} value={item.id}>
+                                                    {item.name} ({item.currentCost ? `$${item.currentCost}` : 'N/A'})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs text-white/50 block mb-1">Cantidad</label>
+                                            <input
+                                                type="number"
+                                                value={purchaseQuantity}
+                                                onChange={e => setPurchaseQuantity(e.target.value)}
+                                                className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm"
+                                                placeholder="0.0"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-white/50 block mb-1">Costo Unitario</label>
+                                            <input
+                                                type="number"
+                                                value={purchaseUnitCost}
+                                                onChange={e => setPurchaseUnitCost(e.target.value)}
+                                                className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm"
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                                        <span className="text-xs text-amber-400">Total Calculado: </span>
+                                        <span className="font-mono font-bold text-amber-300">${amount || '0.00'}</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="text-xs text-white/50 block mb-1">Monto Total</label>
+                                    <div className="relative">
+                                        <DollarSign className="absolute left-3 top-3.5 w-5 h-5 text-white/30" />
+                                        <input
+                                            type="number"
+                                            autoFocus={!linkInventory}
+                                            value={amount}
+                                            onChange={e => setAmount(e.target.value)}
+                                            className="w-full bg-black/50 border border-white/10 rounded-xl p-3 pl-10 text-lg font-mono"
+                                            placeholder="0.00"
+                                            readOnly={linkInventory} // Read only if calculating automatically
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="text-xs text-white/50 block mb-1">Descripción / Motivo</label>
@@ -269,7 +361,7 @@ export default function CashMovementsPage() {
 
                             <button
                                 onClick={handleTransaction}
-                                disabled={!amount || !description || isSubmitting}
+                                disabled={!amount || !description || isSubmitting || (linkInventory && (!selectedSupplyItem || !purchaseQuantity))}
                                 className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2
                                     ${txType === 'EXPENSE' ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-500 hover:bg-emerald-600'}
                                     disabled:opacity-50 disabled:cursor-not-allowed transition-all

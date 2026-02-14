@@ -385,4 +385,73 @@ export default async function registerRoutes(fastify: FastifyInstance) {
             cashiers: stats
         };
     });
+
+    // --- KEY: TRANSACTION WITH INVENTORY LOGIC ---
+    const transactionSchema = z.object({
+        sessionId: z.string(),
+        amount: z.number(),
+        type: z.enum(['SALE', 'PURCHASE', 'EXPENSE', 'DEPOSIT', 'WITHDRAWAL']),
+        description: z.string(),
+        supplyItemId: z.string().optional(),
+        quantity: z.number().optional().nullable(),
+        unitCost: z.number().optional().nullable()
+    });
+
+    fastify.post('/register/transaction', async (request, reply) => {
+        const tenantId = getTenant(request);
+        const data = transactionSchema.parse(request.body);
+
+        const session = await prisma.registerSession.findUnique({
+            where: { id: data.sessionId }
+        });
+        if (!session) return reply.status(404).send({ error: 'Session not found' });
+
+        return await prisma.$transaction(async (tx) => {
+            // 1. Create Transaction
+            const transaction = await tx.cashTransaction.create({
+                data: {
+                    sessionId: data.sessionId,
+                    amount: data.amount,
+                    type: data.type,
+                    description: data.description,
+                    supplyItemId: data.supplyItemId,
+                    quantity: data.quantity || null,
+                    unitCost: data.unitCost || null,
+                }
+            });
+
+            // 2. Inventory Logic
+            if (data.supplyItemId && data.quantity) {
+                const item = await tx.supplyItem.findUnique({ where: { id: data.supplyItemId } });
+
+                if (item) {
+                    const newStock = (item.stockQuantity || 0) + data.quantity;
+
+                    // Update Stock & Cost
+                    await tx.supplyItem.update({
+                        where: { id: data.supplyItemId },
+                        data: {
+                            stockQuantity: newStock,
+                            currentCost: data.unitCost ? data.unitCost : undefined,
+                            lastPurchaseDate: new Date()
+                        }
+                    });
+
+                    // Log
+                    await tx.inventoryLog.create({
+                        data: {
+                            tenantId,
+                            supplyItemId: data.supplyItemId,
+                            previousStock: item.stockQuantity || 0,
+                            newStock,
+                            changeAmount: data.quantity,
+                            reason: 'PURCHASE',
+                            notes: `Compra Caja: ${data.description}`
+                        }
+                    });
+                }
+            }
+            return transaction;
+        });
+    });
 }

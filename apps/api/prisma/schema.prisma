@@ -210,6 +210,13 @@ model CashTransaction {
   timestamp   DateTime @default(now())
 
   session     RegisterSession @relation(fields: [sessionId], references: [id])
+  
+  // --- Inventory Linkage (New) ---
+  supplyItemId  String?
+  quantity      Float?   // Amount bought
+  unitCost      Float?   // Cost per unit (optional override)
+  
+  supplyItem    SupplyItem? @relation(fields: [supplyItemId], references: [id])
 }
 
 // --- MODULE: PRODUCTS (Ingest) ---
@@ -293,6 +300,7 @@ model SupplyItem {
   inventoryLogs     InventoryLog[]
   supplierPrices    SupplierPrice[]
   productRecipes    ProductRecipe[]
+  cashTransactions  CashTransaction[]
 
   // --- NEW: Kitchen Hierarchy (Batches) ---
   isProduction    Boolean            @default(false) // If true, this item is made in-house (e.g. "Pizza Dough")
