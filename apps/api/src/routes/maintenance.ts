@@ -13,18 +13,18 @@ export default async function maintenanceRoutes(fastify: FastifyInstance) {
             return reply.status(403).send({ error: "Unauthorized" });
         }
 
-        console.log("⚠️ Starting Emergency Migration from API (Version: Skynet v3 - Direct Binary)...");
+        console.log("⚠️ Starting Emergency Migration from API (Version: Skynet v4 - Skip Generate)...");
         console.log(`CWD: ${process.cwd()}`);
 
         const prismaBinary = path.join(process.cwd(), 'node_modules', '.bin', 'prisma');
-        let command = `"${prismaBinary}" db push`;
+        let command = `"${prismaBinary}" db push --skip-generate`;
 
         // If schema is provided, write to temp file
         if (schema) {
             const tempSchemaPath = path.join('/tmp', 'schema.prisma');
             fs.writeFileSync(tempSchemaPath, schema);
             console.log(`[Maintenance] Schema written to ${tempSchemaPath}`);
-            command = `"${prismaBinary}" db push --schema ${tempSchemaPath} --accept-data-loss`;
+            command = `"${prismaBinary}" db push --schema ${tempSchemaPath} --accept-data-loss --skip-generate`;
         }
 
         return new Promise((resolve, reject) => {
