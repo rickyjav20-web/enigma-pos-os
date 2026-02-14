@@ -463,6 +463,7 @@ export default async function registerRoutes(fastify: FastifyInstance) {
                     }
 
                     // Log
+                    console.log(`[Transaction] Creating InventoryLog for ${data.supplyItemId}. Qty: ${data.quantity}`);
                     await tx.inventoryLog.create({
                         data: {
                             tenantId,

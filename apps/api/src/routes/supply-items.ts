@@ -64,6 +64,10 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
             }
         });
         if (!item) return reply.status(404).send({ error: "Item not found" });
+
+        console.log(`[API] Fetching SupplyItem ${item.name} (${id})`);
+        console.log(`[API] Found ${item.inventoryLogs?.length || 0} inventory logs.`);
+
         return item;
     });
 
