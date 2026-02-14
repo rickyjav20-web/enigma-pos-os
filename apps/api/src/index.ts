@@ -40,6 +40,7 @@ fastify.register(import('./routes/data'), { prefix: '/api/v1' });
 fastify.register(import('./routes/setup'), { prefix: '/api/v1' });
 fastify.register(import('./routes/roles'), { prefix: '/api/v1' });
 fastify.register(import('./routes/sales-import'), { prefix: '/api/v1' });
+fastify.register(import('./routes/sales'), { prefix: '/api/v1' }); // Enable POS Sales
 fastify.register(import('./routes/test-simulation'), { prefix: '/api/v1' });
 fastify.register(import('./routes/system-init'), { prefix: '/api/v1' });
 fastify.register(import('./routes/sales-consumption'), { prefix: '/api/v1' });
