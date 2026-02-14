@@ -85,7 +85,20 @@ export default async function salesConsumptionRoutes(fastify: FastifyInstance) {
                 }
 
                 for (const recipe of product.recipes) {
-                    const totalNeeded = recipe.quantity * qty;
+                    const item = recipe.supplyItem;
+                    const factor = item.stockCorrectionFactor || 1;
+                    const yieldPct = item.yieldPercentage || 1;
+
+                    // SMART YIELD DEDUCTION LOGIC:
+                    // 1. Convert RecipeQty to StockUnit (e.g. 20g -> 0.02kg)
+                    const qtyInStockUnit = recipe.quantity / factor;
+
+                    // 2. Apply Yield to get Gross Deduction (e.g. 0.02kg / 0.4 -> 0.05kg)
+                    const grossDeductionPerUnit = qtyInStockUnit / yieldPct;
+
+                    // 3. Total for Sales Quantity
+                    const totalNeeded = grossDeductionPerUnit * qty;
+
                     const existing = consumptions.get(recipe.supplyItemId);
                     consumptions.set(recipe.supplyItemId, {
                         amount: (existing?.amount || 0) + totalNeeded,

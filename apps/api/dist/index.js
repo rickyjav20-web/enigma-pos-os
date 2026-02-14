@@ -73,6 +73,7 @@ fastify.register(Promise.resolve().then(() => __importStar(require('./routes/sal
 fastify.register(Promise.resolve().then(() => __importStar(require('./routes/test-simulation'))), { prefix: '/api/v1' });
 fastify.register(Promise.resolve().then(() => __importStar(require('./routes/system-init'))), { prefix: '/api/v1' });
 fastify.register(Promise.resolve().then(() => __importStar(require('./routes/sales-consumption'))), { prefix: '/api/v1' });
+fastify.register(Promise.resolve().then(() => __importStar(require('./routes/maintenance'))), { prefix: '/api/v1' });
 fastify.get('/', async (request, reply) => {
     return { hello: 'Enigma POS OS API', status: 'active', timestamp: Date.now() };
 });

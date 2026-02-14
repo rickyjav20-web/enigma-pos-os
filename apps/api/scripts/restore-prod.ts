@@ -26,6 +26,7 @@ async function restore() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'x-tenant-id': 'enigma_hq',
                 'Content-Length': Buffer.byteLength(payload)
             }
         };
