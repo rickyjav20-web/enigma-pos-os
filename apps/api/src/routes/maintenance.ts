@@ -13,7 +13,7 @@ export default async function maintenanceRoutes(fastify: FastifyInstance) {
             return reply.status(403).send({ error: "Unauthorized" });
         }
 
-        console.log("⚠️ Starting Emergency Migration from API...");
+        console.log("⚠️ Starting Emergency Migration from API (Version: Skynet v2)...");
 
         let command = 'npx prisma db push';
 
