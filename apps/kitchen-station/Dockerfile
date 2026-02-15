@@ -13,7 +13,6 @@ COPY apps/hq/package.json ./apps/hq/package.json
 COPY apps/kitchen-station/package.json ./apps/kitchen-station/package.json
 COPY apps/ops/package.json ./apps/ops/package.json
 COPY apps/pos/package.json ./apps/pos/package.json
-COPY apps/purchase/package.json ./apps/purchase/package.json
 COPY apps/staff/package.json ./apps/staff/package.json
 
 # Install dependencies (frozen-lockfile)
