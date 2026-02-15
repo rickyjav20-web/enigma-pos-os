@@ -1,15 +1,17 @@
 import { FastifyInstance } from 'fastify';
 import prisma from '../lib/prisma';
 import { recipeService } from '../services/RecipeService';
+import { eventBus } from '../events/EventBus';
 
 export default async function productionRoutes(fastify: FastifyInstance) {
 
     // POST /production (Execute Production Run)
     fastify.post('/production', async (request, reply) => {
-        const { supplyItemId, quantity, unit } = request.body as any;
-        const activeTenant = request.tenantId || 'enigma_hq';
+        const { supplyItemId, quantity, unit, reason, userId } = request.body as any;
+        const tenantId = request.tenantId || 'enigma_hq';
+        const actorId = userId || 'system';
 
-        console.log(`🍳 Executing Production: Item ${supplyItemId}, Qty ${quantity} ${unit}`);
+        console.log(`🍳 Executing Production: Item ${supplyItemId}, Qty ${quantity} ${unit} (Reason: ${reason})`);
 
         // 1. Get the Batch Item
         const batchItem = await prisma.supplyItem.findUnique({
@@ -31,29 +33,32 @@ export default async function productionRoutes(fastify: FastifyInstance) {
         }
 
         // 3. Calculate Scale Factor
-        // If Batch Yield is defined (e.g. Yield 5L), and we are producing 10L, scale is 2.
-        // If no yield defined, assume 1-to-1 recipe definition per unit? 
-        // Typically recipes are defined for X yield.
-
         const yieldQty = batchItem.yieldQuantity || 1;
         const scale = quantity / yieldQty;
-
-        console.log(`   - Recipe Yield: ${yieldQty} ${batchItem.yieldUnit}`);
-        console.log(`   - Target Qty: ${quantity} ${unit}`);
-        console.log(`   - Scale Factor: ${scale}`);
 
         // 4. Deduct Ingredients
         const movements = [];
         for (const ing of ingredients) {
             const requiredQty = ing.quantity * scale;
 
-            console.log(`   - Consuming: ${ing.component.name}: ${requiredQty} ${ing.unit}`);
-
             // Deduct
             await prisma.supplyItem.update({
                 where: { id: ing.supplyItemId },
                 data: {
                     stockQuantity: { decrement: requiredQty }
+                }
+            });
+
+            // Log Ingredient Usage
+            await prisma.inventoryLog.create({
+                data: {
+                    tenantId,
+                    supplyItemId: ing.supplyItemId,
+                    previousStock: ing.component.stockQuantity, // Approximation
+                    newStock: ing.component.stockQuantity - requiredQty, // Approximation
+                    changeAmount: -requiredQty,
+                    reason: 'PRODUCTION_INGREDIENT',
+                    notes: `Used in Batch ${batchItem.name} (${quantity} ${unit})`
                 }
             });
 
@@ -65,16 +70,49 @@ export default async function productionRoutes(fastify: FastifyInstance) {
         }
 
         // 5. Add Stock to Batch Item
+        const previousBatchStock = batchItem.stockQuantity;
         const updatedBatch = await prisma.supplyItem.update({
             where: { id: supplyItemId },
             data: {
                 stockQuantity: { increment: Number(quantity) },
-                lastPurchaseDate: new Date() // Mark as 'recently filled'
+                lastPurchaseDate: new Date()
             }
         });
 
-        // 6. Recalculate Cost (Just in case ingredients changed cost recently)
+        // Log Batch Creation
+        await prisma.inventoryLog.create({
+            data: {
+                tenantId,
+                supplyItemId,
+                previousStock: previousBatchStock,
+                newStock: updatedBatch.stockQuantity,
+                changeAmount: Number(quantity),
+                reason: 'PRODUCTION_OUTPUT',
+                notes: reason || 'Manual Production Run'
+            }
+        });
+
+        // 6. Recalculate Cost
         await recipeService.recalculateSupplyItemCost(supplyItemId);
+
+        // 7. Emit Event
+        await eventBus.publish({
+            event_id: crypto.randomUUID(),
+            tenant_id: tenantId,
+            event_type: 'production_batch_completed',
+            entity_type: 'supply_item',
+            entity_id: supplyItemId,
+            timestamp: Date.now(),
+            actor_id: actorId,
+            version: 1,
+            metadata: {
+                batchName: batchItem.name,
+                quantity,
+                unit,
+                ingredientsUsed: movements,
+                reason
+            }
+        });
 
         return {
             success: true,
@@ -84,3 +122,4 @@ export default async function productionRoutes(fastify: FastifyInstance) {
         };
     });
 }
+

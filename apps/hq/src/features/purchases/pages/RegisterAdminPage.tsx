@@ -431,7 +431,19 @@ function SessionsTable({ sessions, expandedSession, setExpandedSession, fmt }: {
                                                 <div key={tx.id} className="flex justify-between items-center py-1.5 px-2 rounded text-sm hover:bg-white/5">
                                                     <div className="flex items-center gap-2">
                                                         <TypeBadge type={tx.type} />
-                                                        <span className="text-white/70 truncate max-w-[200px]">{tx.description || tx.type}</span>
+                                                        <div>
+                                                            <span className="text-white/70 block truncate max-w-[200px]">{tx.description || tx.type}</span>
+                                                            {tx.supplyItem && (
+                                                                <div className="flex items-center gap-1.5 text-[10px] text-amber-400/80 mt-0.5">
+                                                                    <ShoppingCart className="w-3 h-3" />
+                                                                    <span>{tx.supplyItem.name}</span>
+                                                                    <span className="text-white/30">•</span>
+                                                                    <span>{tx.quantity} {tx.supplyItem.defaultUnit}</span>
+                                                                    <span className="text-white/30">•</span>
+                                                                    <span>${tx.unitCost?.toFixed(2)}/u</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div className="flex items-center gap-3">
                                                         <span className="text-xs text-white/30 font-mono">

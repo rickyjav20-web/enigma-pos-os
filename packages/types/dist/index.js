@@ -19,4 +19,7 @@ var EventType;
     EventType["PURCHASE_ORDER_CONFIRMED"] = "orden_compra_confirmada";
     // Notification Events
     EventType["NOTIFICATION_CREATED"] = "notification_created";
+    // Kitchen Events
+    EventType["PRODUCTION_BATCH_COMPLETED"] = "production_batch_completed";
+    EventType["WASTE_REPORTED"] = "waste_reported";
 })(EventType || (exports.EventType = EventType = {}));

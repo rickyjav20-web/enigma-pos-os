@@ -25,7 +25,9 @@ export declare enum EventType {
     PRODUCT_CREATED = "producto_creado",
     PRODUCT_UPDATED = "producto_actualizado",
     PURCHASE_ORDER_CONFIRMED = "orden_compra_confirmada",
-    NOTIFICATION_CREATED = "notification_created"
+    NOTIFICATION_CREATED = "notification_created",
+    PRODUCTION_BATCH_COMPLETED = "production_batch_completed",
+    WASTE_REPORTED = "waste_reported"
 }
 export interface BaseEntity {
     id: string;

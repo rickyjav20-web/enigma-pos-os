@@ -33,6 +33,7 @@ fastify.register(import('./routes/purchases'), { prefix: '/api/v1' });
 fastify.register(import('./routes/auth'), { prefix: '/api/v1' });
 fastify.register(import('./routes/register'), { prefix: '/api/v1' });
 fastify.register(import('./routes/transactions'), { prefix: '/api/v1' });
+fastify.register(import('./routes/waste'), { prefix: '/api/v1' });
 
 fastify.register(import('./routes/supply-items'), { prefix: '/api/v1' });
 fastify.register(import('./routes/production'), { prefix: '/api/v1' });

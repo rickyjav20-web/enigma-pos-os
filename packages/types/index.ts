@@ -37,7 +37,11 @@ export enum EventType {
     PURCHASE_ORDER_CONFIRMED = 'orden_compra_confirmada',
 
     // Notification Events
-    NOTIFICATION_CREATED = 'notification_created'
+    NOTIFICATION_CREATED = 'notification_created',
+
+    // Kitchen Events
+    PRODUCTION_BATCH_COMPLETED = 'production_batch_completed',
+    WASTE_REPORTED = 'waste_reported'
 }
 
 export interface BaseEntity {
