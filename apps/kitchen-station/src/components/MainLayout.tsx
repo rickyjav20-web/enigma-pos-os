@@ -1,6 +1,6 @@
-import React from 'react';
+
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { ChefHat, Trash2, LogOut, User } from 'lucide-react';
+import { ChefHat, Trash2, LogOut } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
 export default function MainLayout() {

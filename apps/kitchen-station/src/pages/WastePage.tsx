@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Trash2, Search, AlertTriangle, AlertCircle, X, CheckCircle } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -183,8 +183,8 @@ export default function WastePage() {
                                 key={type.id}
                                 onClick={() => setWasteType(type.id)}
                                 className={`p-4 rounded-xl border text-left transition-all ${wasteType === type.id
-                                        ? 'bg-red-500/20 border-red-500 ring-1 ring-red-500'
-                                        : 'bg-zinc-950 border-zinc-800 hover:bg-zinc-800 text-zinc-400'
+                                    ? 'bg-red-500/20 border-red-500 ring-1 ring-red-500'
+                                    : 'bg-zinc-950 border-zinc-800 hover:bg-zinc-800 text-zinc-400'
                                     }`}
                             >
                                 <div className="text-2xl mb-2">{type.icon}</div>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ChefHat, Plus, Minus, CheckCircle, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChefHat, Plus, Minus, CheckCircle } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
@@ -106,8 +106,8 @@ export default function ProductionPage() {
                         key={item.id}
                         onClick={() => handleSelect(item)}
                         className={`p-6 rounded-2xl border flex flex-col items-start transition-all text-left relative overflow-hidden group ${selectedItem?.id === item.id
-                                ? 'bg-amber-500/20 border-amber-500 ring-2 ring-amber-500 shadow-xl'
-                                : 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800'
+                            ? 'bg-amber-500/20 border-amber-500 ring-2 ring-amber-500 shadow-xl'
+                            : 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800'
                             }`}
                     >
                         {/* Background Decor */}
