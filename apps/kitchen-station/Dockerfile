@@ -6,8 +6,17 @@ WORKDIR /app
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+# Copy ALL workspace package.json files to satisfy npm ci
 COPY packages/types/package.json ./packages/types/package.json
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/hq/package.json ./apps/hq/package.json
 COPY apps/kitchen-station/package.json ./apps/kitchen-station/package.json
+COPY apps/ops/package.json ./apps/ops/package.json
+COPY apps/pos/package.json ./apps/pos/package.json
+COPY apps/purchase/package.json ./apps/purchase/package.json
+COPY apps/staff/package.json ./apps/staff/package.json
+
+# Install dependencies (frozen-lockfile)
 RUN npm ci
 
 # Builder stage
@@ -29,6 +38,7 @@ ENV VITE_API_URL=${VITE_API_URL}
 RUN echo "VITE_API_URL=${VITE_API_URL}" > apps/kitchen-station/.env
 
 # Build Kitchen Station
+# Use --if-present just in case, but it should exist
 RUN npm run build -w apps/kitchen-station
 
 # Runner stage
