@@ -6,8 +6,15 @@ WORKDIR /app
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+# Copy ALL workspace package.json files so npm ci can resolve workspaces
 COPY packages/types/package.json ./packages/types/package.json
 COPY apps/hq/package.json ./apps/hq/package.json
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/kitchen-station/package.json ./apps/kitchen-station/package.json
+COPY apps/ops/package.json ./apps/ops/package.json
+COPY apps/pos/package.json ./apps/pos/package.json
+COPY apps/purchase/package.json ./apps/purchase/package.json
+COPY apps/staff/package.json ./apps/staff/package.json
 RUN npm ci
 
 # Builder stage
