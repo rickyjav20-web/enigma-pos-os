@@ -1,0 +1,48 @@
+# Dependencies (installed fresh in Docker)
+node_modules
+**/node_modules
+
+# Build output (rebuilt in Docker)
+**/dist
+**/build
+**/.next
+
+# Development files
+.git
+.gitignore
+.env
+.env.*
+**/.env
+**/.env.*
+
+# IDE / Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# Test / CI
+coverage
+**/__tests__
+**/*.test.*
+**/*.spec.*
+
+# Documentation & scripts (not needed for build)
+*.md
+LICENSE
+docs/
+
+# Legacy standalone apps (not npm workspaces)
+apps/purchase/data
+apps/purchase/frontend/node_modules
+apps/staff/client/node_modules
+apps/staff/server/node_modules
+
+# Misc
+*.log
+npm-debug.log*
