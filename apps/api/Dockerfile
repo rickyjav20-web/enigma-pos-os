@@ -15,6 +15,12 @@ COPY package.json package-lock.json ./
 # We need to recreate the directory structure for workspaces
 COPY packages/types/package.json ./packages/types/package.json
 COPY apps/api/package.json ./apps/api/package.json
+COPY apps/hq/package.json ./apps/hq/package.json
+COPY apps/kitchen-station/package.json ./apps/kitchen-station/package.json
+COPY apps/ops/package.json ./apps/ops/package.json
+COPY apps/pos/package.json ./apps/pos/package.json
+COPY apps/purchase/package.json ./apps/purchase/package.json
+COPY apps/staff/package.json ./apps/staff/package.json
 
 # Install dependencies (including devDependencies for building)
 RUN npm ci
