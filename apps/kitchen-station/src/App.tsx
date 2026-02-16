@@ -2,7 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
 import MainLayout from './components/MainLayout';
 import LoginPage from './pages/LoginPage';
-// will import pages later
+import ProductionPage from './pages/ProductionPage';
+import WastePage from './pages/WastePage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { isAuthenticated } = useAuth();
@@ -19,8 +20,8 @@ export default function App() {
 
                     <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                         <Route index element={<Navigate to="/production" replace />} />
-                        <Route path="production" element={<div className="p-8 text-2xl">Production Page (Coming Soon)</div>} />
-                        <Route path="waste" element={<div className="p-8 text-2xl">Waste Page (Coming Soon)</div>} />
+                        <Route path="production" element={<ProductionPage />} />
+                        <Route path="waste" element={<WastePage />} />
                     </Route>
                 </Routes>
             </BrowserRouter>
