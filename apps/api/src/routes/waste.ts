@@ -101,6 +101,26 @@ export default async function wasteRoutes(fastify: FastifyInstance) {
             }
         });
 
+        // Log Kitchen Activity (for analytics)
+        try {
+            await prisma.kitchenActivityLog.create({
+                data: {
+                    tenantId,
+                    employeeId: actorId,
+                    employeeName: (request.body as any).userName || 'Unknown',
+                    action: 'WASTE',
+                    entityType: isSupplyItem ? 'supply_item' : 'product',
+                    entityId: itemId,
+                    entityName: itemName || 'Unknown',
+                    quantity: Number(quantity),
+                    unit: unit || 'und',
+                    metadata: { wasteType: type, reason }
+                }
+            });
+        } catch (e) {
+            console.warn('[WASTE] Failed to log kitchen activity:', e);
+        }
+
         return {
             success: true,
             message: `Reported waste for ${itemName}`,

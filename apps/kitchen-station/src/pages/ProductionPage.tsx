@@ -52,15 +52,11 @@ export default function ProductionPage() {
         try {
             const payload = {
                 supplyItemId: selectedItem.id,
-                quantity: quantity * (selectedItem.yieldQuantity || 1), // Assuming API takes TOTAL quantity or Batches?
-                // Re-reading API: `const scale = quantity / yieldQty;`
-                // Actually the API logic seemed to take TOTAL quantity. 
-                // Let's send Total Quantity corresponding to 'quantity' batches.
-                // Wait, if I say "1 Batch", dealing with "Yield" in UI is better.
-                // Let's send the TOTAL computed quantity to be safe and explicit.
+                quantity: quantity * (selectedItem.yieldQuantity || 1),
                 unit: selectedItem.yieldUnit,
                 reason: 'Manual Production (Kitchen Station)',
-                userId: user?.id
+                userId: user?.id,
+                userName: user?.name
             };
 
             await api.post('/production', payload);

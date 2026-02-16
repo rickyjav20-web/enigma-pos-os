@@ -29,6 +29,34 @@ export default async function authRoutes(fastify: FastifyInstance) {
             return reply.status(401).send({ error: 'Invalid PIN' });
         }
 
+        // Look up role permissions from SystemRole
+        let permissions = {
+            canAccessOps: false,
+            canAccessHq: false,
+            canAccessKiosk: true,
+            canAccessKitchen: false
+        };
+
+        try {
+            const systemRole = await prisma.systemRole.findFirst({
+                where: {
+                    tenantId,
+                    name: { equals: employee.role, mode: 'insensitive' }
+                }
+            });
+
+            if (systemRole) {
+                permissions = {
+                    canAccessOps: systemRole.canAccessOps,
+                    canAccessHq: systemRole.canAccessHq,
+                    canAccessKiosk: systemRole.canAccessKiosk,
+                    canAccessKitchen: systemRole.canAccessKitchen
+                };
+            }
+        } catch (e) {
+            console.warn('[AUTH] SystemRole lookup failed, using defaults:', (e as any).message);
+        }
+
         // Check for Active Register Session (resilient: table may not exist yet)
         let activeSession: any = null;
         try {
@@ -55,6 +83,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
                 name: employee.fullName,
                 role: employee.role
             },
+            permissions,
             activeSession
         };
     });

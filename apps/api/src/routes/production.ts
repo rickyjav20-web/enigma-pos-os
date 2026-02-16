@@ -114,6 +114,26 @@ export default async function productionRoutes(fastify: FastifyInstance) {
             }
         });
 
+        // 8. Log Kitchen Activity (for analytics)
+        try {
+            await prisma.kitchenActivityLog.create({
+                data: {
+                    tenantId,
+                    employeeId: actorId,
+                    employeeName: (request.body as any).userName || 'Unknown',
+                    action: 'PRODUCTION',
+                    entityType: 'supply_item',
+                    entityId: supplyItemId,
+                    entityName: batchItem.name,
+                    quantity: Number(quantity),
+                    unit: unit || batchItem.yieldUnit || 'und',
+                    metadata: { reason, ingredientsUsed: movements }
+                }
+            });
+        } catch (e) {
+            console.warn('[PRODUCTION] Failed to log kitchen activity:', e);
+        }
+
         return {
             success: true,
             message: `Produced ${quantity} ${unit} of ${batchItem.name}`,

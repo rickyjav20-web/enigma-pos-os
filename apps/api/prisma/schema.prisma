@@ -44,9 +44,10 @@ model SystemRole {
   color       String  @default("#8b5cf6")
 
   // System access permissions
-  canAccessOps    Boolean @default(false)   // Cash register (OPS)
-  canAccessHq     Boolean @default(false)   // Back office (HQ)
-  canAccessKiosk  Boolean @default(true)    // Clock-in kiosk
+  canAccessOps      Boolean @default(false)   // Cash register (OPS)
+  canAccessHq       Boolean @default(false)   // Back office (HQ)
+  canAccessKiosk    Boolean @default(true)    // Clock-in kiosk
+  canAccessKitchen  Boolean @default(false)   // Kitchen station
 
   isSystem    Boolean  @default(false)      // Prevents deletion
   createdAt   DateTime @default(now())
@@ -530,4 +531,26 @@ model ProductCostHistory {
   
   @@index([productId])
   @@index([changeDate])
+}
+
+// --- MODULE: KITCHEN ACTIVITY ---
+
+model KitchenActivityLog {
+  id          String   @id @default(uuid())
+  tenantId    String
+  employeeId  String
+  employeeName String  // Snapshot for fast queries
+  action      String   // 'LOGIN', 'LOGOUT', 'PRODUCTION', 'WASTE'
+  entityType  String?  // 'supply_item', 'product'
+  entityId    String?
+  entityName  String?  // Snapshot
+  quantity    Float?
+  unit        String?
+  metadata    Json?    // Flexible for extra data (wasteType, reason, etc.)
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([action])
+  @@index([createdAt])
 }

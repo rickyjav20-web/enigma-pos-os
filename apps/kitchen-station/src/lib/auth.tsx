@@ -1,9 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+interface Permissions {
+    canAccessOps: boolean;
+    canAccessHq: boolean;
+    canAccessKiosk: boolean;
+    canAccessKitchen: boolean;
+}
+
 interface User {
     id: string;
     name: string;
     role: string;
+    permissions?: Permissions;
 }
 
 interface AuthContextType {

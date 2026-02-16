@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Delete, Lock } from 'lucide-react';
+import { Delete, Lock, ShieldAlert } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
@@ -30,7 +30,32 @@ export default function LoginPage() {
         try {
             const res = await api.post('/auth/employee-login', { pin });
             if (res.data.employee) {
-                login(res.data.employee);
+                // Check kitchen access permission
+                const permissions = res.data.permissions;
+                if (permissions && permissions.canAccessKitchen === false) {
+                    setError('⛔ No tienes acceso a Kitchen Station');
+                    setLoading(false);
+                    setPin('');
+                    return;
+                }
+
+                // Store user with permissions
+                login({
+                    ...res.data.employee,
+                    permissions
+                });
+
+                // Log login activity
+                try {
+                    await api.post('/kitchen/activity', {
+                        employeeId: res.data.employee.id,
+                        employeeName: res.data.employee.name,
+                        action: 'LOGIN'
+                    });
+                } catch (logErr) {
+                    console.warn('Failed to log login activity:', logErr);
+                }
+
                 navigate('/production');
             } else {
                 setError('Credenciales inválidas');
@@ -62,7 +87,12 @@ export default function LoginPage() {
                     ))}
                 </div>
 
-                {error && <p className="text-red-500 text-center mb-4 text-sm font-bold animate-pulse">{error}</p>}
+                {error && (
+                    <div className={`text-center mb-4 text-sm font-bold animate-pulse flex items-center justify-center gap-2 ${error.includes('⛔') ? 'text-amber-400' : 'text-red-500'}`}>
+                        {error.includes('⛔') && <ShieldAlert size={16} />}
+                        {error}
+                    </div>
+                )}
 
                 {/* NUMPAD */}
                 <div className="grid grid-cols-3 gap-4">

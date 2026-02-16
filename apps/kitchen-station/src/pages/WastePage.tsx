@@ -73,10 +73,11 @@ export default function WastePage() {
             await api.post('/waste', {
                 itemId: selectedItem.id,
                 quantity: parseFloat(quantity),
-                unit: selectedItem.yieldUnit || selectedItem.defaultUnit || 'und', // Best guess unit
+                unit: selectedItem.yieldUnit || selectedItem.defaultUnit || 'und',
                 type: wasteType,
                 reason: notes,
-                userId: user?.id
+                userId: user?.id,
+                userName: user?.name
             });
 
             setSuccessMessage(`Reported waste for ${selectedItem.name}`);

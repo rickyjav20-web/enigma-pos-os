@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '@/lib/api';
-import { Shield, Plus, Trash2, Edit2, Check, X, ArrowLeft, Monitor, LayoutDashboard, Clock, AlertCircle, Lock } from 'lucide-react';
+import { Shield, Plus, Trash2, Edit2, Check, X, ArrowLeft, Monitor, LayoutDashboard, Clock, AlertCircle, Lock, ChefHat } from 'lucide-react';
 
 const SYSTEM_ICONS = {
     ops: Monitor,
     hq: LayoutDashboard,
     kiosk: Clock,
+    kitchen: ChefHat,
 };
 
 const SYSTEM_LABELS = {
     ops: 'Caja (OPS)',
     hq: 'Oficina (HQ)',
     kiosk: 'Kiosko',
+    kitchen: 'Cocina',
 };
 
 export default function RolesManager() {
@@ -21,7 +23,7 @@ export default function RolesManager() {
     const [editingId, setEditingId] = useState(null);
     const [editData, setEditData] = useState({});
     const [showCreate, setShowCreate] = useState(false);
-    const [newRole, setNewRole] = useState({ name: '', description: '', color: '#8b5cf6', canAccessOps: false, canAccessHq: false, canAccessKiosk: true });
+    const [newRole, setNewRole] = useState({ name: '', description: '', color: '#8b5cf6', canAccessOps: false, canAccessHq: false, canAccessKiosk: true, canAccessKitchen: false });
     const [error, setError] = useState('');
     const [employeeCounts, setEmployeeCounts] = useState({});
 
@@ -66,7 +68,7 @@ export default function RolesManager() {
         try {
             await api.post('/roles', newRole);
             setShowCreate(false);
-            setNewRole({ name: '', description: '', color: '#8b5cf6', canAccessOps: false, canAccessHq: false, canAccessKiosk: true });
+            setNewRole({ name: '', description: '', color: '#8b5cf6', canAccessOps: false, canAccessHq: false, canAccessKiosk: true, canAccessKitchen: false });
             fetchRoles();
         } catch (e) {
             setError(e.response?.data?.error || 'Error al crear rol');
@@ -240,6 +242,9 @@ export default function RolesManager() {
                             <th className="p-6 pb-4 text-center">
                                 <div className="flex items-center justify-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Kiosk</div>
                             </th>
+                            <th className="p-6 pb-4 text-center">
+                                <div className="flex items-center justify-center gap-1.5"><ChefHat className="w-3.5 h-3.5" /> Kitchen</div>
+                            </th>
                             <th className="p-6 pb-4 text-center">Staff</th>
                             <th className="p-6 pb-4 text-right">Actions</th>
                         </tr>
@@ -307,7 +312,7 @@ export default function RolesManager() {
                                 </td>
 
                                 {/* Permission toggles */}
-                                {['canAccessOps', 'canAccessHq', 'canAccessKiosk'].map(field => (
+                                {['canAccessOps', 'canAccessHq', 'canAccessKiosk', 'canAccessKitchen'].map(field => (
                                     <td key={field} className="p-6 text-center">
                                         <button
                                             onClick={() => handleToggle(role, field)}
@@ -361,6 +366,7 @@ export default function RolesManager() {
                 <div className="flex items-center gap-2"><Monitor className="w-3.5 h-3.5" /> <strong>OPS</strong> = Caja registradora</div>
                 <div className="flex items-center gap-2"><LayoutDashboard className="w-3.5 h-3.5" /> <strong>HQ</strong> = Back office</div>
                 <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5" /> <strong>Kiosk</strong> = Clock-in/out</div>
+                <div className="flex items-center gap-2"><ChefHat className="w-3.5 h-3.5" /> <strong>Kitchen</strong> = Producción y Merma</div>
                 <div className="flex items-center gap-2"><Lock className="w-3 h-3" /> = System role (cannot delete)</div>
             </div>
         </div>

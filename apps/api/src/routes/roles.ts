@@ -20,7 +20,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
     // POST /roles — create a new role
     fastify.post('/roles', async (request, reply) => {
         try {
-            const { name, description, color, canAccessOps, canAccessHq, canAccessKiosk } = request.body as any;
+            const { name, description, color, canAccessOps, canAccessHq, canAccessKiosk, canAccessKitchen } = request.body as any;
 
             if (!name || !name.trim()) {
                 return reply.status(400).send({ error: 'Role name is required' });
@@ -43,6 +43,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
                     canAccessOps: canAccessOps ?? false,
                     canAccessHq: canAccessHq ?? false,
                     canAccessKiosk: canAccessKiosk ?? true,
+                    canAccessKitchen: canAccessKitchen ?? false,
                     isSystem: false
                 }
             });
@@ -81,6 +82,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
                     ...(updates.canAccessOps !== undefined && { canAccessOps: updates.canAccessOps }),
                     ...(updates.canAccessHq !== undefined && { canAccessHq: updates.canAccessHq }),
                     ...(updates.canAccessKiosk !== undefined && { canAccessKiosk: updates.canAccessKiosk }),
+                    ...(updates.canAccessKitchen !== undefined && { canAccessKitchen: updates.canAccessKitchen }),
                 }
             });
 
@@ -145,7 +147,8 @@ export default async function roleRoutes(fastify: FastifyInstance) {
                 roleName: role.name,
                 canAccessOps: role.canAccessOps,
                 canAccessHq: role.canAccessHq,
-                canAccessKiosk: role.canAccessKiosk
+                canAccessKiosk: role.canAccessKiosk,
+                canAccessKitchen: role.canAccessKitchen
             };
         } catch (error: any) {
             fastify.log.error(error);
@@ -157,12 +160,12 @@ export default async function roleRoutes(fastify: FastifyInstance) {
     fastify.post('/roles/seed', async (request, reply) => {
         try {
             const defaults = [
-                { name: 'ADMIN', description: 'Acceso total a todos los sistemas', color: '#ef4444', canAccessOps: true, canAccessHq: true, canAccessKiosk: true, isSystem: true },
-                { name: 'Cajero', description: 'Caja registradora y kiosko', color: '#10b981', canAccessOps: true, canAccessHq: false, canAccessKiosk: true, isSystem: false },
-                { name: 'Gerente', description: 'Acceso administrativo y operativo', color: '#f59e0b', canAccessOps: true, canAccessHq: true, canAccessKiosk: true, isSystem: false },
-                { name: 'Cocina', description: 'Acceso a caja y kiosko', color: '#8b5cf6', canAccessOps: true, canAccessHq: false, canAccessKiosk: true, isSystem: false },
-                { name: 'WAITER', description: 'Solo kiosko (sin acceso a caja)', color: '#3b82f6', canAccessOps: false, canAccessHq: false, canAccessKiosk: true, isSystem: false },
-                { name: 'Barista', description: 'Acceso a caja y kiosko', color: '#ec4899', canAccessOps: true, canAccessHq: false, canAccessKiosk: true, isSystem: false },
+                { name: 'ADMIN', description: 'Acceso total a todos los sistemas', color: '#ef4444', canAccessOps: true, canAccessHq: true, canAccessKiosk: true, canAccessKitchen: true, isSystem: true },
+                { name: 'Cajero', description: 'Caja registradora y kiosko', color: '#10b981', canAccessOps: true, canAccessHq: false, canAccessKiosk: true, canAccessKitchen: false, isSystem: false },
+                { name: 'Gerente', description: 'Acceso administrativo y operativo', color: '#f59e0b', canAccessOps: true, canAccessHq: true, canAccessKiosk: true, canAccessKitchen: true, isSystem: false },
+                { name: 'Cocina', description: 'Acceso a cocina y kiosko', color: '#8b5cf6', canAccessOps: false, canAccessHq: false, canAccessKiosk: true, canAccessKitchen: true, isSystem: false },
+                { name: 'WAITER', description: 'Solo kiosko (sin acceso a caja)', color: '#3b82f6', canAccessOps: false, canAccessHq: false, canAccessKiosk: true, canAccessKitchen: false, isSystem: false },
+                { name: 'Barista', description: 'Acceso a caja y kiosko', color: '#ec4899', canAccessOps: true, canAccessHq: false, canAccessKiosk: true, canAccessKitchen: false, isSystem: false },
             ];
 
             const results = { created: 0, skipped: 0, roles: [] as string[] };
