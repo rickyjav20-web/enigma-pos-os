@@ -4,10 +4,12 @@ import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
 const WASTE_TYPES = [
-    { id: 'PRODUCTION_FAILURE', label: 'Fallo de Producción', icon: '🔥', description: 'Se quemó, salió mal, error de receta' },
-    { id: 'EXPIRED', label: 'Vencimiento / Mal Estado', icon: '🤢', description: 'Producto vencido o mal refrigerado' },
-    { id: 'OPERATIONAL', label: 'Accidente Operativo', icon: '💥', description: 'Se cayó, se contaminó, error de manipulación' },
-    { id: 'INVENTORY_CORRECTION', label: 'Corrección de Inventario', icon: '📉', description: 'Conteo físico no coincide (Faltante)' }
+    { id: 'WRONG_ORDER', label: 'Pedido Erróneo', icon: '🔄', description: 'Se preparó mal un pedido, el cliente lo rechazó' },
+    { id: 'DAMAGED', label: 'Se Dañó / Accidente', icon: '💥', description: 'Se cayó, se derramó, se contaminó, error de manipulación' },
+    { id: 'LOST', label: 'Pérdida / Faltante', icon: '❓', description: 'No se encuentra, posible robo o extravío' },
+    { id: 'EXPIRED', label: 'Caducado / Vencido', icon: '🤢', description: 'Producto vencido, mal refrigerado, en mal estado' },
+    { id: 'PRODUCTION_FAILURE', label: 'Fallo de Producción', icon: '🔥', description: 'Se quemó, receta salió mal, temperatura incorrecta' },
+    { id: 'INVENTORY_CORRECTION', label: 'Corrección de Inventario', icon: '📉', description: 'Conteo físico no coincide con el sistema' },
 ] as const;
 
 export default function WastePage() {
@@ -131,9 +133,17 @@ export default function WastePage() {
                             >
                                 <div>
                                     <h3 className="font-bold text-lg text-white group-hover:text-red-400 transition-colors">{item.name}</h3>
-                                    <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-1 rounded uppercase tracking-wider font-bold">
-                                        {item.displayType}
-                                    </span>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-1 rounded uppercase tracking-wider font-bold">
+                                            {item.displayType}
+                                        </span>
+                                        {item.type === 'SUPPLY' && (
+                                            <span className={`text-xs px-2 py-1 rounded font-mono font-bold ${item.stockQuantity <= 0 ? 'bg-red-500/20 text-red-400' : item.stockQuantity < 5 ? 'bg-amber-500/20 text-amber-400' : 'bg-zinc-800 text-zinc-400'
+                                                }`}>
+                                                Stock: {item.stockQuantity} {item.defaultUnit || 'und'}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="text-zinc-500 group-hover:text-white">
                                     <AlertTriangle size={20} />
@@ -152,7 +162,15 @@ export default function WastePage() {
                         <div>
                             <span className="text-red-500 font-bold text-xs uppercase tracking-wider">Reportando Merma</span>
                             <h2 className="text-3xl font-bold text-white mt-1">{selectedItem.name}</h2>
-                            <p className="text-zinc-400">{selectedItem.displayType}</p>
+                            <div className="flex items-center gap-3 mt-1">
+                                <span className="text-zinc-400">{selectedItem.displayType}</span>
+                                {selectedItem.type === 'SUPPLY' && (
+                                    <span className={`text-xs px-2 py-1 rounded font-mono font-bold ${selectedItem.stockQuantity <= 0 ? 'bg-red-500/20 text-red-400' : 'bg-zinc-800 text-zinc-400'
+                                        }`}>
+                                        Stock actual: {selectedItem.stockQuantity} {selectedItem.defaultUnit || 'und'}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         <button onClick={() => setSelectedItem(null)} className="p-2 hover:bg-zinc-800 rounded-full text-zinc-500 hover:text-white">
                             <X size={24} />
@@ -178,7 +196,7 @@ export default function WastePage() {
                     </div>
 
                     {/* Step 2: Type */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                         {WASTE_TYPES.map(type => (
                             <button
                                 key={type.id}
