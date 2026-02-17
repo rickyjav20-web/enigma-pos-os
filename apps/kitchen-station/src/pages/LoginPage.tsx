@@ -30,7 +30,6 @@ export default function LoginPage() {
         try {
             const res = await api.post('/auth/employee-login', { pin });
             if (res.data.employee) {
-                // Check kitchen access permission
                 const permissions = res.data.permissions;
                 if (permissions && permissions.canAccessKitchen === false) {
                     setError('⛔ No tienes acceso a Kitchen Station');
@@ -39,13 +38,11 @@ export default function LoginPage() {
                     return;
                 }
 
-                // Store user with permissions
                 login({
                     ...res.data.employee,
                     permissions
                 });
 
-                // Log login activity
                 try {
                     await api.post('/kitchen/activity', {
                         employeeId: res.data.employee.id,
@@ -70,37 +67,44 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="h-screen bg-black flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
+        <div className="h-screen flex items-center justify-center p-4">
+            <div className="w-full max-w-sm glass-card rounded-2xl p-8 shadow-2xl">
                 <div className="flex flex-col items-center mb-8">
-                    <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mb-4 border border-zinc-700">
-                        <Lock className="text-emerald-500" size={32} />
+                    <div className="relative w-14 h-14 flex items-center justify-center mb-4">
+                        <div className="absolute inset-0 bg-violet-500/20 rounded-2xl blur-xl" />
+                        <div className="relative bg-gradient-to-br from-white/10 to-transparent border border-white/10 rounded-2xl w-full h-full flex items-center justify-center backdrop-blur-md">
+                            <Lock className="text-violet-400" size={24} />
+                        </div>
                     </div>
-                    <h1 className="text-2xl font-bold text-white">Kitchen Station</h1>
-                    <p className="text-zinc-500">Ingrese su PIN personal</p>
+                    <h1 className="text-xl font-bold text-white tracking-tight">Kitchen Station</h1>
+                    <p className="text-zinc-500 text-sm">Ingrese su PIN personal</p>
                 </div>
 
                 {/* PIN DISPLAY */}
-                <div className="flex justify-center gap-4 mb-8 h-12">
+                <div className="flex justify-center gap-4 mb-8 h-8">
                     {[0, 1, 2, 3].map(i => (
-                        <div key={i} className={`w-4 h-4 rounded-full transition-all duration-300 ${i < pin.length ? 'bg-emerald-500 scale-125 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-zinc-800'}`} />
+                        <div key={i} className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${i < pin.length
+                                ? 'bg-violet-500 scale-125 shadow-[0_0_10px_rgba(139,92,246,0.5)]'
+                                : 'bg-white/10 border border-white/10'
+                            }`} />
                     ))}
                 </div>
 
                 {error && (
-                    <div className={`text-center mb-4 text-sm font-bold animate-pulse flex items-center justify-center gap-2 ${error.includes('⛔') ? 'text-amber-400' : 'text-red-500'}`}>
+                    <div className={`text-center mb-4 text-sm font-bold animate-pulse flex items-center justify-center gap-2 ${error.includes('⛔') ? 'text-amber-400' : 'text-red-400'
+                        }`}>
                         {error.includes('⛔') && <ShieldAlert size={16} />}
                         {error}
                     </div>
                 )}
 
                 {/* NUMPAD */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
                         <button
                             key={num}
                             onClick={() => handleIdx(num)}
-                            className="h-16 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 rounded-xl text-2xl font-bold text-white transition-colors"
+                            className="h-14 bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/5 rounded-xl text-xl font-bold text-white transition-all duration-150"
                         >
                             {num}
                         </button>
@@ -108,22 +112,22 @@ export default function LoginPage() {
                     <div />
                     <button
                         onClick={() => handleIdx(0)}
-                        className="h-16 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 rounded-xl text-2xl font-bold text-white transition-colors"
+                        className="h-14 bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/5 rounded-xl text-xl font-bold text-white transition-all duration-150"
                     >
                         0
                     </button>
                     <button
                         onClick={handleClear}
-                        className="h-16 bg-zinc-800/50 hover:bg-red-900/20 active:bg-red-900/40 rounded-xl flex items-center justify-center text-zinc-400 hover:text-red-400 transition-colors"
+                        className="h-14 bg-white/5 hover:bg-red-500/10 active:bg-red-500/20 border border-white/5 rounded-xl flex items-center justify-center text-zinc-500 hover:text-red-400 transition-all duration-150"
                     >
-                        <Delete size={24} />
+                        <Delete size={22} />
                     </button>
                 </div>
 
                 <button
                     onClick={handleSubmit}
                     disabled={loading || pin.length < 4}
-                    className="w-full mt-8 py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-white font-bold text-lg shadow-lg hover:shadow-emerald-500/20 transition-all"
+                    className="w-full mt-6 py-3.5 bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-white font-bold text-sm shadow-lg shadow-violet-500/20 hover:shadow-violet-500/30 transition-all duration-200"
                 >
                     {loading ? 'Verificando...' : 'Entrar'}
                 </button>
