@@ -94,42 +94,11 @@ export class RecipeService {
 
         if (!po) return;
 
-        // For each bought item, update Average Cost & Stock
+        // NOTE: Stock and WAC are already updated by the purchase route on confirmation.
+        // RecipeService is responsible ONLY for the ripple-effect cost recalculation
+        // (batches and products that use these ingredients). Do NOT re-increment stock or WAC here.
         for (const line of po.lines) {
-            const item = await prisma.supplyItem.findUnique({ where: { id: line.supplyItemId } });
-            if (!item) continue;
-
-            // @ts-ignore
-            const currentQty = item.stockQuantity || 0;
-            const incomingQty = line.quantity;
-            const incomingCost = line.unitCost;
-            const oldAvg = item.averageCost || item.currentCost || 0;
-
-            let newAvgCost = incomingCost; // Default reset
-
-            // Weighted Average Cost Formula
-            // NewAvg = ((CurrentQty * OldAvg) + (IncomingQty * IncomingPrice)) / (CurrentQty + IncomingQty)
-            const newTotalQty = currentQty + incomingQty;
-
-            if (newTotalQty > 0) {
-                const currentVal = currentQty < 0 ? 0 : (currentQty * oldAvg); // If neg stock, assume 0 value
-                const incomingVal = incomingQty * incomingCost;
-                newAvgCost = (currentVal + incomingVal) / newTotalQty;
-            }
-
-            // Update Item Standard Costing
-            await prisma.supplyItem.update({
-                where: { id: item.id },
-                data: {
-                    averageCost: newAvgCost,
-                    currentCost: incomingCost, // "Last Price" used for reference, but Recipe uses Avg
-                    lastPurchaseDate: new Date(),
-                    // @ts-ignore
-                    stockQuantity: newTotalQty
-                }
-            });
-
-            // Trigger ripple effect (for Batches/Products using this)
+            // Trigger ripple effect (for Batches/Products using this ingredient)
             await this.recalculateSupplyItemCost(line.supplyItemId);
         }
     }

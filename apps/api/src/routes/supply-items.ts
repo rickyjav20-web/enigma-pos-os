@@ -48,7 +48,34 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
             include: { ingredients: { include: { component: true } } }
         });
 
-        return { success: true, count: items.length, total: totalItems, data: items };
+        // Compute last-3-purchases average for each item in a single query
+        const itemIds = items.map(i => i.id);
+        const recentLines = await prisma.purchaseLine.findMany({
+            where: {
+                supplyItemId: { in: itemIds },
+                purchaseOrder: { status: 'confirmed' }
+            },
+            orderBy: { purchaseOrder: { date: 'desc' } },
+            select: { supplyItemId: true, unitCost: true }
+        });
+
+        // Group by item, take last 3, compute avg
+        const linesByItem = new Map<string, number[]>();
+        for (const l of recentLines) {
+            const arr = linesByItem.get(l.supplyItemId) || [];
+            if (arr.length < 3) arr.push(l.unitCost);
+            linesByItem.set(l.supplyItemId, arr);
+        }
+
+        const enriched = items.map(item => {
+            const prices = linesByItem.get(item.id) || [];
+            const lastThreePurchasesAvg = prices.length > 0
+                ? prices.reduce((s, p) => s + p, 0) / prices.length
+                : null;
+            return { ...item, lastThreePurchasesAvg };
+        });
+
+        return { success: true, count: enriched.length, total: totalItems, data: enriched };
     });
 
     // GET /supply-items/:id
@@ -65,10 +92,38 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
         });
         if (!item) return reply.status(404).send({ error: "Item not found" });
 
+        // Last 3 confirmed purchase prices for this item
+        const lastThreePurchaseLines = await prisma.purchaseLine.findMany({
+            where: {
+                supplyItemId: id,
+                purchaseOrder: { status: 'confirmed' }
+            },
+            orderBy: { purchaseOrder: { date: 'desc' } },
+            take: 3,
+            select: {
+                unitCost: true,
+                quantity: true,
+                purchaseOrder: { select: { date: true, supplier: { select: { name: true } } } }
+            }
+        });
+
+        const lastThreePurchasesAvg = lastThreePurchaseLines.length > 0
+            ? lastThreePurchaseLines.reduce((sum, l) => sum + l.unitCost, 0) / lastThreePurchaseLines.length
+            : null;
+
         console.log(`[API] Fetching SupplyItem ${item.name} (${id})`);
         console.log(`[API] Found ${item.inventoryLogs?.length || 0} inventory logs.`);
 
-        return item;
+        return {
+            ...item,
+            lastThreePurchases: lastThreePurchaseLines.map(l => ({
+                unitCost: l.unitCost,
+                quantity: l.quantity,
+                date: l.purchaseOrder.date,
+                supplier: l.purchaseOrder.supplier?.name
+            })),
+            lastThreePurchasesAvg
+        };
     });
 
     // POST /supply-items (Create)

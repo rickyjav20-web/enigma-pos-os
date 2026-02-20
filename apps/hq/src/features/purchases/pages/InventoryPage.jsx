@@ -387,14 +387,24 @@ export default function InventoryPage() {
                             })}
 
                             {zone === 'KITCHEN' && kitchenItems.map(item => (
-                                <tr key={item.id} className="hover:bg-zinc-800/50 group cursor-pointer" onClick={() => handleEdit(item)}>
-                                    <td className="p-4 font-medium text-amber-100">{item.name}</td>
-                                    <td className="p-4 text-zinc-400">{item.yieldQuantity} {item.yieldUnit}</td>
+                                <tr key={item.id} className={`hover:bg-zinc-800/50 group cursor-pointer ${!item.yieldQuantity ? 'opacity-70' : ''}`} onClick={() => handleEdit(item)}>
+                                    <td className="p-4">
+                                        <div className="font-medium text-amber-100">{item.name}</div>
+                                        {!item.yieldQuantity && (
+                                            <div className="text-[10px] text-orange-400 font-bold mt-0.5">⚠ Sin yield configurado</div>
+                                        )}
+                                    </td>
+                                    <td className="p-4">
+                                        {item.yieldQuantity
+                                            ? <span className="text-zinc-300 font-mono">{item.yieldQuantity} {item.yieldUnit}</span>
+                                            : <span className="text-orange-400/60 text-xs italic">No definido</span>
+                                        }
+                                    </td>
                                     <td className="p-4 text-zinc-300">
-                                        ${item.currentCost.toFixed(2)} <span className="text-xs text-zinc-500">/ batch</span>
+                                        ${(item.currentCost || 0).toFixed(2)} <span className="text-xs text-zinc-500">/ batch</span>
                                     </td>
                                     <td className="p-4 text-zinc-200 font-bold">
-                                        {item.stockQuantity || 0} <span className="text-xs text-zinc-500 font-normal">{item.yieldUnit}</span>
+                                        {(item.stockQuantity || 0).toFixed(2)} <span className="text-xs text-zinc-500 font-normal">{item.yieldUnit || 'und'}</span>
                                     </td>
                                     <td className="p-4 text-emerald-400 font-bold">
                                         ${((item.stockQuantity || 0) * (item.currentCost || 0)).toFixed(2)}
@@ -430,14 +440,24 @@ export default function InventoryPage() {
                                     <tr key={item.id} className="hover:bg-zinc-800/50 group cursor-pointer" onClick={() => setViewingItem({ ...item, type: 'SUPPLY' })}>
                                         <td className="p-4 font-medium text-blue-100">{item.name}</td>
                                         <td className="p-4 text-zinc-400">{item.defaultUnit}</td>
-                                        <td className="p-4 text-zinc-300">
-                                            ${(item.currentCost || 0).toFixed(2)} <span className="text-xs text-zinc-500">last</span>
+                                        <td className="p-4">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-zinc-300 font-mono">
+                                                    ${(item.currentCost || 0).toFixed(2)}
+                                                    <span className="text-xs text-zinc-600 ml-1">last</span>
+                                                </span>
+                                                {item.lastThreePurchasesAvg != null && (
+                                                    <span className="text-xs text-violet-400 font-mono">
+                                                        avg3: ${item.lastThreePurchasesAvg.toFixed(2)}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="p-4 text-zinc-200 font-bold">
-                                            {item.stockQuantity || 0} <span className="text-xs text-zinc-500 font-normal">{item.defaultUnit}</span>
+                                            {(item.stockQuantity || 0).toFixed(2)} <span className="text-xs text-zinc-500 font-normal">{item.defaultUnit}</span>
                                         </td>
                                         <td className="p-4 text-emerald-400 font-bold">
-                                            ${((item.stockQuantity || 0) * (item.averageCost || 0)).toFixed(2)}
+                                            ${((item.stockQuantity || 0) * (item.lastThreePurchasesAvg || item.averageCost || 0)).toFixed(2)}
                                         </td>
                                         <td className="p-4">
                                             {Math.abs(costChange) > 1 ? (

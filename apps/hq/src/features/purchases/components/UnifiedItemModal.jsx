@@ -70,16 +70,18 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                 loadedRecipe = initialData.recipes.map(r => ({
                     id: r.supplyItemId,
                     name: r.supplyItem?.name || 'Unknown',
-                    cost: r.supplyItem?.currentCost || 0,
+                    // Prefer averageCost (WAC) for accuracy, fallback to currentCost (last price)
+                    cost: r.supplyItem?.averageCost || r.supplyItem?.currentCost || 0,
                     quantity: r.quantity,
                     unit: r.unit
                 }));
             } else if (initialData.ingredients && initialData.ingredients.length > 0) {
                 // Batch/Prep Recipe (uses nested 'component')
                 loadedRecipe = initialData.ingredients.map(r => ({
-                    id: r.supplyItemId, // or r.component.id
+                    id: r.supplyItemId,
                     name: r.component?.name || 'Unknown',
-                    cost: r.component?.currentCost || 0,
+                    // Prefer averageCost (WAC) for accuracy, fallback to currentCost (last price)
+                    cost: r.component?.averageCost || r.component?.currentCost || 0,
                     quantity: r.quantity,
                     unit: r.unit
                 }));
