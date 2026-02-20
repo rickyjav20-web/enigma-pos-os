@@ -48,20 +48,18 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
             include: { ingredients: { include: { component: true } } }
         });
 
-        // Compute last-3-purchases average for each item in a single query
+        // Compute last-3-purchases average for each item (two-step for Prisma compatibility)
         const itemIds = items.map(i => i.id);
         const recentLines = await prisma.purchaseLine.findMany({
-            where: {
-                supplyItemId: { in: itemIds },
-                purchaseOrder: { status: 'confirmed' }
-            },
-            orderBy: { purchaseOrder: { date: 'desc' } },
-            select: { supplyItemId: true, unitCost: true }
+            where: { supplyItemId: { in: itemIds } },
+            include: { purchaseOrder: { select: { status: true, date: true } } },
+            orderBy: { purchaseOrder: { date: 'desc' } }
         });
 
-        // Group by item, take last 3, compute avg
+        // Group by item: only confirmed, take last 3, compute avg
         const linesByItem = new Map<string, number[]>();
         for (const l of recentLines) {
+            if (l.purchaseOrder.status !== 'confirmed') continue;
             const arr = linesByItem.get(l.supplyItemId) || [];
             if (arr.length < 3) arr.push(l.unitCost);
             linesByItem.set(l.supplyItemId, arr);
@@ -92,20 +90,20 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
         });
         if (!item) return reply.status(404).send({ error: "Item not found" });
 
-        // Last 3 confirmed purchase prices for this item
-        const lastThreePurchaseLines = await prisma.purchaseLine.findMany({
-            where: {
-                supplyItemId: id,
-                purchaseOrder: { status: 'confirmed' }
-            },
-            orderBy: { purchaseOrder: { date: 'desc' } },
-            take: 3,
-            select: {
-                unitCost: true,
-                quantity: true,
-                purchaseOrder: { select: { date: true, supplier: { select: { name: true } } } }
+        // Last 3 confirmed purchase prices for this item (two-step for Prisma compatibility)
+        const allPurchaseLines = await prisma.purchaseLine.findMany({
+            where: { supplyItemId: id },
+            include: {
+                purchaseOrder: {
+                    select: { status: true, date: true, supplier: { select: { name: true } } }
+                }
             }
         });
+
+        const lastThreePurchaseLines = allPurchaseLines
+            .filter(l => l.purchaseOrder.status === 'confirmed')
+            .sort((a, b) => new Date(b.purchaseOrder.date).getTime() - new Date(a.purchaseOrder.date).getTime())
+            .slice(0, 3);
 
         const lastThreePurchasesAvg = lastThreePurchaseLines.length > 0
             ? lastThreePurchaseLines.reduce((sum, l) => sum + l.unitCost, 0) / lastThreePurchaseLines.length
