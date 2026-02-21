@@ -129,21 +129,31 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
         try {
             const { name, sku, category, currentCost, unitOfMeasure, preferredSupplierId, tenantId, yieldQuantity, yieldUnit, yieldPercentage, recipeUnit, stockCorrectionFactor, ingredients } = request.body as any;
 
+            // STANDARD: enforce canonical factor from unit pair
+            const POST_UNIT_FACTOR_MAP: Record<string, number> = {
+                'kg|g': 1000, 'lt|ml': 1000,
+                'g|kg': 0.001, 'ml|lt': 0.001,
+                'kg|kg': 1, 'lt|lt': 1, 'g|g': 1, 'ml|ml': 1, 'und|und': 1,
+            };
+            const stockU = unitOfMeasure || 'und';
+            const recipeU = recipeUnit || stockU;
+            const canonicalFactor = POST_UNIT_FACTOR_MAP[`${stockU}|${recipeU}`] ?? 1;
+
             const item = await prisma.supplyItem.create({
                 data: {
                     name,
                     sku: sku || `SKU-${Date.now()}`,
                     category: category || 'General',
                     currentCost: Number(currentCost) || 0,
-                    defaultUnit: unitOfMeasure || 'und',
+                    defaultUnit: stockU,
                     preferredSupplierId,
                     tenantId: request.tenantId || 'enigma_hq',
                     yieldQuantity: yieldQuantity ? Number(yieldQuantity) : null,
                     yieldUnit,
-                    // Smart Yield
+                    // Smart Yield — factor always canonical
                     yieldPercentage: yieldPercentage ? Number(yieldPercentage) : 1.0,
-                    recipeUnit,
-                    stockCorrectionFactor: stockCorrectionFactor ? Number(stockCorrectionFactor) : 1.0
+                    recipeUnit: recipeU,
+                    stockCorrectionFactor: canonicalFactor
                 }
             });
 
@@ -164,6 +174,26 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
         try {
             const { id } = request.params;
             const { name, sku, category, currentCost, defaultUnit, preferredSupplierId, stockQuantity, yieldQuantity, yieldUnit, yieldPercentage, recipeUnit, stockCorrectionFactor, ingredients } = request.body as any;
+
+            // STANDARD: Auto-validate & enforce the stockCorrectionFactor from unit pair.
+            // This prevents misconfiguration (e.g., kg stock + und recipe with factor=1000).
+            const UNIT_FACTOR_MAP: Record<string, number> = {
+                'kg|g': 1000, 'lt|ml': 1000,
+                'g|kg': 0.001, 'ml|lt': 0.001,
+                'kg|kg': 1, 'lt|lt': 1, 'g|g': 1, 'ml|ml': 1, 'und|und': 1,
+            };
+            let resolvedFactor = stockCorrectionFactor !== undefined ? Number(stockCorrectionFactor) : undefined;
+            if (defaultUnit && recipeUnit) {
+                const key = `${defaultUnit}|${recipeUnit}`;
+                const canonical = UNIT_FACTOR_MAP[key];
+                if (canonical !== undefined) {
+                    resolvedFactor = canonical; // Always enforce canonical factor
+                } else {
+                    // Invalid combination — log warning, reset to 1
+                    console.warn(`[API] Invalid unit pair: stock=${defaultUnit} recipe=${recipeUnit}. Forcing factor=1.`);
+                    resolvedFactor = 1;
+                }
+            }
 
             // 1. Fetch current item for Audit
             const currentItem = await prisma.supplyItem.findUnique({ where: { id } });
@@ -202,10 +232,10 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
                     stockQuantity: stockQuantity !== undefined ? Number(stockQuantity) : undefined,
                     yieldQuantity: yieldQuantity !== undefined ? Number(yieldQuantity) : undefined,
                     yieldUnit,
-                    // Smart Yield
+                    // Smart Yield — factor is always canonical (enforced above)
                     yieldPercentage: yieldPercentage !== undefined ? Number(yieldPercentage) : undefined,
                     recipeUnit,
-                    stockCorrectionFactor: stockCorrectionFactor !== undefined ? Number(stockCorrectionFactor) : undefined
+                    stockCorrectionFactor: resolvedFactor
                 }
             });
 

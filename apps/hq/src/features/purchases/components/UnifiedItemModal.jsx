@@ -8,6 +8,28 @@ import { api } from '@/lib/api';
  * @param {string} type - 'PRODUCT' | 'BATCH' | 'SUPPLY'
  * @param {object} initialData - If provided, we are in EDIT mode.
  */
+// ─────────────────────────────────────────────────────────────────────────────
+// STANDARD UNIT CONVERSION TABLE
+// Factor = how many recipeUnits fit in 1 stockUnit (qtyInStock = recipe.qty / factor)
+// ONLY these combinations are valid — anything else gets factor=1 with a warning.
+// ─────────────────────────────────────────────────────────────────────────────
+const UNIT_FACTOR_MAP = {
+    'kg|g':   1000,
+    'lt|ml':  1000,
+    'g|kg':   0.001,
+    'ml|lt':  0.001,
+    'kg|kg':  1,
+    'lt|lt':  1,
+    'g|g':    1,
+    'ml|ml':  1,
+    'und|und': 1,
+};
+
+function calcFactor(stockUnit, recipeUnit) {
+    const key = `${stockUnit}|${recipeUnit}`;
+    return UNIT_FACTOR_MAP[key] ?? null; // null = invalid combo
+}
+
 export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess, allItems = [] }) {
     if (!isOpen) return null;
 
@@ -152,10 +174,12 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
             // API PUT /supply-items expects 'defaultUnit'
             if (type !== 'PRODUCT') {
                 payload.defaultUnit = formData.unitOfMeasure;
-                // Smart Yield
+                // Smart Yield — factor is always auto-calculated from units (never user-input)
                 payload.yieldPercentage = parseFloat(formData.yieldPercentage) || 1.0;
-                payload.recipeUnit = formData.recipeUnit;
-                payload.stockCorrectionFactor = parseFloat(formData.stockCorrectionFactor) || 1;
+                const recipeUnitFinal = formData.recipeUnit || formData.unitOfMeasure;
+                payload.recipeUnit = recipeUnitFinal;
+                const computedFactor = calcFactor(formData.unitOfMeasure, recipeUnitFinal);
+                payload.stockCorrectionFactor = computedFactor !== null ? computedFactor : 1;
             }
 
             // Attach Recipe
@@ -280,25 +304,27 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
 
                         {type !== 'PRODUCT' && (
                             <div className="col-span-2 sm:col-span-1">
-                                <label className="block text-xs font-medium text-zinc-400 mb-1">Default Unit</label>
+                                <label className="block text-xs font-medium text-zinc-400 mb-1">Unidad de Compra (Stock)</label>
                                 <select
                                     className="w-full bg-zinc-800 border-zinc-700 rounded-lg p-2 text-white outline-none"
                                     value={formData.unitOfMeasure}
                                     onChange={e => {
-                                        const newUnit = e.target.value;
+                                        const newStockUnit = e.target.value;
+                                        const currentRecipeUnit = formData.recipeUnit || newStockUnit;
+                                        const autoFactor = calcFactor(newStockUnit, currentRecipeUnit) ?? 1;
                                         setFormData(prev => ({
                                             ...prev,
-                                            unitOfMeasure: newUnit,
-                                            // Auto-sync recipeUnit if it's not set or was same as old default
-                                            recipeUnit: (!prev.recipeUnit || prev.recipeUnit === 'und' || prev.recipeUnit === prev.unitOfMeasure) ? newUnit : prev.recipeUnit
+                                            unitOfMeasure: newStockUnit,
+                                            recipeUnit: currentRecipeUnit,
+                                            stockCorrectionFactor: autoFactor,
                                         }));
                                     }}
                                 >
-                                    <option value="und">Units (und)</option>
-                                    <option value="kg">Kilograms (kg)</option>
-                                    <option value="g">Grams (g)</option>
-                                    <option value="lt">Liters (lt)</option>
-                                    <option value="ml">Milliliters (ml)</option>
+                                    <option value="und">Unidades (und)</option>
+                                    <option value="kg">Kilogramos (kg)</option>
+                                    <option value="g">Gramos (g)</option>
+                                    <option value="lt">Litros (lt)</option>
+                                    <option value="ml">Mililitros (ml)</option>
                                 </select>
                             </div>
                         )}
@@ -354,7 +380,7 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                                 </div>
                             </div>
 
-                            {/* PROTOCOLO SMART YIELD (Nuevo) - Exclusivo para Supply Items y Batches */}
+                            {/* PROTOCOLO SMART YIELD - Exclusivo para Supply Items y Batches */}
                             {(type === 'SUPPLY' || type === 'BATCH') && (
                                 <div className="col-span-2 bg-zinc-800/30 p-3 rounded-lg border border-zinc-700/50 space-y-3">
                                     <div className="flex items-center gap-2 mb-2">
@@ -384,63 +410,76 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                                             </div>
                                         </div>
 
-                                        {/* 2. Recipe Unit */}
+                                        {/* 2. Recipe Unit — drives factor auto-calculation */}
                                         <div className="col-span-1">
                                             <label className="block text-[10px] font-medium text-zinc-400 mb-1">Unidad Receta</label>
                                             <select
                                                 className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white outline-none"
                                                 value={formData.recipeUnit || ''}
                                                 onChange={e => {
-                                                    const unit = e.target.value;
-                                                    // Auto-set factor for known conversions
-                                                    let newFactor = formData.stockCorrectionFactor;
-                                                    if (formData.unitOfMeasure === 'kg' && unit === 'g') newFactor = 1000;
-                                                    if (formData.unitOfMeasure === 'lt' && unit === 'ml') newFactor = 1000;
-                                                    setFormData({ ...formData, recipeUnit: unit, stockCorrectionFactor: newFactor });
+                                                    const recipeUnit = e.target.value;
+                                                    const autoFactor = calcFactor(formData.unitOfMeasure, recipeUnit) ?? 1;
+                                                    setFormData({ ...formData, recipeUnit, stockCorrectionFactor: autoFactor });
                                                 }}
                                             >
-                                                <option value="">Select Unit</option>
-                                                <option value="g">Grams (g)</option>
-                                                <option value="ml">Milliliters (ml)</option>
-                                                <option value="oz">Ounces (oz)</option>
-                                                <option value="und">Units (und)</option>
+                                                <option value="">Misma unidad</option>
+                                                <option value="kg">Kilogramos (kg)</option>
+                                                <option value="g">Gramos (g)</option>
+                                                <option value="lt">Litros (lt)</option>
+                                                <option value="ml">Mililitros (ml)</option>
+                                                <option value="und">Unidades (und)</option>
                                             </select>
                                         </div>
 
-                                        {/* 3. Factor */}
+                                        {/* 3. Factor — AUTO-CALCULATED, READ ONLY */}
                                         <div className="col-span-1">
-                                            <div className="flex items-center gap-1 mb-1">
-                                                <label className="block text-[10px] font-medium text-zinc-400">Factor</label>
-                                                <div className="group relative">
-                                                    <AlertCircle size={10} className="text-zinc-500 cursor-help" />
-                                                    <div className="absolute bottom-full right-0 mb-1 w-48 bg-black border border-zinc-700 p-2 rounded text-[10px] text-zinc-300 hidden group-hover:block z-50">
-                                                        ¿Cuántos {formData.recipeUnit || 'items'} caben en 1 {formData.unitOfMeasure}?
-                                                        <br />Ej: 1 Kg = 1000 g → Factor 1000
+                                            {(() => {
+                                                const stockU = formData.unitOfMeasure;
+                                                const recipeU = formData.recipeUnit || stockU;
+                                                const computedFactor = calcFactor(stockU, recipeU);
+                                                const isInvalid = computedFactor === null;
+                                                return (
+                                                    <div>
+                                                        <label className="block text-[10px] font-medium text-zinc-400 mb-1">
+                                                            Factor <span className="text-zinc-600">(auto)</span>
+                                                        </label>
+                                                        <div className={`w-full rounded-lg p-2 text-center font-mono text-sm border ${isInvalid ? 'bg-red-900/20 border-red-500/50 text-red-400' : 'bg-zinc-950 border-zinc-700 text-emerald-400'}`}>
+                                                            {isInvalid ? '⚠ Inválido' : (computedFactor ?? formData.stockCorrectionFactor)}
+                                                        </div>
+                                                        {isInvalid && (
+                                                            <p className="text-[9px] text-red-400 mt-0.5">
+                                                                {stockU} → {recipeU} no es convertible
+                                                            </p>
+                                                        )}
                                                     </div>
-                                                </div>
-                                            </div>
-                                            <input
-                                                type="number"
-                                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white outline-none"
-                                                value={formData.stockCorrectionFactor}
-                                                onChange={e => setFormData({ ...formData, stockCorrectionFactor: e.target.value })}
-                                                placeholder="1000"
-                                            />
+                                                );
+                                            })()}
                                         </div>
                                     </div>
 
                                     {/* Preview Calculation */}
-                                    <div className="text-[10px] text-zinc-500 bg-zinc-900/50 p-2 rounded border border-zinc-800">
-                                        <p>
-                                            Costo Real: <span className="text-amber-400 font-mono">
-                                                ${(
-                                                    (parseFloat(formData.currentCost) || 0) /
-                                                    (parseFloat(formData.stockCorrectionFactor) || 1) /
-                                                    (parseFloat(formData.yieldPercentage) || 1)
-                                                ).toFixed(4)}
-                                            </span> / {formData.recipeUnit || formData.unitOfMeasure}
-                                        </p>
-                                    </div>
+                                    {(() => {
+                                        const factor = parseFloat(formData.stockCorrectionFactor) || 1;
+                                        const yieldPct = parseFloat(formData.yieldPercentage) || 1;
+                                        const cost = parseFloat(formData.currentCost) || 0;
+                                        const effectiveCost = cost / (factor * yieldPct);
+                                        const recipeU = formData.recipeUnit || formData.unitOfMeasure;
+                                        const isInvalid = calcFactor(formData.unitOfMeasure, recipeU) === null;
+                                        return (
+                                            <div className={`text-[10px] bg-zinc-900/50 p-2 rounded border ${isInvalid ? 'border-red-800/50 text-red-400' : 'border-zinc-800 text-zinc-500'}`}>
+                                                {isInvalid ? (
+                                                    <p>⚠ Combinación de unidades no válida. Selecciona una unidad de receta compatible con {formData.unitOfMeasure}.</p>
+                                                ) : (
+                                                    <p>
+                                                        Costo efectivo:{' '}
+                                                        <span className="text-amber-400 font-mono">${effectiveCost.toFixed(4)}</span>
+                                                        {' '}/ {recipeU}
+                                                        {factor !== 1 && <span className="text-zinc-600 ml-1">(1 {formData.unitOfMeasure} = {factor} {recipeU})</span>}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             )}
                         </>
