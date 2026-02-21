@@ -1,4 +1,4 @@
-
+// v2.1 — effectiveCost per recipe unit, soft-delete, factor enforcement
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Plus, Trash2, Search, Save, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
