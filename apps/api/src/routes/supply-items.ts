@@ -273,7 +273,7 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
     });
 
     // DELETE /supply-items/:id (Soft Delete / Archive)
-    fastify.delete('/:id', async (request, reply) => {
+    fastify.delete('/supply-items/:id', async (request, reply) => {
         const { id } = request.params as { id: string };
         const tenantId = request.headers['x-tenant-id'] as string;
         if (!tenantId) return reply.code(400).send({ error: 'Missing tenant ID' });

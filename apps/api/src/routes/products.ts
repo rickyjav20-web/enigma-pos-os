@@ -128,7 +128,7 @@ export default async function productRoutes(fastify: FastifyInstance) {
     });
 
     // DELETE /products/:id (Soft Delete / Archive)
-    fastify.delete('/:id', async (request, reply) => {
+    fastify.delete('/products/:id', async (request, reply) => {
         const { id } = request.params as { id: string };
         const tenantId = request.headers['x-tenant-id'] as string;
         if (!tenantId) return reply.code(400).send({ error: 'Missing tenant ID' });
