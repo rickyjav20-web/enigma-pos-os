@@ -86,14 +86,25 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
             // Simplified: If editing, we assume Recipe is loaded or we fetch separately?
             // Let's assume passed strictly for now, or empty.
             // Load Recipe from Initial Data
+            // Helper: effective cost per recipe unit (accounts for factor + yield)
+            const effectiveCostFrom = (supplyItem) => {
+                if (!supplyItem) return 0;
+                const avg = supplyItem.averageCost || supplyItem.currentCost || 0;
+                const factor = supplyItem.stockCorrectionFactor || 1;
+                const yieldPct = supplyItem.yieldPercentage || 1;
+                return avg / (factor * yieldPct);
+            };
+
             let loadedRecipe = [];
             if (initialData.recipes && initialData.recipes.length > 0) {
                 // Product Recipe
                 loadedRecipe = initialData.recipes.map(r => ({
                     id: r.supplyItemId,
                     name: r.supplyItem?.name || 'Unknown',
-                    // Prefer averageCost (WAC) for accuracy, fallback to currentCost (last price)
-                    cost: r.supplyItem?.averageCost || r.supplyItem?.currentCost || 0,
+                    cost: effectiveCostFrom(r.supplyItem),  // per recipe unit (e.g. $/g)
+                    _stockUnit: r.supplyItem?.defaultUnit,
+                    _recipeUnit: r.supplyItem?.recipeUnit,
+                    _factor: r.supplyItem?.stockCorrectionFactor || 1,
                     quantity: r.quantity,
                     unit: r.unit
                 }));
@@ -102,8 +113,10 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                 loadedRecipe = initialData.ingredients.map(r => ({
                     id: r.supplyItemId,
                     name: r.component?.name || 'Unknown',
-                    // Prefer averageCost (WAC) for accuracy, fallback to currentCost (last price)
-                    cost: r.component?.averageCost || r.component?.currentCost || 0,
+                    cost: effectiveCostFrom(r.component),   // per recipe unit
+                    _stockUnit: r.component?.defaultUnit,
+                    _recipeUnit: r.component?.recipeUnit,
+                    _factor: r.component?.stockCorrectionFactor || 1,
                     quantity: r.quantity,
                     unit: r.unit
                 }));
@@ -135,20 +148,35 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
         return calculatedCost / yieldQty;
     }, [calculatedCost, formData.yieldQuantity, type]);
 
+    // Compute the effective cost per recipe unit for a supply item.
+    // This accounts for unit conversion (factor) and yield loss.
+    // e.g. Limones: $1.50/kg, factor=1000, yield=0.35 → $0.00429/g
+    const getEffectiveCost = (item) => {
+        const avgCost = item.averageCost || item.currentCost || 0;
+        const factor = item.stockCorrectionFactor || 1;
+        const yieldPct = item.yieldPercentage || 1;
+        return avgCost / (factor * yieldPct);
+    };
+
     const handleAddIngredient = (item) => {
-        // Prevent dupes? Or allow with warning?
         if (recipe.find(r => r.id === item.id)) return;
+
+        const recipeUnit = (item.recipeUnit && item.recipeUnit !== 'und')
+            ? item.recipeUnit
+            : (item.defaultUnit || 'und');
 
         setRecipe([...recipe, {
             id: item.id,
             name: item.name,
-            cost: item.currentCost || 0,
-            quantity: 1, // Default
-            // UX Fix: If recipeUnit is 'und' or empty, use 'defaultUnit' (KG/LT) for coherence.
-            unit: (item.recipeUnit && item.recipeUnit !== 'und') ? item.recipeUnit : (item.defaultUnit || 'und')
+            // Effective cost per recipe unit (not raw $/kg)
+            cost: getEffectiveCost(item),
+            _stockUnit: item.defaultUnit,
+            _recipeUnit: recipeUnit,
+            _factor: item.stockCorrectionFactor || 1,
+            quantity: 1,
+            unit: recipeUnit
         }]);
-        console.log(`[RecipeBuilder] Added ${item.name}. Unit Selection: Recipe(${item.recipeUnit}) vs Default(${item.defaultUnit}) -> Result: ${(item.recipeUnit && item.recipeUnit !== 'und') ? item.recipeUnit : (item.defaultUnit || 'und')}`);
-        setSearchTerm(''); // Clear search
+        setSearchTerm('');
     };
 
     const handleRemoveIngredient = (id) => {
@@ -511,16 +539,24 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                                 />
                                 {searchResults.length > 0 && (
                                     <div className="absolute top-10 left-0 right-0 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-10 max-h-40 overflow-y-auto">
-                                        {searchResults.map(item => (
+                                        {searchResults.map(item => {
+                                            const effCost = getEffectiveCost(item);
+                                            const recipeU = item.recipeUnit || item.defaultUnit || 'und';
+                                            return (
                                             <button
                                                 key={item.id}
                                                 onClick={() => handleAddIngredient(item)}
-                                                className="w-full text-left px-4 py-2 hover:bg-zinc-700 text-sm text-white flex justify-between"
+                                                className="w-full text-left px-4 py-2 hover:bg-zinc-700 text-sm text-white flex justify-between items-center"
                                             >
                                                 <span>{item.name}</span>
-                                                <span className="text-zinc-500 text-xs">${item.currentCost?.toFixed(2) || '0.00'}</span>
+                                                <span className="text-zinc-500 text-xs">
+                                                    ${effCost < 0.01
+                                                        ? `${(effCost * 1000).toFixed(3)}/1000${recipeU}`
+                                                        : `${effCost.toFixed(4)}/${recipeU}`}
+                                                </span>
                                             </button>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
@@ -533,11 +569,21 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                                         <p className="text-zinc-600 text-xs mt-1">Search above to add components.</p>
                                     </div>
                                 )}
-                                {recipe.map(r => (
+                                {recipe.map(r => {
+                                    const lineTotal = r.quantity * r.cost;
+                                    // Friendly cost display: if very small (e.g. $/g), show per 100 units instead
+                                    const isSmall = r.cost < 0.01;
+                                    const costDisplay = isSmall
+                                        ? `$${(r.cost * 100).toFixed(4)}/100${r.unit || 'u'}`
+                                        : `$${r.cost.toFixed(4)}/${r.unit || 'u'}`;
+                                    return (
                                     <div key={r.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg border border-zinc-700/50">
                                         <div className="flex-1">
                                             <p className="text-sm text-white">{r.name}</p>
-                                            <p className="text-[10px] text-zinc-500">${r.cost.toFixed(2)} per unit</p>
+                                            <p className="text-[10px] text-zinc-500">
+                                                {costDisplay}
+                                                <span className="text-emerald-600 ml-2">→ ${lineTotal.toFixed(3)} total</span>
+                                            </p>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <input
@@ -559,7 +605,8 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                                             </button>
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
