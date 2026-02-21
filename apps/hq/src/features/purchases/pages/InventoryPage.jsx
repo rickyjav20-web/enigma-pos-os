@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Package, ChefHat, ShoppingCart,
     ArrowUpRight, ArrowDownRight, Search, Filter, Plus, FileDown, Upload, X,
-    TrendingUp, FileText, Info
+    TrendingUp, FileText, Info, Trash2
 } from 'lucide-react';
 import { api, CURRENT_TENANT_ID } from '@/lib/api';
 import { UnifiedItemModal } from '../components/UnifiedItemModal';
@@ -172,6 +172,18 @@ export default function InventoryPage() {
         if (zone === 'PANTRY') setModalType('SUPPLY');
         setIsModalOpen(true);
     };
+
+    const handleDelete = async (e, item) => {
+        e.stopPropagation();
+        if (!window.confirm(`¿Dar de baja "${item.name}"? Esta acción la ocultará del sistema.`)) return;
+        try {
+            await api.delete('/supply-items/' + item.id);
+            fetchData();
+        } catch (err) {
+            alert('Error al dar de baja: ' + (err.message || 'Error desconocido'));
+        }
+    };
+
 
     // --- RENDER HELPERS ---
     const renderZoneHeader = () => {
@@ -380,6 +392,7 @@ export default function InventoryPage() {
                                                     <Search size={16} />
                                                 </button>
                                                 <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="text-zinc-500 hover:text-white z-10 relative">Edit</button>
+                                                <button onClick={(e) => handleDelete(e, item)} className="p-1.5 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300 transition-colors" title="Dar de baja"><Trash2 size={16} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -427,6 +440,7 @@ export default function InventoryPage() {
                                                 <Search size={16} />
                                             </button>
                                             <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="text-zinc-500 hover:text-white">Edit</button>
+                                            <button onClick={(e) => handleDelete(e, item)} className="p-1.5 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300 transition-colors" title="Dar de baja"><Trash2 size={16} /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -479,6 +493,7 @@ export default function InventoryPage() {
                                                 </button>
                                                 <button onClick={(e) => { e.stopPropagation(); setViewingItem({ ...item, type: 'SUPPLY' }); }} className="text-blue-400 hover:text-white">History</button>
                                                 <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="text-zinc-500 hover:text-white">Edit</button>
+                                                <button onClick={(e) => handleDelete(e, item)} className="p-1.5 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300 transition-colors" title="Dar de baja"><Trash2 size={16} /></button>
                                             </div>
                                         </td>
                                     </tr>

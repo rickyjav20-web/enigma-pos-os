@@ -285,6 +285,7 @@ model SupplyItem {
   lastPurchaseDate DateTime?
   stockQuantity   Float    @default(0) // Current stock for WAC
   isByWeight      Boolean  @default(false)
+  isActive        Boolean  @default(true)
   
   // Smart Yield & Conversion Protocol
   yieldPercentage Float    @default(1.0) // 1.0 = 100% (No loss). 0.4 = 40% yield.

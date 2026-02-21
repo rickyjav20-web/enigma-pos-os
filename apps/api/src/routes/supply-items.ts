@@ -20,17 +20,21 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
     });
 
     // GET /supply-items (Search & List)
-    fastify.get<{ Querystring: { search?: string; tenant_id?: string; limit?: string } }>('/supply-items', async (request, reply) => {
-        const { search, limit } = request.query;
+    fastify.get<{ Querystring: { search?: string; tenant_id?: string; limit?: string; showArchived?: string } }>('/supply-items', async (request, reply) => {
+        const { search, limit, showArchived } = request.query;
         // Use resolved tenant ID from middleware (UUID) 
         const activeTenant = request.tenantId || 'enigma_hq';
-
 
         const take = limit ? parseInt(limit) : 1000;
 
         const where: any = {
             tenantId: activeTenant
         };
+
+        // Only return active items unless ?showArchived=true is passed
+        if (showArchived !== 'true') {
+            where.isActive = true;
+        }
 
         if (search) {
             where.name = {
@@ -266,5 +270,22 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
         });
 
         return history;
+    });
+
+    // DELETE /supply-items/:id (Soft Delete / Archive)
+    fastify.delete('/:id', async (request, reply) => {
+        const { id } = request.params as { id: string };
+        const tenantId = request.headers['x-tenant-id'] as string;
+        if (!tenantId) return reply.code(400).send({ error: 'Missing tenant ID' });
+
+        const item = await prisma.supplyItem.findFirst({ where: { id, tenantId } });
+        if (!item) return reply.code(404).send({ error: 'Item not found' });
+
+        await prisma.supplyItem.update({
+            where: { id },
+            data: { isActive: false }
+        });
+
+        return reply.send({ success: true, message: 'Item archived successfully' });
     });
 }

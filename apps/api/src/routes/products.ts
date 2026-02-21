@@ -5,12 +5,19 @@ import { recipeService } from '../services/RecipeService';
 export default async function productRoutes(fastify: FastifyInstance) {
 
     // GET /products (Listing)
-    fastify.get<{ Querystring: { tenant_id: string } }>('/products', async (request, reply) => {
-        const { tenant_id } = request.query;
+    fastify.get<{ Querystring: { tenant_id: string; showArchived?: string } }>('/products', async (request, reply) => {
+        const { showArchived } = request.query;
         const activeTenant = request.tenantId || 'enigma_hq';
 
+        const where: any = { tenantId: activeTenant };
+
+        // Only return active products unless ?showArchived=true is passed
+        if (showArchived !== 'true') {
+            where.isActive = true;
+        }
+
         const products = await prisma.product.findMany({
-            where: { tenantId: activeTenant },
+            where,
             include: { variants: true, recipes: { include: { supplyItem: true } } }
         });
         return {
@@ -118,5 +125,22 @@ export default async function productRoutes(fastify: FastifyInstance) {
         await prisma.productRecipe.delete({ where: { id: recipeId } });
         await recipeService.recalculateProductCost(id);
         return { success: true };
+    });
+
+    // DELETE /products/:id (Soft Delete / Archive)
+    fastify.delete('/:id', async (request, reply) => {
+        const { id } = request.params as { id: string };
+        const tenantId = request.headers['x-tenant-id'] as string;
+        if (!tenantId) return reply.code(400).send({ error: 'Missing tenant ID' });
+
+        const product = await prisma.product.findFirst({ where: { id, tenantId } });
+        if (!product) return reply.code(404).send({ error: 'Product not found' });
+
+        await prisma.product.update({
+            where: { id },
+            data: { isActive: false }
+        });
+
+        return reply.send({ success: true, message: 'Product archived successfully' });
     });
 }
