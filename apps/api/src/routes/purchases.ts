@@ -490,22 +490,34 @@ export default async function (fastify: FastifyInstance) {
 
             // AUTOMATED CASH TRANSACTION (If Cash)
             if (purchase.paymentMethod === 'cash' && purchase.registeredById) {
-                // Find active session for this user
+                // Route to the correct register based on currency:
+                // VES -> ELECTRONIC session, USD/COP -> PHYSICAL session
+                const targetRegisterType = purchase.currency === 'VES' ? 'ELECTRONIC' : 'PHYSICAL';
+
                 const activeSession = await prisma.registerSession.findFirst({
                     where: {
                         employeeId: purchase.registeredById,
-                        status: 'open'
+                        status: 'open',
+                        registerType: targetRegisterType
                     }
                 });
 
-                if (activeSession) {
+                // Fallback: if no typed session found, try any open session
+                const fallbackSession = activeSession || await prisma.registerSession.findFirst({
+                    where: { employeeId: purchase.registeredById, status: 'open' }
+                });
+
+                if (fallbackSession) {
                     await prisma.cashTransaction.create({
                         data: {
-                            sessionId: activeSession.id,
-                            amount: -purchase.totalAmount, // Negative for outflow
+                            sessionId: fallbackSession.id,
+                            amount: -purchase.totalAmount, // Negative for outflow (USD)
                             type: 'PURCHASE',
                             description: `Compra Proveedor: ${purchase.supplier?.name || 'Desconocido'}`,
-                            referenceId: purchase.id
+                            referenceId: purchase.id,
+                            currency: purchase.currency || 'USD',
+                            amountLocal: purchase.totalAmountLocal ? -purchase.totalAmountLocal : null,
+                            exchangeRate: purchase.exchangeRate || null
                         }
                     });
                 }

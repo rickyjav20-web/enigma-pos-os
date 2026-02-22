@@ -9,7 +9,7 @@ import {
 } from '../utils/unitConversion';
 import { useAuth } from '../context/AuthContext';
 import { useCurrencies } from '../hooks/useCurrencies';
-import CurrencyInput, { CurrencyValue } from '../components/CurrencyInput';
+// CurrencyInput not used in PurchasesPage (currency is a simple toggle, no manual amount entry)
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 const TENANT_HEADER = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
@@ -65,11 +65,9 @@ export default function PurchasesPage() {
     // Payment State
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'credit'>('cash');
 
-    // Currency State
-    const { currencies } = useCurrencies();
-    const [purchaseCurrencyVal, setPurchaseCurrencyVal] = useState<CurrencyValue>({
-        currency: 'USD', amountLocal: 0, amountUSD: 0, exchangeRate: 1
-    });
+    // Currency State — just track which currency, amounts are auto-calculated from total
+    const { currencies, getRate } = useCurrencies();
+    const [selectedPayCurrency, setSelectedPayCurrency] = useState<'USD' | 'VES' | 'COP'>('USD');
 
     // Items State
     const [allItems, setAllItems] = useState<SupplyItem[]>([]);
@@ -315,6 +313,10 @@ export default function PurchasesPage() {
         if (!selectedSupplier || cart.length === 0) return;
         setLoading(true);
 
+        // Auto-calculate local currency amount from total
+        const payRate = getRate(selectedPayCurrency);
+        const totalAmountLocal = selectedPayCurrency !== 'USD' ? Math.round(total * payRate * 100) / 100 : null;
+
         try {
             const res = await fetch(`${API_URL}/purchases`, {
                 method: 'POST',
@@ -325,14 +327,10 @@ export default function PurchasesPage() {
                     status: 'confirmed',
                     paymentMethod,
                     registeredById: employee?.id,
-                    // Multi-currency fields
-                    currency: purchaseCurrencyVal.currency,
-                    totalAmountLocal: purchaseCurrencyVal.currency !== 'USD' && purchaseCurrencyVal.amountLocal > 0
-                        ? purchaseCurrencyVal.amountLocal
-                        : null,
-                    exchangeRate: purchaseCurrencyVal.currency !== 'USD'
-                        ? purchaseCurrencyVal.exchangeRate
-                        : null,
+                    // Multi-currency fields (auto-calculated)
+                    currency: selectedPayCurrency,
+                    totalAmountLocal,
+                    exchangeRate: selectedPayCurrency !== 'USD' ? payRate : null,
                     items: cart.filter(c => c.quantity > 0).map(c => ({
                         supplyItemId: c.id,
                         quantity: c.normalizedQuantity,  // Send normalized quantity
@@ -803,24 +801,57 @@ export default function PurchasesPage() {
                             )}
                         </div>
 
-                        {/* Currency Selector */}
-                        {currencies.length > 0 && (
-                            <div className="rounded-2xl bg-enigma-gray p-4 border border-white/5 space-y-3">
-                                <p className="text-sm text-white/50">Moneda de Pago</p>
-                                <CurrencyInput
-                                    currencies={currencies}
-                                    defaultCurrency="USD"
-                                    placeholder={total.toFixed(2)}
-                                    label={`Total en moneda seleccionada (total USD: $${total.toFixed(2)})`}
-                                    onChange={val => setPurchaseCurrencyVal(val)}
-                                />
-                                {purchaseCurrencyVal.currency !== 'USD' && purchaseCurrencyVal.amountLocal > 0 && (
-                                    <p className="text-xs text-white/40 italic pl-1">
-                                        Esto es referencial — el sistema guarda el total en USD.
-                                    </p>
-                                )}
+                        {/* Currency Selector — auto-calculates from total */}
+                        <div className="rounded-2xl bg-enigma-gray p-4 border border-white/5 space-y-3">
+                            <p className="text-sm text-white/50">Moneda de Pago</p>
+                            <div className="grid grid-cols-3 gap-2">
+                                {(['USD', 'VES', 'COP'] as const).map(code => {
+                                    const label = code === 'USD' ? 'USD ($)' : code === 'VES' ? 'VES (Bs.)' : 'COP ($)';
+                                    return (
+                                        <button
+                                            key={code}
+                                            onClick={() => setSelectedPayCurrency(code)}
+                                            className={`p-3 rounded-xl border transition-all text-sm font-medium ${selectedPayCurrency === code
+                                                ? 'bg-enigma-purple border-enigma-purple text-white'
+                                                : 'bg-black/30 border-white/10 text-white/50 hover:bg-white/5'
+                                            }`}
+                                        >
+                                            {label}
+                                        </button>
+                                    );
+                                })}
                             </div>
-                        )}
+                            {/* Auto-calculated total in selected currency */}
+                            {selectedPayCurrency !== 'USD' && (
+                                <div className="bg-enigma-purple/10 border border-enigma-purple/20 rounded-xl p-3">
+                                    <p className="text-xs text-white/50 mb-1">Total a pagar en {selectedPayCurrency}</p>
+                                    <p className="font-mono font-bold text-white text-lg">
+                                        {selectedPayCurrency === 'VES'
+                                            ? `Bs. ${Math.round(total * getRate('VES')).toLocaleString()}`
+                                            : `$${Math.round(total * getRate('COP')).toLocaleString()} COP`
+                                        }
+                                    </p>
+                                    <p className="text-xs text-white/30 mt-0.5">
+                                        = ${total.toFixed(2)} USD · tasa: {getRate(selectedPayCurrency).toLocaleString()} {selectedPayCurrency === 'VES' ? 'Bs.' : 'COP'}/$1
+                                    </p>
+                                    {selectedPayCurrency === 'VES' && (
+                                        <p className="text-xs text-blue-400 mt-2 flex items-center gap-1">
+                                            📱 Se descontara de la Caja Electronica (VES)
+                                        </p>
+                                    )}
+                                    {selectedPayCurrency === 'COP' && (
+                                        <p className="text-xs text-amber-400 mt-2 flex items-center gap-1">
+                                            💵 Se descontara de la Caja Fisica (COP/USD)
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                            {selectedPayCurrency === 'USD' && (
+                                <p className="text-xs text-amber-400 flex items-center gap-1.5 bg-amber-500/10 p-2 rounded-lg">
+                                    💵 Se descontara de la Caja Fisica (USD)
+                                </p>
+                            )}
+                        </div>
                     </div>
                 )}
             </main>

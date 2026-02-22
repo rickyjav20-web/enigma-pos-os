@@ -1,7 +1,8 @@
-import { Package, ArrowRight, ShoppingCart, TrendingUp, Building2, Sparkles, ArrowLeftRight, DollarSign, ChevronDown, ChevronUp, Wallet, BookOpen } from 'lucide-react';
+import { Package, ArrowRight, ShoppingCart, TrendingUp, Building2, Sparkles, ArrowLeftRight, DollarSign, ChevronDown, ChevronUp, Wallet, BookOpen, Smartphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useCurrencies } from '../hooks/useCurrencies';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
@@ -28,10 +29,12 @@ interface AuditData {
 }
 
 export default function HomePage() {
-    const { session, employee } = useAuth();
+    const { session, electronicSession, employee } = useAuth();
+    const { getRate } = useCurrencies();
     const [stats, setStats] = useState({ suppliers: 0, items: 0, recentPurchases: 0 });
     const [recentOrders, setRecentOrders] = useState<RecentPurchase[]>([]);
     const [auditData, setAuditData] = useState<AuditData | null>(null);
+    const [electronicAuditData, setElectronicAuditData] = useState<AuditData | null>(null);
     const [showGuide, setShowGuide] = useState(false);
 
     const TENANT_HEADER = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
@@ -51,7 +54,7 @@ export default function HomePage() {
         }).catch(console.error);
     }, []);
 
-    // Fetch live cash balance
+    // Fetch live cash balances for both registers
     useEffect(() => {
         if (session?.id) {
             fetch(`${API_URL}/register/audit/${session.id}`, { headers: TENANT_HEADER })
@@ -60,6 +63,15 @@ export default function HomePage() {
                 .catch(console.error);
         }
     }, [session]);
+
+    useEffect(() => {
+        if (electronicSession?.id) {
+            fetch(`${API_URL}/register/audit/${electronicSession.id}`, { headers: TENANT_HEADER })
+                .then(r => r.json())
+                .then(data => setElectronicAuditData(data))
+                .catch(console.error);
+        }
+    }, [electronicSession]);
 
     return (
         <div className="p-4 space-y-6 animate-fade-in">
@@ -77,59 +89,93 @@ export default function HomePage() {
             </header>
 
             {/* ═══════════════════════════════════════════════════════════ */}
-            {/* LIVE CASH BALANCE CARD */}
+            {/* DUAL REGISTER BALANCE CARDS */}
             {/* ═══════════════════════════════════════════════════════════ */}
-            {auditData && (
-                <div className="rounded-3xl bg-gradient-to-br from-emerald-500/15 via-enigma-gray to-enigma-gray border border-emerald-500/20 overflow-hidden">
-                    {/* Main Balance */}
-                    <div className="p-5">
-                        <div className="flex items-center gap-2 mb-1">
-                            <Wallet className="w-4 h-4 text-emerald-400" />
-                            <span className="text-xs text-white/50 uppercase tracking-wider font-medium">Efectivo en Caja</span>
+            {(auditData || electronicAuditData) && (
+                <div className="space-y-3">
+                    {/* Physical Register — USD/COP */}
+                    {auditData && (
+                        <div className="rounded-2xl bg-gradient-to-br from-amber-500/10 via-enigma-gray to-enigma-gray border border-amber-500/20 overflow-hidden">
+                            <div className="p-4">
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-2">
+                                        <Wallet className="w-4 h-4 text-amber-400" />
+                                        <span className="text-xs text-white/50 uppercase tracking-wider font-medium">Caja Fisica</span>
+                                    </div>
+                                    <span className="text-xs text-white/30">USD · COP</span>
+                                </div>
+                                <p className="text-3xl font-bold font-mono text-white tracking-tight">
+                                    ${auditData.expectedCash.toFixed(2)}
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-4 border-t border-white/5 text-center">
+                                <div className="p-2 border-r border-white/5">
+                                    <p className="text-[10px] text-white/40">Fondo</p>
+                                    <p className="font-mono text-xs text-white/70">${auditData.startingCash.toFixed(2)}</p>
+                                </div>
+                                <div className="p-2 border-r border-white/5">
+                                    <p className="text-[10px] text-white/40">Ventas</p>
+                                    <p className="font-mono text-xs text-emerald-400">+${(auditData.breakdown?.sales || 0).toFixed(2)}</p>
+                                </div>
+                                <div className="p-2 border-r border-white/5">
+                                    <p className="text-[10px] text-white/40">Entradas</p>
+                                    <p className="font-mono text-xs text-blue-400">+${(auditData.breakdown?.deposits || 0).toFixed(2)}</p>
+                                </div>
+                                <div className="p-2">
+                                    <p className="text-[10px] text-white/40">Salidas</p>
+                                    <p className="font-mono text-xs text-red-400">-${((auditData.breakdown?.expenses || 0) + (auditData.breakdown?.purchases || 0) + (auditData.breakdown?.withdrawals || 0)).toFixed(2)}</p>
+                                </div>
+                            </div>
+                            <div className="px-4 py-2 bg-white/3 flex items-center justify-between">
+                                <span className="text-[10px] text-white/30">{auditData.transactionCount} movimientos</span>
+                                <Link to="/cash-movements" className="text-[10px] text-amber-400 hover:text-amber-300">Ver detalle →</Link>
+                            </div>
                         </div>
-                        <p className="text-4xl font-bold font-mono text-white tracking-tight">
-                            ${auditData.expectedCash.toFixed(2)}
-                        </p>
-                    </div>
+                    )}
 
-                    {/* Breakdown Row */}
-                    {/* Breakdown Row */}
-                    <div className="grid grid-cols-4 border-t border-white/5">
-                        <div className="p-3 text-center border-r border-white/5">
-                            <p className="text-xs text-white/40">Fondo</p>
-                            <p className="font-mono text-sm text-white/70">${auditData.startingCash.toFixed(2)}</p>
+                    {/* Electronic Register — VES */}
+                    {electronicAuditData && (
+                        <div className="rounded-2xl bg-gradient-to-br from-blue-500/10 via-enigma-gray to-enigma-gray border border-blue-500/20 overflow-hidden">
+                            <div className="p-4">
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-2">
+                                        <Smartphone className="w-4 h-4 text-blue-400" />
+                                        <span className="text-xs text-white/50 uppercase tracking-wider font-medium">Caja Electronica</span>
+                                    </div>
+                                    <span className="text-xs text-white/30">VES · Bolivares</span>
+                                </div>
+                                {/* Show in VES and USD */}
+                                <div className="flex items-baseline gap-2">
+                                    <p className="text-3xl font-bold font-mono text-white tracking-tight">
+                                        Bs.{Math.round(electronicAuditData.expectedCash * getRate('VES')).toLocaleString()}
+                                    </p>
+                                    <p className="text-sm text-white/40 font-mono">${electronicAuditData.expectedCash.toFixed(2)} USD</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-4 border-t border-white/5 text-center">
+                                <div className="p-2 border-r border-white/5">
+                                    <p className="text-[10px] text-white/40">Fondo</p>
+                                    <p className="font-mono text-xs text-white/70">Bs.{Math.round(electronicAuditData.startingCash * getRate('VES')).toLocaleString()}</p>
+                                </div>
+                                <div className="p-2 border-r border-white/5">
+                                    <p className="text-[10px] text-white/40">Ventas</p>
+                                    <p className="font-mono text-xs text-emerald-400">+Bs.{Math.round((electronicAuditData.breakdown?.sales || 0) * getRate('VES')).toLocaleString()}</p>
+                                </div>
+                                <div className="p-2 border-r border-white/5">
+                                    <p className="text-[10px] text-white/40">Entradas</p>
+                                    <p className="font-mono text-xs text-blue-400">+Bs.{Math.round((electronicAuditData.breakdown?.deposits || 0) * getRate('VES')).toLocaleString()}</p>
+                                </div>
+                                <div className="p-2">
+                                    <p className="text-[10px] text-white/40">Salidas</p>
+                                    <p className="font-mono text-xs text-red-400">-Bs.{Math.round(((electronicAuditData.breakdown?.expenses || 0) + (electronicAuditData.breakdown?.purchases || 0) + (electronicAuditData.breakdown?.withdrawals || 0)) * getRate('VES')).toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <div className="px-4 py-2 bg-white/3 flex items-center justify-between">
+                                <span className="text-[10px] text-white/30">{electronicAuditData.transactionCount} movimientos</span>
+                                <Link to="/cash-movements" className="text-[10px] text-blue-400 hover:text-blue-300">Ver detalle →</Link>
+                            </div>
                         </div>
-                        <div className="p-3 text-center border-r border-white/5">
-                            <p className="text-xs text-white/40">Ventas</p>
-                            <p className="font-mono text-sm text-emerald-400">
-                                +${(auditData.breakdown?.sales || 0).toFixed(2)}
-                            </p>
-                        </div>
-                        <div className="p-3 text-center border-r border-white/5">
-                            <p className="text-xs text-white/40">Entradas</p>
-                            <p className="font-mono text-sm text-blue-400">
-                                +${(auditData.breakdown?.deposits || 0).toFixed(2)}
-                            </p>
-                        </div>
-                        <div className="p-3 text-center">
-                            <p className="text-xs text-white/40">Salidas</p>
-                            <p className="font-mono text-sm text-red-400">
-                                ${(
-                                    (auditData.breakdown?.expenses || 0) +
-                                    (auditData.breakdown?.purchases || 0) +
-                                    (auditData.breakdown?.withdrawals || 0)
-                                ).toFixed(2)}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Transactions Counter */}
-                    <div className="px-5 py-2 bg-white/3 flex items-center justify-between">
-                        <span className="text-xs text-white/30">{auditData.transactionCount} movimientos esta sesión</span>
-                        <Link to="/cash-movements" className="text-xs text-emerald-400 hover:text-emerald-300">
-                            Ver detalle →
-                        </Link>
-                    </div>
+                    )}
                 </div>
             )}
 
