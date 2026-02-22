@@ -423,28 +423,28 @@ export default function InventoryPage() {
             <div className="flex-1 bg-zinc-900/30 border border-zinc-800 rounded-xl overflow-hidden flex flex-col">
                 <div className="overflow-y-auto flex-1">
                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-zinc-900 text-zinc-400 text-xs uppercase sticky top-0 z-10">
+                        <thead className="bg-zinc-950/80 text-zinc-500 text-[11px] tracking-widest uppercase sticky top-0 z-10 border-b border-zinc-800">
                             <tr>
-                                <th className="p-4 font-medium border-b border-zinc-800">
-                                    {zone === 'MENU' ? 'Menu Item' : zone === 'KITCHEN' ? 'Batch / Prep' : 'Supply Item'}
+                                <th className="px-4 py-3 font-semibold">
+                                    {zone === 'MENU' ? 'Producto' : zone === 'KITCHEN' ? 'Batch / Prep' : 'Insumo'}
                                 </th>
-                                <th className="p-4 font-medium border-b border-zinc-800">
-                                    {zone === 'MENU' ? 'Sales Price' : zone === 'KITCHEN' ? 'Yield' : 'Purchase Unit'}
+                                <th className="px-4 py-3 font-semibold w-36 text-right">
+                                    {zone === 'MENU' ? 'Precio Venta' : zone === 'KITCHEN' ? 'Rendimiento' : 'Unidad'}
                                 </th>
-                                <th className="p-4 font-medium border-b border-zinc-800">
-                                    {zone === 'MENU' ? 'Calc Cost' : zone === 'KITCHEN' ? 'Unit Cost' : zone === 'LOGS' ? 'Reason' : 'Last Cost'}
+                                <th className="px-4 py-3 font-semibold w-36 text-right">
+                                    {zone === 'MENU' ? 'Costo Real' : zone === 'KITCHEN' ? 'Costo/Batch' : zone === 'LOGS' ? 'Motivo' : 'Último Costo'}
                                 </th>
                                 {(zone === 'PANTRY' || zone === 'KITCHEN' || zone === 'LOGS') && (
                                     <>
-                                        <th className="p-4 font-medium border-b border-zinc-800 text-right">{zone === 'LOGS' ? 'Previous' : 'Stock'}</th>
-                                        <th className="p-4 font-medium border-b border-zinc-800 text-right">{zone === 'LOGS' ? 'New' : 'Total Value'}</th>
+                                        <th className="px-4 py-3 font-semibold text-right w-28">{zone === 'LOGS' ? 'Anterior' : 'Stock'}</th>
+                                        <th className="px-4 py-3 font-semibold text-right w-32">{zone === 'LOGS' ? 'Nuevo' : 'Valor Total'}</th>
                                     </>
                                 )}
-                                <th className="p-4 font-medium border-b border-zinc-800 text-right">
-                                    {zone === 'MENU' ? 'Margin %' : zone === 'KITCHEN' ? 'POS Link' : zone === 'LOGS' ? 'Change' : 'Trend'}
+                                <th className="px-4 py-3 font-semibold w-36">
+                                    {zone === 'MENU' ? 'Margen' : zone === 'KITCHEN' ? 'POS Link' : zone === 'LOGS' ? 'Variación' : 'Tendencia'}
                                 </th>
-                                <th className="p-4 font-medium border-b border-zinc-800 text-right">
-                                    {zone === 'LOGS' ? 'Notes' : 'Actions'}
+                                <th className="px-4 py-3 font-semibold w-28 text-right">
+                                    {zone === 'LOGS' ? 'Notas' : 'Acciones'}
                                 </th>
                             </tr>
                         </thead>
@@ -466,40 +466,66 @@ export default function InventoryPage() {
                                     ? 'bg-yellow-500/10 text-yellow-300'
                                     : 'bg-emerald-500/20 text-emerald-400';
                                 return (
-                                    <tr key={item.id} className={`hover:bg-zinc-800/50 group cursor-pointer ${isNegative ? 'bg-red-950/20' : ''}`} onClick={() => handleEdit(item)}>
-                                        <td className="p-4">
-                                            <div className="font-medium text-white flex items-center gap-2">
-                                                {item.name}
-                                                {isNegative && <AlertTriangle size={12} className="text-red-400 shrink-0" />}
+                                    <tr key={item.id} className={`group cursor-pointer transition-colors ${isNegative ? 'bg-red-950/20 hover:bg-red-950/30' : 'hover:bg-zinc-800/40'}`} onClick={() => handleEdit(item)}>
+                                        {/* NAME */}
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <div>
+                                                    <div className="font-medium text-white text-sm flex items-center gap-1.5">
+                                                        {item.name}
+                                                        {isNegative && <AlertTriangle size={11} className="text-red-400 shrink-0" />}
+                                                    </div>
+                                                    <div className="text-[11px] text-zinc-600 font-mono mt-0.5">{item.sku || item.id.slice(0, 8)}</div>
+                                                </div>
                                             </div>
-                                            <div className="text-xs text-zinc-500 bg-zinc-800/50 px-1 rounded inline-block">{item.sku || item.id.slice(0, 8)}</div>
                                         </td>
-                                        <td className="p-4">
-                                            <span className={`font-medium ${isPlaceholderPrice ? 'text-amber-400' : 'text-zinc-300'}`}>${item.price.toFixed(2)}</span>
-                                            {isPlaceholderPrice && <span className="text-[10px] text-amber-500/70 ml-1">placeholder</span>}
-                                        </td>
-                                        <td className="p-4">
-                                            <span className="text-zinc-300">${effectiveCost.toFixed(2)}</span>
-                                            {hasRecipe && item.cost !== effectiveCost && item.cost === 0 && (
-                                                <span className="text-[10px] text-violet-400/70 ml-1">vivo</span>
+                                        {/* PRICE */}
+                                        <td className="px-4 py-3 text-right w-36">
+                                            <span className={`font-semibold tabular-nums ${isPlaceholderPrice ? 'text-amber-400' : 'text-zinc-200'}`}>
+                                                ${item.price.toFixed(2)}
+                                            </span>
+                                            {isPlaceholderPrice && (
+                                                <div className="text-[10px] text-amber-500/60 font-normal">placeholder</div>
                                             )}
                                         </td>
-                                        <td className="p-4">
-                                            <div className={`text-xs font-bold px-2 py-1 rounded w-fit ${marginBadgeClass}`}>
+                                        {/* COST */}
+                                        <td className="px-4 py-3 text-right w-36">
+                                            <span className="text-zinc-400 tabular-nums font-medium">
+                                                ${effectiveCost.toFixed(2)}
+                                            </span>
+                                            {hasRecipe && item.cost === 0 && (
+                                                <div className="text-[10px] text-violet-400/60">recalculado</div>
+                                            )}
+                                        </td>
+                                        {/* MARGIN */}
+                                        <td className="px-4 py-3 w-36">
+                                            <div className={`inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-md ${marginBadgeClass}`}>
                                                 {noCost ? 'Sin costo' : `${margin.toFixed(1)}%`}
                                             </div>
                                         </td>
-                                        <td className="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <div className="flex justify-end gap-2">
+                                        {/* ACTIONS */}
+                                        <td className="px-4 py-3 text-right w-28 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex justify-end items-center gap-1">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setViewingItem({ ...item, type: 'PRODUCT' }); }}
-                                                    className="p-1.5 hover:bg-zinc-700 rounded text-zinc-400 hover:text-emerald-400 transition-colors"
+                                                    className="p-1.5 hover:bg-zinc-700 rounded-md text-zinc-500 hover:text-emerald-400 transition-colors"
                                                     title="Ver Ficha Técnica"
                                                 >
-                                                    <Search size={16} />
+                                                    <Search size={14} />
                                                 </button>
-                                                <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="text-zinc-500 hover:text-white z-10 relative">Edit</button>
-                                                <button onClick={(e) => handleDelete(e, item)} className="p-1.5 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300 transition-colors" title="Dar de baja"><Trash2 size={16} /></button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                                    className="px-2 py-1 text-xs text-zinc-500 hover:text-white hover:bg-zinc-700 rounded-md transition-colors"
+                                                >
+                                                    Editar
+                                                </button>
+                                                <button
+                                                    onClick={(e) => handleDelete(e, item)}
+                                                    className="p-1.5 hover:bg-red-500/10 rounded-md text-zinc-600 hover:text-red-400 transition-colors"
+                                                    title="Dar de baja"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
