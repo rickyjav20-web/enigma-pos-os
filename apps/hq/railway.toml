@@ -7,3 +7,6 @@ watchPatterns = [
   "package.json",
   "package-lock.json"
 ]
+
+[deploy]
+startCommand = ""
