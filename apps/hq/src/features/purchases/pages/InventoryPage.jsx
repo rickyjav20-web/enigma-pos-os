@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Package, ChefHat, ShoppingCart,
     ArrowUpRight, ArrowDownRight, Search, Filter, Plus, FileDown, Upload, X,
-    TrendingUp, FileText, Info, Trash2
+    TrendingUp, FileText, Info, Trash2, ArrowUpDown, AlertTriangle
 } from 'lucide-react';
 import { api, CURRENT_TENANT_ID } from '@/lib/api';
 import { UnifiedItemModal } from '../components/UnifiedItemModal';
@@ -137,6 +137,7 @@ export default function InventoryPage() {
 
     // --- FILTER & ZONES ---
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState('name');
 
     const filteredProducts = products.filter(i =>
         i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -148,7 +149,19 @@ export default function InventoryPage() {
         (i.sku && i.sku.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    const menuItems = filteredProducts;
+    const menuItems = [...filteredProducts].sort((a, b) => {
+        const marginA = a.price > 0 ? ((a.price - a.cost) / a.price) * 100 : -Infinity;
+        const marginB = b.price > 0 ? ((b.price - b.cost) / b.price) * 100 : -Infinity;
+        switch (sortBy) {
+            case 'price_desc': return b.price - a.price;
+            case 'price_asc': return a.price - b.price;
+            case 'cost_asc': return a.cost - b.cost;
+            case 'cost_desc': return b.cost - a.cost;
+            case 'margin_desc': return marginB - marginA;
+            case 'margin_asc': return marginA - marginB;
+            default: return a.name.localeCompare(b.name);
+        }
+    });
     const kitchenItems = filteredSupplyItems.filter(i => i.isProduction && !products.some(p => p.sku && i.sku && p.sku === i.sku));
     const pantryItems = filteredSupplyItems.filter(i => !i.isProduction && !products.some(p => p.sku && i.sku && p.sku === i.sku));
 
@@ -177,7 +190,8 @@ export default function InventoryPage() {
         e.stopPropagation();
         if (!window.confirm(`¿Dar de baja "${item.name}"? Esta acción la ocultará del sistema.`)) return;
         try {
-            await api.delete('/supply-items/' + item.id);
+            const endpoint = zone === 'MENU' ? `/products/${item.id}` : `/supply-items/${item.id}`;
+            await api.delete(endpoint);
             fetchData();
         } catch (err) {
             alert('Error al dar de baja: ' + (err.message || 'Error desconocido'));
@@ -320,12 +334,30 @@ export default function InventoryPage() {
                     <div className="relative">
                         <Search className="absolute left-3 top-2.5 text-zinc-500" size={16} />
                         <input
-                            className="bg-zinc-900 border border-zinc-700 rounded-lg pl-9 pr-4 py-2 text-sm text-white w-64 focus:ring-1 focus:ring-emerald-500"
+                            className="bg-zinc-900 border border-zinc-700 rounded-lg pl-9 pr-4 py-2 text-sm text-white w-56 focus:ring-1 focus:ring-emerald-500"
                             placeholder="Search items..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    {zone === 'MENU' && (
+                        <div className="relative flex items-center">
+                            <ArrowUpDown className="absolute left-3 text-zinc-500 pointer-events-none" size={14} />
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="bg-zinc-900 border border-zinc-700 rounded-lg pl-8 pr-3 py-2 text-sm text-zinc-300 focus:ring-1 focus:ring-emerald-500 appearance-none cursor-pointer"
+                            >
+                                <option value="name">Nombre A-Z</option>
+                                <option value="price_desc">Precio: Mayor → Menor</option>
+                                <option value="price_asc">Precio: Menor → Mayor</option>
+                                <option value="cost_asc">Costo: Menor → Mayor</option>
+                                <option value="cost_desc">Costo: Mayor → Menor</option>
+                                <option value="margin_desc">Margen: Mayor → Menor</option>
+                                <option value="margin_asc">Margen: Menor → Mayor (peores)</option>
+                            </select>
+                        </div>
+                    )}
                     {/* SMART ACTION BUTTON */}
                     <button
                         onClick={handleOpenCreate}
@@ -335,6 +367,40 @@ export default function InventoryPage() {
                     </button>
                 </div>
             </div>
+
+            {/* MENU ZONE SUMMARY BAR */}
+            {zone === 'MENU' && (() => {
+                const negMargin = menuItems.filter(i => i.price > 0 && i.cost > i.price);
+                const noCost = menuItems.filter(i => i.cost === 0);
+                const withCost = menuItems.filter(i => i.cost > 0 && i.price > 0);
+                const avgMargin = withCost.length > 0
+                    ? withCost.reduce((acc, i) => acc + ((i.price - i.cost) / i.price) * 100, 0) / withCost.length
+                    : 0;
+                const placeholderPrice = menuItems.filter(i => i.price === 1);
+                return (
+                    <div className="flex gap-3 mb-3 text-xs">
+                        {negMargin.length > 0 && (
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 font-medium">
+                                <AlertTriangle size={12} />
+                                {negMargin.length} margen negativo{negMargin.length > 1 ? 's' : ''}
+                            </div>
+                        )}
+                        {noCost.length > 0 && (
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-400 font-medium">
+                                {noCost.length} sin costo
+                            </div>
+                        )}
+                        {placeholderPrice.length > 0 && (
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 font-medium">
+                                {placeholderPrice.length} precio $1 (placeholder)
+                            </div>
+                        )}
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-zinc-400 font-medium ml-auto">
+                            Margen promedio: <span className={`font-bold ml-1 ${avgMargin >= 60 ? 'text-emerald-400' : avgMargin >= 30 ? 'text-amber-400' : 'text-red-400'}`}>{avgMargin.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* TABLE AREA */}
             <div className="flex-1 bg-zinc-900/30 border border-zinc-800 rounded-xl overflow-hidden flex flex-col">
@@ -368,18 +434,35 @@ export default function InventoryPage() {
                         <tbody className="text-sm divide-y divide-zinc-800">
                             {zone === 'MENU' && menuItems.map(item => {
                                 const margin = item.price > 0 ? ((item.price - item.cost) / item.price) * 100 : 0;
-                                const isLowMargin = margin < 30;
+                                const noCost = item.cost === 0;
+                                const isNegative = margin < 0;
+                                const isPlaceholderPrice = item.price === 1;
+                                const marginBadgeClass = noCost
+                                    ? 'bg-zinc-700/50 text-zinc-500'
+                                    : isNegative
+                                    ? 'bg-red-600/30 text-red-400 ring-1 ring-red-500/30'
+                                    : margin < 30
+                                    ? 'bg-amber-500/20 text-amber-400'
+                                    : margin < 60
+                                    ? 'bg-yellow-500/10 text-yellow-300'
+                                    : 'bg-emerald-500/20 text-emerald-400';
                                 return (
-                                    <tr key={item.id} className="hover:bg-zinc-800/50 group cursor-pointer" onClick={() => handleEdit(item)}>
+                                    <tr key={item.id} className={`hover:bg-zinc-800/50 group cursor-pointer ${isNegative ? 'bg-red-950/20' : ''}`} onClick={() => handleEdit(item)}>
                                         <td className="p-4">
-                                            <div className="font-medium text-white">{item.name}</div>
+                                            <div className="font-medium text-white flex items-center gap-2">
+                                                {item.name}
+                                                {isNegative && <AlertTriangle size={12} className="text-red-400 shrink-0" />}
+                                            </div>
                                             <div className="text-xs text-zinc-500 bg-zinc-800/50 px-1 rounded inline-block">{item.sku || item.id.slice(0, 8)}</div>
                                         </td>
-                                        <td className="p-4 text-zinc-300">${item.price.toFixed(2)}</td>
+                                        <td className="p-4">
+                                            <span className={`font-medium ${isPlaceholderPrice ? 'text-amber-400' : 'text-zinc-300'}`}>${item.price.toFixed(2)}</span>
+                                            {isPlaceholderPrice && <span className="text-[10px] text-amber-500/70 ml-1">placeholder</span>}
+                                        </td>
                                         <td className="p-4 text-zinc-400">${item.cost.toFixed(2)}</td>
                                         <td className="p-4">
-                                            <div className={`text-xs font-bold px-2 py-1 rounded w-fit ${isLowMargin ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                                                {margin.toFixed(1)}%
+                                            <div className={`text-xs font-bold px-2 py-1 rounded w-fit ${marginBadgeClass}`}>
+                                                {noCost ? 'Sin costo' : `${margin.toFixed(1)}%`}
                                             </div>
                                         </td>
                                         <td className="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
