@@ -149,14 +149,31 @@ export default function InventoryPage() {
         (i.sku && i.sku.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
+    // Compute effective cost from live recipe data (same formula as API backend)
+    // Falls back to stored cost if no recipes linked
+    const getEffectiveCost = (item) => {
+        if (item.recipes && item.recipes.length > 0) {
+            return item.recipes.reduce((acc, r) => {
+                const si = r.supplyItem;
+                const factor = si?.stockCorrectionFactor || 1;
+                const yld = si?.yieldPercentage || 1;
+                const rawCost = si?.averageCost || si?.currentCost || 0;
+                return acc + r.quantity * (rawCost / (factor * yld));
+            }, 0);
+        }
+        return item.cost || 0;
+    };
+
     const menuItems = [...filteredProducts].sort((a, b) => {
-        const marginA = a.price > 0 ? ((a.price - a.cost) / a.price) * 100 : -Infinity;
-        const marginB = b.price > 0 ? ((b.price - b.cost) / b.price) * 100 : -Infinity;
+        const costA = getEffectiveCost(a);
+        const costB = getEffectiveCost(b);
+        const marginA = a.price > 0 && costA > 0 ? ((a.price - costA) / a.price) * 100 : -Infinity;
+        const marginB = b.price > 0 && costB > 0 ? ((b.price - costB) / b.price) * 100 : -Infinity;
         switch (sortBy) {
             case 'price_desc': return b.price - a.price;
             case 'price_asc': return a.price - b.price;
-            case 'cost_asc': return a.cost - b.cost;
-            case 'cost_desc': return b.cost - a.cost;
+            case 'cost_asc': return costA - costB;
+            case 'cost_desc': return costB - costA;
             case 'margin_desc': return marginB - marginA;
             case 'margin_asc': return marginA - marginB;
             default: return a.name.localeCompare(b.name);
@@ -370,11 +387,11 @@ export default function InventoryPage() {
 
             {/* MENU ZONE SUMMARY BAR */}
             {zone === 'MENU' && (() => {
-                const negMargin = menuItems.filter(i => i.price > 0 && i.cost > i.price);
-                const noCost = menuItems.filter(i => i.cost === 0);
-                const withCost = menuItems.filter(i => i.cost > 0 && i.price > 0);
+                const negMargin = menuItems.filter(i => { const c = getEffectiveCost(i); return i.price > 0 && c > 0 && c > i.price; });
+                const noCost = menuItems.filter(i => getEffectiveCost(i) === 0);
+                const withCost = menuItems.filter(i => getEffectiveCost(i) > 0 && i.price > 0);
                 const avgMargin = withCost.length > 0
-                    ? withCost.reduce((acc, i) => acc + ((i.price - i.cost) / i.price) * 100, 0) / withCost.length
+                    ? withCost.reduce((acc, i) => { const c = getEffectiveCost(i); return acc + ((i.price - c) / i.price) * 100; }, 0) / withCost.length
                     : 0;
                 const placeholderPrice = menuItems.filter(i => i.price === 1);
                 return (
@@ -433,9 +450,11 @@ export default function InventoryPage() {
                         </thead>
                         <tbody className="text-sm divide-y divide-zinc-800">
                             {zone === 'MENU' && menuItems.map(item => {
-                                const margin = item.price > 0 ? ((item.price - item.cost) / item.price) * 100 : 0;
-                                const noCost = item.cost === 0;
-                                const isNegative = margin < 0;
+                                const effectiveCost = getEffectiveCost(item);
+                                const hasRecipe = item.recipes && item.recipes.length > 0;
+                                const noCost = effectiveCost === 0;
+                                const margin = item.price > 0 && effectiveCost > 0 ? ((item.price - effectiveCost) / item.price) * 100 : 0;
+                                const isNegative = !noCost && margin < 0;
                                 const isPlaceholderPrice = item.price === 1;
                                 const marginBadgeClass = noCost
                                     ? 'bg-zinc-700/50 text-zinc-500'
@@ -459,7 +478,12 @@ export default function InventoryPage() {
                                             <span className={`font-medium ${isPlaceholderPrice ? 'text-amber-400' : 'text-zinc-300'}`}>${item.price.toFixed(2)}</span>
                                             {isPlaceholderPrice && <span className="text-[10px] text-amber-500/70 ml-1">placeholder</span>}
                                         </td>
-                                        <td className="p-4 text-zinc-400">${item.cost.toFixed(2)}</td>
+                                        <td className="p-4">
+                                            <span className="text-zinc-300">${effectiveCost.toFixed(2)}</span>
+                                            {hasRecipe && item.cost !== effectiveCost && item.cost === 0 && (
+                                                <span className="text-[10px] text-violet-400/70 ml-1">vivo</span>
+                                            )}
+                                        </td>
                                         <td className="p-4">
                                             <div className={`text-xs font-bold px-2 py-1 rounded w-fit ${marginBadgeClass}`}>
                                                 {noCost ? 'Sin costo' : `${margin.toFixed(1)}%`}
