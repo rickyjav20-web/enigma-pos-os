@@ -311,6 +311,32 @@ export default async function inventoryTasksRoutes(fastify: FastifyInstance) {
                     notes: `Conteo físico (${shift}). Varianza: ${variance > 0 ? '+' : ''}${variance.toFixed(3)} ${item.defaultUnit}. Por: ${userName}`
                 }
             });
+
+            // Negative variance = stock desaparecido = merma implícita.
+            // Se registra en KitchenActivityLog WASTE para que aparezca
+            // en el dashboard de Mermas con su valor en $.
+            if (variance < -0.001) {
+                const lostQty = Math.abs(variance);
+                await prisma.kitchenActivityLog.create({
+                    data: {
+                        tenantId,
+                        employeeId: userId,
+                        employeeName: userName,
+                        action: 'WASTE',
+                        entityType: 'supply_item',
+                        entityId: supplyItemId,
+                        entityName: item.name,
+                        quantity: lostQty,
+                        unit: item.defaultUnit,
+                        metadata: {
+                            wasteType: 'INVENTORY_CORRECTION',
+                            reason: `Varianza negativa en conteo fisico (${shift}). Sistema: ${systemQty}, Real: ${countedQty}`,
+                            costLost: Math.round(lostQty * unitCostAtTime * 100) / 100,
+                            inventoryCountId: count.id
+                        }
+                    }
+                }).catch(() => {}); // non-fatal
+            }
         } else {
             // No variance, just update lastCountedAt
             await prisma.supplyItem.update({
