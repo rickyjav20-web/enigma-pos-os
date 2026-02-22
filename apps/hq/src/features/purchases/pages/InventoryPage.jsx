@@ -729,24 +729,53 @@ function ItemPassport({ item, onClose, onEdit }) {
                                                 </thead>
                                                 <tbody className="divide-y divide-zinc-800">
                                                     {item.recipes.map(r => {
-                                                        const currentUnitCost = r.supplyItem?.currentCost || 0;
-                                                        const lineCost = r.quantity * currentUnitCost;
+                                                        const si = r.supplyItem;
+                                                        const factor = si?.stockCorrectionFactor || 1;
+                                                        const yld = si?.yieldPercentage || 1;
+                                                        const wacCost = (si?.averageCost || si?.currentCost || 0) / (factor * yld);
+                                                        const liveCost = (si?.currentCost || 0) / (factor * yld);
+                                                        const lineWac = r.quantity * wacCost;
+                                                        const lineLive = r.quantity * liveCost;
                                                         return (
                                                             <tr key={r.id} className="hover:bg-white/5">
-                                                                <td className="p-3 text-white">{r.supplyItem?.name || 'Unknown'}</td>
+                                                                <td className="p-3 text-white">{si?.name || 'Unknown'}</td>
                                                                 <td className="p-3 text-zinc-400">{r.quantity} {r.unit}</td>
-                                                                <td className="p-3 text-zinc-500">${currentUnitCost.toFixed(2)}</td>
-                                                                <td className="p-3 text-right font-medium text-zinc-300">
-                                                                    ${lineCost.toFixed(2)}
+                                                                <td className="p-3">
+                                                                    <div className="text-zinc-300 font-mono text-xs">${wacCost.toFixed(4)}<span className="text-zinc-600 ml-1">/{r.unit}</span></div>
+                                                                    {si?.averageCost > 0 && Math.abs(wacCost - liveCost) > 0.0001 && (
+                                                                        <div className="text-zinc-500 font-mono text-xs">live: ${liveCost.toFixed(4)}</div>
+                                                                    )}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    <div className="font-medium text-zinc-200">${lineWac.toFixed(4)}</div>
+                                                                    {si?.averageCost > 0 && Math.abs(lineWac - lineLive) > 0.0001 && (
+                                                                        <div className="text-xs text-zinc-500">live: ${lineLive.toFixed(4)}</div>
+                                                                    )}
                                                                 </td>
                                                             </tr>
                                                         );
                                                     })}
-                                                    {/* LIVE COST TOTAL */}
+                                                    {/* TOTALS */}
                                                     <tr className="bg-zinc-800/50 font-bold border-t border-zinc-700">
-                                                        <td colSpan={3} className="p-3 text-right text-zinc-400 uppercase text-xs tracking-wider pt-4">Live Cost Calculation</td>
-                                                        <td className="p-3 text-right text-emerald-400 text-lg">
-                                                            ${item.recipes.reduce((acc, r) => acc + (r.quantity * (r.supplyItem?.currentCost || 0)), 0).toFixed(2)}
+                                                        <td colSpan={2} className="p-3 text-right text-zinc-400 uppercase text-xs tracking-wider">Costo WAC (Promedio)</td>
+                                                        <td colSpan={2} className="p-3 text-right text-emerald-400 text-lg">
+                                                            ${item.recipes.reduce((acc, r) => {
+                                                                const si = r.supplyItem;
+                                                                const factor = si?.stockCorrectionFactor || 1;
+                                                                const yld = si?.yieldPercentage || 1;
+                                                                return acc + r.quantity * ((si?.averageCost || si?.currentCost || 0) / (factor * yld));
+                                                            }, 0).toFixed(4)}
+                                                        </td>
+                                                    </tr>
+                                                    <tr className="bg-zinc-800/30 border-t border-zinc-700/50">
+                                                        <td colSpan={2} className="p-2 text-right text-zinc-500 uppercase text-xs tracking-wider">Costo Vivo (Último Precio)</td>
+                                                        <td colSpan={2} className="p-2 text-right text-blue-400 font-mono text-sm">
+                                                            ${item.recipes.reduce((acc, r) => {
+                                                                const si = r.supplyItem;
+                                                                const factor = si?.stockCorrectionFactor || 1;
+                                                                const yld = si?.yieldPercentage || 1;
+                                                                return acc + r.quantity * ((si?.currentCost || 0) / (factor * yld));
+                                                            }, 0).toFixed(4)}
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -755,7 +784,7 @@ function ItemPassport({ item, onClose, onEdit }) {
 
                                         <div className="flex gap-2 text-xs text-zinc-500 bg-zinc-800/30 p-2 rounded-lg">
                                             <Info size={14} />
-                                            <p>This "Live Cost" is calculated instantly from current ingredient prices.</p>
+                                            <p><span className="text-emerald-400 font-bold">Costo WAC</span> usa el costo promedio ponderado (precio real pagado en compras). <span className="text-blue-400 font-bold">Costo Vivo</span> usa el último precio registrado. Ambos aplican el factor de conversión por unidad.</p>
                                         </div>
                                     </div>
                                 ) : (

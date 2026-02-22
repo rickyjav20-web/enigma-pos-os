@@ -130,7 +130,7 @@ export default async function productRoutes(fastify: FastifyInstance) {
     // DELETE /products/:id (Soft Delete / Archive)
     fastify.delete('/products/:id', async (request, reply) => {
         const { id } = request.params as { id: string };
-        const tenantId = request.headers['x-tenant-id'] as string;
+        const tenantId = request.tenantId;
         if (!tenantId) return reply.code(400).send({ error: 'Missing tenant ID' });
 
         const product = await prisma.product.findFirst({ where: { id, tenantId } });

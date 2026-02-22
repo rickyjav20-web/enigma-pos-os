@@ -275,7 +275,7 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
     // DELETE /supply-items/:id (Soft Delete / Archive)
     fastify.delete('/supply-items/:id', async (request, reply) => {
         const { id } = request.params as { id: string };
-        const tenantId = request.headers['x-tenant-id'] as string;
+        const tenantId = request.tenantId;
         if (!tenantId) return reply.code(400).send({ error: 'Missing tenant ID' });
 
         const item = await prisma.supplyItem.findFirst({ where: { id, tenantId } });
