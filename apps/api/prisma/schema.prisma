@@ -312,7 +312,7 @@ model SupplyItem {
   
   // --- Smart Inventory & Par Levels ---
   parLevel          Float?    // Target stock level (trigger production if below)
-  minStock          Float?    // Absolute minimum — red alert
+  minStock          Float?    // Absolute minimum - red alert
   maxStock          Float?    // Upper limit to avoid overstock
   countFrequency    String?   @default("SMART") // "DAILY" | "WEEKLY" | "SMART"
   lastCountedAt     DateTime? // When last physically counted
@@ -632,7 +632,7 @@ model InventoryCount {
 model ShiftTask {
   id           String    @id @default(uuid())
   tenantId     String
-  date         String    // "2026-02-22" — ISO date string for easy querying
+  date         String    // "2026-02-22" - ISO date string for easy querying
   shift        String    // "MORNING" | "EVENING"
   type         String    // "INVENTORY" | "PRODUCTION"
   supplyItemId String
