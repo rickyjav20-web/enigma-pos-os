@@ -6,7 +6,7 @@ import { Loader2, ArrowRight, Smartphone, Wallet } from 'lucide-react';
 
 export default function RegisterOpenPage() {
     const { employee, openRegister } = useAuth();
-    const { currencies, getRate, formatLocal } = useCurrencies();
+    const { currencies, getRate } = useCurrencies();
     const [isLoading, setIsLoading] = useState(false);
 
     // --- Caja Fisica: USD + COP ---

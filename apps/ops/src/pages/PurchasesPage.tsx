@@ -66,7 +66,7 @@ export default function PurchasesPage() {
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'credit'>('cash');
 
     // Currency State
-    const { currencies, getRate } = useCurrencies();
+    const { currencies } = useCurrencies();
     const [purchaseCurrencyVal, setPurchaseCurrencyVal] = useState<CurrencyValue>({
         currency: 'USD', amountLocal: 0, amountUSD: 0, exchangeRate: 1
     });
