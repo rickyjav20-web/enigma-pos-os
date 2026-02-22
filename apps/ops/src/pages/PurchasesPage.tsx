@@ -66,7 +66,7 @@ export default function PurchasesPage() {
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'credit'>('cash');
 
     // Currency State — just track which currency, amounts are auto-calculated from total
-    const { currencies, getRate } = useCurrencies();
+    const { getRate } = useCurrencies();
     const [selectedPayCurrency, setSelectedPayCurrency] = useState<'USD' | 'VES' | 'COP'>('USD');
 
     // Items State
