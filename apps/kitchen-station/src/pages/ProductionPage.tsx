@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChefHat, Plus, Minus, CheckCircle, Package, Loader2 } from 'lucide-react';
+import { ChefHat, Plus, Minus, CheckCircle, Package, Loader2, Zap, AlertTriangle } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
@@ -12,6 +12,32 @@ interface ProductionItem {
     stockQuantity: number;
 }
 
+interface ShiftTask {
+    id: string;
+    supplyItemId: string;
+    targetQty: number | null;
+    priority: number;
+    reason: string;
+    status: string;
+    supplyItem: {
+        id: string;
+        name: string;
+        yieldUnit: string | null;
+        defaultUnit: string;
+        stockQuantity: number;
+        parLevel: number | null;
+        yieldQuantity: number | null;
+    };
+}
+
+function getToday(): string {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function getShift(): 'MORNING' | 'EVENING' {
+    return new Date().getHours() < 15 ? 'MORNING' : 'EVENING';
+}
+
 export default function ProductionPage() {
     const { user } = useAuth();
     const [items, setItems] = useState<ProductionItem[]>([]);
@@ -20,9 +46,13 @@ export default function ProductionPage() {
     const [quantity, setQuantity] = useState(1);
     const [isProducing, setIsProducing] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    const [tasks, setTasks] = useState<ShiftTask[]>([]);
+    const [tasksLoading, setTasksLoading] = useState(true);
+    const [completingTask, setCompletingTask] = useState<string | null>(null);
 
     useEffect(() => {
         fetchItems();
+        fetchTasks();
     }, []);
 
     const fetchItems = async () => {
@@ -35,6 +65,51 @@ export default function ProductionPage() {
             console.error("Failed to fetch production items", e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchTasks = async () => {
+        setTasksLoading(true);
+        try {
+            const res = await api.get('/inventory/tasks', {
+                params: { date: getToday(), shift: getShift(), type: 'PRODUCTION' }
+            });
+            const pending = (res.data || []).filter((t: ShiftTask) => t.status === 'PENDING');
+            setTasks(pending);
+        } catch (e) {
+            console.error('Failed to fetch shift tasks', e);
+        } finally {
+            setTasksLoading(false);
+        }
+    };
+
+    const handleProduceTask = async (task: ShiftTask) => {
+        if (!user) return;
+        setCompletingTask(task.id);
+        try {
+            const item = task.supplyItem;
+            const batchQty = (item.yieldQuantity || 1) * (task.targetQty || 1);
+            await api.post('/production', {
+                supplyItemId: item.id,
+                quantity: batchQty,
+                unit: item.yieldUnit || item.defaultUnit,
+                reason: `Tarea de producción (turno ${getShift()})`,
+                userId: user.id,
+                userName: user.name
+            });
+            await api.patch(`/inventory/tasks/${task.id}`, {
+                status: 'DONE',
+                completedQty: task.targetQty || 0,
+                completedBy: user.id
+            });
+            setSuccessMessage(`✓ Completado: ${item.name}`);
+            setTimeout(() => setSuccessMessage(''), 4000);
+            fetchTasks();
+            fetchItems();
+        } catch (e) {
+            console.error('Failed to complete task', e);
+        } finally {
+            setCompletingTask(null);
         }
     };
 
@@ -96,6 +171,63 @@ export default function ProductionPage() {
                 <div className="mb-4 glass-card px-5 py-3 rounded-xl flex items-center gap-3 animate-fade-in border-emerald-500/20 bg-emerald-500/10">
                     <CheckCircle size={18} className="text-emerald-400 shrink-0" />
                     <span className="text-emerald-300 font-medium text-sm">{successMessage}</span>
+                </div>
+            )}
+
+            {/* Shift Tasks Section */}
+            {!tasksLoading && tasks.length > 0 && (
+                <div className="mb-5">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Zap size={14} className="text-amber-400" />
+                        <span className="text-xs font-bold uppercase tracking-widest text-amber-400/80">Tareas del Turno</span>
+                        <span className="text-xs text-zinc-500">— generadas del conteo de anoche</span>
+                    </div>
+                    <div className="space-y-2">
+                        {tasks.map(task => {
+                            const item = task.supplyItem;
+                            const unit = item.yieldUnit || item.defaultUnit;
+                            const isUrgent = task.priority >= 3;
+                            const isHigh = task.priority === 2;
+                            return (
+                                <div
+                                    key={task.id}
+                                    className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${isUrgent
+                                        ? 'bg-red-500/5 border-red-500/25'
+                                        : isHigh
+                                            ? 'bg-amber-500/5 border-amber-500/25'
+                                            : 'bg-white/[0.02] border-white/8'
+                                    }`}
+                                >
+                                    <div className={`w-1.5 h-10 rounded-full flex-shrink-0 ${isUrgent ? 'bg-red-500' : isHigh ? 'bg-amber-500' : 'bg-violet-500'}`} />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-sm font-bold text-white">{item.name}</p>
+                                            {isUrgent && <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />}
+                                        </div>
+                                        <p className="text-xs text-zinc-500 mt-0.5">{task.reason}</p>
+                                    </div>
+                                    <div className="text-right flex-shrink-0">
+                                        <p className="text-lg font-bold text-white font-mono">{task.targetQty}</p>
+                                        <p className="text-[10px] text-zinc-500 uppercase">{unit}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => handleProduceTask(task)}
+                                        disabled={completingTask === task.id}
+                                        className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-xl text-white text-xs font-bold transition-colors flex-shrink-0"
+                                    >
+                                        {completingTask === task.id
+                                            ? <Loader2 size={14} className="animate-spin" />
+                                            : <ChefHat size={14} />
+                                        }
+                                        Producir
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div className="mt-3 border-t border-white/5 pt-3">
+                        <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-bold">Producción Manual</p>
+                    </div>
                 </div>
             )}
 

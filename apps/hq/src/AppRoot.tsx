@@ -34,6 +34,7 @@ import PurchaseOrderForm from './features/purchases/pages/PurchaseOrderForm';
 import RegisterAdminPage from './features/purchases/pages/RegisterAdminPage';
 // @ts-ignore
 import SalesImportPage from './pages/SalesImportPage';
+import WasteDashboardPage from './features/purchases/pages/WasteDashboardPage';
 // @ts-ignore
 import MenuIntelligencePage from './pages/MenuIntelligencePage';
 
@@ -69,6 +70,7 @@ function AppRoot() {
               <Route path="purchases/smart-order" element={<SmartOrderPage />} />
               <Route path="purchases/new" element={<PurchaseOrderForm />} />
               <Route path="purchases/import-sales" element={<SalesImportPage />} />
+              <Route path="purchases/waste" element={<WasteDashboardPage />} />
               <Route path="register" element={<RegisterAdminPage />} />
             </Route>
 

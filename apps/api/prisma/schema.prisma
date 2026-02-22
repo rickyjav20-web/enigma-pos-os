@@ -14,7 +14,7 @@ model Tenant {
   id        String     @id @default(uuid())
   name      String
   slug      String     @unique
-  
+
   // Relations
   employees Employee[]
   shifts     Shift[]
@@ -33,6 +33,8 @@ model Tenant {
   saleBatches     SaleBatch[]
   saleEvents      SaleEvent[]
   currencies      Currency[]
+  inventoryCounts InventoryCount[]
+  shiftTasks      ShiftTask[]
 }
 
 // --- MODULE: ACCESS CONTROL ---
@@ -308,6 +310,15 @@ model SupplyItem {
   preferredSupplierId String?
   loyverseId          String? // Link to Sales Product if 1:1 match
   
+  // --- Smart Inventory & Par Levels ---
+  parLevel          Float?    // Target stock level (trigger production if below)
+  minStock          Float?    // Absolute minimum — red alert
+  maxStock          Float?    // Upper limit to avoid overstock
+  countFrequency    String?   @default("SMART") // "DAILY" | "WEEKLY" | "SMART"
+  lastCountedAt     DateTime? // When last physically counted
+  lastCountedQty    Float?    // What the last count found
+  countZone         Int?      @default(2) // 1=barra, 2=cocina, 3=almacen
+
   tenant            Tenant          @relation(fields: [tenantId], references: [id])
   preferredSupplier Supplier?       @relation(fields: [preferredSupplierId], references: [id])
   purchaseLines     PurchaseLine[]
@@ -316,15 +327,17 @@ model SupplyItem {
   supplierPrices    SupplierPrice[]
   productRecipes    ProductRecipe[]
   cashTransactions  CashTransaction[]
+  inventoryCounts   InventoryCount[]
+  shiftTasks        ShiftTask[]
 
-  // --- NEW: Kitchen Hierarchy (Batches) ---
+  // --- Kitchen Hierarchy (Batches) ---
   isProduction    Boolean            @default(false) // If true, this item is made in-house (e.g. "Pizza Dough")
   yieldQuantity   Float?             // How much does one batch produce?
   yieldUnit       String?            // Unit of the batch output (e.g. 'kg', 'lt')
-  
+
   ingredients     ProductionRecipe[] @relation("ParentItem")    // Ingredients used TO MAKE this item
   usedIn          ProductionRecipe[] @relation("ComponentItem") // Recipes WHERE this item is used
-  
+
   @@unique([tenantId, sku])
 }
 
@@ -573,21 +586,70 @@ model Currency {
 // --- MODULE: KITCHEN ACTIVITY ---
 
 model KitchenActivityLog {
-  id          String   @id @default(uuid())
-  tenantId    String
-  employeeId  String
-  employeeName String  // Snapshot for fast queries
-  action      String   // 'LOGIN', 'LOGOUT', 'PRODUCTION', 'WASTE'
-  entityType  String?  // 'supply_item', 'product'
-  entityId    String?
-  entityName  String?  // Snapshot
-  quantity    Float?
-  unit        String?
-  metadata    Json?    // Flexible for extra data (wasteType, reason, etc.)
-  createdAt   DateTime @default(now())
+  id           String   @id @default(uuid())
+  tenantId     String
+  employeeId   String
+  employeeName String   // Snapshot for fast queries
+  action       String   // 'LOGIN' | 'LOGOUT' | 'PRODUCTION' | 'WASTE' | 'INVENTORY_COUNT'
+  entityType   String?  // 'supply_item', 'product'
+  entityId     String?
+  entityName   String?  // Snapshot
+  quantity     Float?
+  unit         String?
+  metadata     Json?    // Flexible: wasteType, reason, variance, taskId, etc.
+  createdAt    DateTime @default(now())
 
   @@index([tenantId])
   @@index([employeeId])
   @@index([action])
   @@index([createdAt])
+}
+
+// --- MODULE: SMART INVENTORY ---
+
+model InventoryCount {
+  id             String     @id @default(uuid())
+  tenantId       String
+  supplyItemId   String
+  countedBy      String     // employeeId
+  countedByName  String     // snapshot
+  shift          String     // "MORNING" | "EVENING"
+  date           DateTime   @default(now())
+  countedQty     Float      // physical count
+  systemQty      Float      // system stock at time of count
+  variance       Float      // countedQty - systemQty
+  unitCostAtTime Float?     // item cost at count time (for $ variance calc)
+  notes          String?
+  createdAt      DateTime   @default(now())
+
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  supplyItem  SupplyItem @relation(fields: [supplyItemId], references: [id])
+
+  @@index([tenantId, date])
+  @@index([supplyItemId])
+}
+
+model ShiftTask {
+  id           String    @id @default(uuid())
+  tenantId     String
+  date         String    // "2026-02-22" — ISO date string for easy querying
+  shift        String    // "MORNING" | "EVENING"
+  type         String    // "INVENTORY" | "PRODUCTION"
+  supplyItemId String
+  targetQty    Float?    // for PRODUCTION tasks: how much to make
+  completedQty Float?
+  status       String    @default("PENDING") // "PENDING" | "DONE" | "SKIPPED"
+  generatedBy  String    @default("AUTO")    // "AUTO" | "MANUAL"
+  completedBy  String?   // employeeId
+  completedAt  DateTime?
+  notes        String?
+  priority     Int       @default(1)  // 1=normal, 2=high, 3=urgent
+  reason       String?   // human-readable: "Stock 2 < Par 10"
+  createdAt    DateTime  @default(now())
+
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  supplyItem  SupplyItem @relation(fields: [supplyItemId], references: [id])
+
+  @@index([tenantId, date, shift])
+  @@index([supplyItemId])
 }

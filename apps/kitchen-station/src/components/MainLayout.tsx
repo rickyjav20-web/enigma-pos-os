@@ -1,6 +1,6 @@
 
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { ChefHat, Trash2, LogOut } from 'lucide-react';
+import { ChefHat, Trash2, LogOut, ClipboardList } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
 export default function MainLayout() {
@@ -42,6 +42,26 @@ export default function MainLayout() {
                                 )}
                                 <ChefHat size={24} className={isActive ? 'text-violet-400' : 'group-hover:text-zinc-400'} />
                                 <span className="text-[9px] font-bold mt-1 uppercase tracking-wider">Prod</span>
+                            </>
+                        )}
+                    </NavLink>
+
+                    <NavLink
+                        to="/inventory"
+                        className={({ isActive }) =>
+                            `relative flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-300 group ${isActive
+                                ? 'bg-white/5 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]'
+                                : 'text-zinc-600 hover:bg-white/5 hover:text-zinc-300'
+                            }`
+                        }
+                    >
+                        {({ isActive }) => (
+                            <>
+                                {isActive && (
+                                    <div className="absolute left-0 top-2 bottom-2 w-1 rounded-r bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                                )}
+                                <ClipboardList size={24} className={isActive ? 'text-blue-400' : 'group-hover:text-zinc-400'} />
+                                <span className="text-[9px] font-bold mt-1 uppercase tracking-wider">Inv</span>
                             </>
                         )}
                     </NavLink>

@@ -4,6 +4,7 @@ import MainLayout from './components/MainLayout';
 import LoginPage from './pages/LoginPage';
 import ProductionPage from './pages/ProductionPage';
 import WastePage from './pages/WastePage';
+import InventoryPage from './pages/InventoryPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { isAuthenticated } = useAuth();
@@ -21,6 +22,7 @@ export default function App() {
                     <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                         <Route index element={<Navigate to="/production" replace />} />
                         <Route path="production" element={<ProductionPage />} />
+                        <Route path="inventory" element={<InventoryPage />} />
                         <Route path="waste" element={<WastePage />} />
                     </Route>
                 </Routes>

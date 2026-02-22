@@ -50,6 +50,12 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
         yieldPercentage: 1.0,
         recipeUnit: '',
         stockCorrectionFactor: 1,
+        // Stock Levels (par levels for smart inventory)
+        parLevel: '',
+        minStock: '',
+        maxStock: '',
+        countFrequency: 'SMART',
+        countZone: 2,
         // Common
         preferredSupplierId: null
     });
@@ -75,6 +81,12 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                 yieldPercentage: initialData.yieldPercentage || 1.0,
                 recipeUnit: initialData.recipeUnit || '',
                 stockCorrectionFactor: initialData.stockCorrectionFactor || 1,
+                // Stock Levels
+                parLevel: initialData.parLevel ?? '',
+                minStock: initialData.minStock ?? '',
+                maxStock: initialData.maxStock ?? '',
+                countFrequency: initialData.countFrequency || 'SMART',
+                countZone: initialData.countZone ?? 2,
 
                 preferredSupplierId: initialData.preferredSupplierId || null
             });
@@ -197,6 +209,11 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
             if (payload.currentCost) payload.currentCost = parseFloat(payload.currentCost);
             if (payload.stockQuantity !== '') payload.stockQuantity = parseFloat(payload.stockQuantity);
             if (payload.yieldQuantity) payload.yieldQuantity = parseFloat(payload.yieldQuantity);
+            // Stock levels — send undefined if empty so API ignores them
+            payload.parLevel = payload.parLevel !== '' ? parseFloat(payload.parLevel) : undefined;
+            payload.minStock = payload.minStock !== '' ? parseFloat(payload.minStock) : undefined;
+            payload.maxStock = payload.maxStock !== '' ? parseFloat(payload.maxStock) : undefined;
+            payload.countZone = payload.countZone ? parseInt(payload.countZone) : undefined;
 
             // Mapping for Backend consistency
             // API PUT /supply-items expects 'defaultUnit'
@@ -513,6 +530,90 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                         </>
 
                     </div>
+
+                    {/* STOCK LEVELS — par levels for smart inventory */}
+                    {(type === 'SUPPLY' || type === 'BATCH') && (
+                        <div className="border-t border-zinc-800 pt-4">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <h4 className="text-xs font-bold text-zinc-300 uppercase">Niveles de Stock</h4>
+                                <span className="text-[10px] text-zinc-600">— activa tareas inteligentes de producción e inventario</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label className="block text-[10px] font-medium text-red-400 mb-1">Stock Mínimo</label>
+                                    <div className="flex items-center gap-1">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white outline-none focus:border-red-500 text-sm"
+                                            value={formData.minStock}
+                                            onChange={e => setFormData({ ...formData, minStock: e.target.value })}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <p className="text-[9px] text-zinc-600 mt-0.5">Alerta roja</p>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-medium text-amber-400 mb-1">Par Level (objetivo)</label>
+                                    <div className="flex items-center gap-1">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white outline-none focus:border-amber-500 text-sm"
+                                            value={formData.parLevel}
+                                            onChange={e => setFormData({ ...formData, parLevel: e.target.value })}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <p className="text-[9px] text-zinc-600 mt-0.5">Trigger producción</p>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-medium text-emerald-400 mb-1">Stock Máximo</label>
+                                    <div className="flex items-center gap-1">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white outline-none focus:border-emerald-500 text-sm"
+                                            value={formData.maxStock}
+                                            onChange={e => setFormData({ ...formData, maxStock: e.target.value })}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <p className="text-[9px] text-zinc-600 mt-0.5">Evitar sobrestock</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 mt-3">
+                                <div>
+                                    <label className="block text-[10px] font-medium text-zinc-400 mb-1">Frecuencia de Conteo</label>
+                                    <select
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white outline-none text-sm"
+                                        value={formData.countFrequency}
+                                        onChange={e => setFormData({ ...formData, countFrequency: e.target.value })}
+                                    >
+                                        <option value="SMART">SMART (rotación inteligente)</option>
+                                        <option value="DAILY">DAILY (todos los días)</option>
+                                        <option value="WEEKLY">WEEKLY (solo domingos)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-medium text-zinc-400 mb-1">Zona de Conteo</label>
+                                    <select
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white outline-none text-sm"
+                                        value={formData.countZone}
+                                        onChange={e => setFormData({ ...formData, countZone: parseInt(e.target.value) })}
+                                    >
+                                        <option value={1}>Zona 1 — Barra / Caja</option>
+                                        <option value={2}>Zona 2 — Cocina / Producción</option>
+                                        <option value={3}>Zona 3 — Almacén / Pantry</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* RECIPE BUILDER (Product or Batch) */}
                     {(type === 'PRODUCT' || type === 'BATCH') && (

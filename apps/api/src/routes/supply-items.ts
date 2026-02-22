@@ -177,7 +177,10 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
     fastify.put<{ Params: { id: string } }>('/supply-items/:id', async (request, reply) => {
         try {
             const { id } = request.params;
-            const { name, sku, category, currentCost, defaultUnit, preferredSupplierId, stockQuantity, yieldQuantity, yieldUnit, yieldPercentage, recipeUnit, stockCorrectionFactor, ingredients } = request.body as any;
+            const { name, sku, category, currentCost, defaultUnit, preferredSupplierId, stockQuantity, yieldQuantity, yieldUnit, yieldPercentage, recipeUnit, stockCorrectionFactor, ingredients,
+                // Smart Inventory par level fields
+                parLevel, minStock, maxStock, countFrequency, countZone
+            } = request.body as any;
 
             // STANDARD: Auto-validate & enforce the stockCorrectionFactor from unit pair.
             // This prevents misconfiguration (e.g., kg stock + und recipe with factor=1000).
@@ -239,7 +242,13 @@ export default async function supplyItemRoutes(fastify: FastifyInstance) {
                     // Smart Yield — factor is always canonical (enforced above)
                     yieldPercentage: yieldPercentage !== undefined ? Number(yieldPercentage) : undefined,
                     recipeUnit,
-                    stockCorrectionFactor: resolvedFactor
+                    stockCorrectionFactor: resolvedFactor,
+                    // Smart Inventory par levels
+                    parLevel: parLevel !== undefined ? Number(parLevel) : undefined,
+                    minStock: minStock !== undefined ? Number(minStock) : undefined,
+                    maxStock: maxStock !== undefined ? Number(maxStock) : undefined,
+                    countFrequency: countFrequency || undefined,
+                    countZone: countZone !== undefined ? Number(countZone) : undefined
                 }
             });
 
