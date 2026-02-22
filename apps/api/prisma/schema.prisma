@@ -32,6 +32,7 @@ model Tenant {
   systemRoles     SystemRole[]
   saleBatches     SaleBatch[]
   saleEvents      SaleEvent[]
+  currencies      Currency[]
 }
 
 // --- MODULE: ACCESS CONTROL ---
@@ -176,26 +177,32 @@ model RegisterSession {
   id              String    @id @default(uuid())
   tenantId        String
   employeeId      String
-  
+
   // Timing
   startedAt       DateTime  @default(now())
   endedAt         DateTime?
-  
+
   // Opening
-  startingCash    Float     // The "Float" or "Base"
-  
+  startingCash    Float     // The "Float" or "Base" in USD
+
+  // Multi-currency / Dual Register
+  registerType      String    @default("PHYSICAL")  // 'PHYSICAL' | 'ELECTRONIC'
+  linkedSessionId   String?                          // ID of the paired session
+  startingBreakdown Json?     // { USD:20, COP:150000, rates:{COP:4200} } or { VES:2750, rates:{VES:55} }
+
   // Closing (Manual Entry for now)
-  declaredCash    Float?    // What they counted physically
+  declaredCash    Float?    // What they counted physically (USD total)
   declaredCard    Float?    // Sum of card voucher slips
   declaredTransfer Float?   // Sum of transfers
-  
+  declaredBreakdown Json?   // { USD:{amount,rate,usdEquiv}, VES:{...}, COP:{...} }
+
   // Calculated (Future usage with automated sales)
   expectedCash    Float?    // System calculated cash (not used yet basically)
-  
+
   // Audit
   notes           String?
   status          String    @default("open") // 'open', 'closed'
-  
+
   employee        Employee  @relation(fields: [employeeId], references: [id])
   tenant          Tenant    @relation(fields: [tenantId], references: [id])
   transactions    CashTransaction[]
@@ -205,19 +212,24 @@ model RegisterSession {
 model CashTransaction {
   id          String   @id @default(uuid())
   sessionId   String
-  amount      Float    // Positive = In, Negative = Out
+  amount      Float    // Positive = In, Negative = Out (always in USD)
   type        String   // 'OPENING', 'SALE', 'PURCHASE', 'EXPENSE', 'WITHDRAWAL', 'DEPOSIT'
   description String?
   referenceId String?  // ID of PurchaseOrder or other entity
   timestamp   DateTime @default(now())
 
+  // Multi-currency fields
+  currency     String?  @default("USD")  // 'USD', 'VES', 'COP'
+  amountLocal  Float?   // Original amount in local currency
+  exchangeRate Float?   // Rate used at time of transaction
+
   session     RegisterSession @relation(fields: [sessionId], references: [id])
-  
-  // --- Inventory Linkage (New) ---
+
+  // --- Inventory Linkage ---
   supplyItemId  String?
   quantity      Float?   // Amount bought
-  unitCost      Float?   // Cost per unit (optional override)
-  
+  unitCost      Float?   // Cost per unit in USD (optional override)
+
   supplyItem    SupplyItem? @relation(fields: [supplyItemId], references: [id])
 }
 
@@ -278,7 +290,7 @@ model SupplyItem {
   tenantId        String
   name            String
   sku             String?
-  category        String?  // 'Lácteos', 'Vegetales'
+  category        String?  // 'Lacteos', 'Vegetales'
   defaultUnit     String   // 'kg', 'lt', 'und'
   currentCost     Float    @default(0)
   averageCost     Float    @default(0) // Weighted Average Cost
@@ -362,7 +374,12 @@ model PurchaseOrder {
   // Payment & Audit
   paymentMethod String   @default("cash") // 'cash', 'transfer', 'credit'
   registeredById String? // Employee who registered this purchase
-  
+
+  // Multi-currency fields
+  currency           String?  @default("USD")  // 'USD', 'VES', 'COP'
+  totalAmountLocal   Float?   // Amount in local currency
+  exchangeRate       Float?   // Rate used at time of purchase
+
   supplier      Supplier       @relation(fields: [supplierId], references: [id])
   tenant        Tenant         @relation(fields: [tenantId], references: [id])
   registeredBy  Employee?      @relation("RegisteredPurchases", fields: [registeredById], references: [id])
@@ -532,6 +549,25 @@ model ProductCostHistory {
   
   @@index([productId])
   @@index([changeDate])
+}
+
+// --- MODULE: CURRENCIES ---
+
+model Currency {
+  id           String   @id @default(uuid())
+  tenantId     String
+  code         String   // 'USD', 'VES', 'COP'
+  name         String   // 'Dolar', 'Bolivar', 'Peso Colombiano'
+  symbol       String   // '$', 'Bs.', '$'
+  exchangeRate Float    @default(1)   // Units of THIS currency per 1 USD
+  isBase       Boolean  @default(false) // USD = true, non-editable
+  isActive     Boolean  @default(true)
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, code])
 }
 
 // --- MODULE: KITCHEN ACTIVITY ---

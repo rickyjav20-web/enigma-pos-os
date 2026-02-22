@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import {
     DollarSign, TrendingUp, AlertTriangle, CheckCircle2, Clock,
     Users, ArrowUpRight, ShoppingCart, ChevronDown, ChevronUp,
-    CalendarDays, BarChart3, Shield
+    CalendarDays, BarChart3, Shield, RefreshCw, Coins
 } from 'lucide-react';
 
 const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:4000/api/v1';
@@ -54,19 +54,32 @@ interface CashierStat {
     lastSession: string | null;
 }
 
-type TabType = 'today' | 'sessions' | 'cashiers';
+interface CurrencyItem {
+    id: string;
+    code: string;
+    name: string;
+    symbol: string;
+    exchangeRate: number;
+    isBase: boolean;
+    isActive: boolean;
+    updatedAt: string;
+}
+
+type TabType = 'today' | 'sessions' | 'cashiers' | 'currencies';
 
 export default function RegisterAdminPage() {
     const [activeTab, setActiveTab] = useState<TabType>('today');
     const [summary, setSummary] = useState<DailySummary | null>(null);
     const [sessions, setSessions] = useState<SessionView[]>([]);
     const [cashierStats, setCashierStats] = useState<CashierStat[]>([]);
+    const [currencies, setCurrencies] = useState<CurrencyItem[]>([]);
     const [expandedSession, setExpandedSession] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         loadData();
+        loadCurrencies();
     }, [selectedDate]);
 
     const loadData = async () => {
@@ -94,12 +107,25 @@ export default function RegisterAdminPage() {
         }
     };
 
+    const loadCurrencies = async () => {
+        try {
+            // Seed first (creates USD/VES/COP if not exist), then load
+            await fetch(`${API_URL}/currencies/seed`, { method: 'POST', headers: TENANT_HEADER });
+            const res = await fetch(`${API_URL}/currencies`, { headers: TENANT_HEADER });
+            const data = await res.json();
+            setCurrencies(Array.isArray(data) ? data : []);
+        } catch (e) {
+            console.error('Failed to load currencies', e);
+        }
+    };
+
     const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
     const tabs: { id: TabType; label: string; icon: any }[] = [
         { id: 'today', label: 'Resumen del Día', icon: CalendarDays },
         { id: 'sessions', label: 'Sesiones', icon: Clock },
         { id: 'cashiers', label: 'Rendimiento', icon: BarChart3 },
+        { id: 'currencies', label: 'Monedas & Tasas', icon: Coins },
     ];
 
     return (
@@ -157,6 +183,12 @@ export default function RegisterAdminPage() {
                         />
                     )}
                     {activeTab === 'cashiers' && <CashierStatsView stats={cashierStats} fmt={fmt} />}
+                    {activeTab === 'currencies' && (
+                        <CurrenciesView
+                            currencies={currencies}
+                            onUpdated={loadCurrencies}
+                        />
+                    )}
                 </>
             )}
         </div>
@@ -497,6 +529,137 @@ function TypeBadge({ type }: { type: string }) {
         <span className={`text-xs px-2 py-0.5 rounded-full ${styles[type] || 'bg-white/10 text-white/50'}`}>
             {labels[type] || type}
         </span>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════
+// CURRENCIES & EXCHANGE RATES TAB
+// ═══════════════════════════════════════════════════════════
+function CurrenciesView({ currencies, onUpdated }: { currencies: CurrencyItem[]; onUpdated: () => void }) {
+    const [rates, setRates] = useState<Record<string, string>>({});
+    const [saving, setSaving] = useState<Record<string, boolean>>({});
+    const [saved, setSaved] = useState<Record<string, boolean>>({});
+
+    const FLAG: Record<string, string> = { USD: '🇺🇸', VES: '🇻🇪', COP: '🇨🇴' };
+
+    const handleUpdate = async (code: string) => {
+        const newRate = parseFloat(rates[code]);
+        if (isNaN(newRate) || newRate <= 0) return;
+        setSaving(s => ({ ...s, [code]: true }));
+        try {
+            await fetch(`${API_URL}/currencies/${code}`, {
+                method: 'PUT',
+                headers: TENANT_HEADER,
+                body: JSON.stringify({ exchangeRate: newRate })
+            });
+            setSaved(s => ({ ...s, [code]: true }));
+            setRates(r => ({ ...r, [code]: '' }));
+            setTimeout(() => setSaved(s => ({ ...s, [code]: false })), 2000);
+            onUpdated();
+        } catch (e) {
+            console.error('Failed to update rate', e);
+        } finally {
+            setSaving(s => ({ ...s, [code]: false }));
+        }
+    };
+
+    if (currencies.length === 0) {
+        return (
+            <div className="text-center py-20 text-white/30">
+                <Coins className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>Cargando monedas...</p>
+            </div>
+        );
+    }
+
+    // Sort: USD first, then others
+    const sorted = [...currencies].sort((a, b) => (a.isBase ? -1 : b.isBase ? 1 : a.code.localeCompare(b.code)));
+
+    return (
+        <div className="space-y-4 max-w-2xl">
+            <p className="text-sm text-white/40">
+                Las tasas de cambio se expresan en unidades de cada moneda por 1 USD.
+                El dolar (USD) es la moneda base del sistema y no puede modificarse.
+            </p>
+
+            {sorted.map(currency => (
+                <Card key={currency.code} className={`border ${currency.isBase ? 'bg-slate-900 border-white/5' : 'bg-slate-900 border-slate-700'}`}>
+                    <CardContent className="py-4">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <span className="text-3xl">{FLAG[currency.code] || '🌐'}</span>
+                                <div>
+                                    <p className="font-bold text-white flex items-center gap-2">
+                                        {currency.name}
+                                        <span className="text-xs text-white/30 font-mono">({currency.code})</span>
+                                        {currency.isBase && (
+                                            <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">Base</span>
+                                        )}
+                                    </p>
+                                    <p className="text-sm text-white/50 mt-0.5">
+                                        Tasa actual:&nbsp;
+                                        <span className="font-mono font-bold text-white/80">
+                                            {currency.exchangeRate.toLocaleString()} {currency.symbol} = $1 USD
+                                        </span>
+                                    </p>
+                                    {!currency.isBase && (
+                                        <p className="text-xs text-white/25 mt-0.5">
+                                            Actualizado: {new Date(currency.updatedAt).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {!currency.isBase && (
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/40 font-mono">
+                                            {currency.symbol}
+                                        </span>
+                                        <input
+                                            type="number"
+                                            placeholder={String(currency.exchangeRate)}
+                                            value={rates[currency.code] || ''}
+                                            onChange={e => setRates(r => ({ ...r, [currency.code]: e.target.value }))}
+                                            onKeyDown={e => e.key === 'Enter' && handleUpdate(currency.code)}
+                                            className="bg-black/40 border border-white/10 rounded-lg pl-8 pr-3 py-2 text-sm text-white font-mono w-36 focus:outline-none focus:border-emerald-500/50"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => handleUpdate(currency.code)}
+                                        disabled={saving[currency.code] || !rates[currency.code]}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5
+                                            ${saved[currency.code]
+                                                ? 'bg-emerald-500/20 text-emerald-400'
+                                                : saving[currency.code]
+                                                    ? 'bg-white/5 text-white/30'
+                                                    : rates[currency.code]
+                                                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                                                        : 'bg-white/5 text-white/20 cursor-not-allowed'
+                                            }`}
+                                    >
+                                        {saved[currency.code] ? (
+                                            <><CheckCircle2 className="w-3.5 h-3.5" /> Guardado</>
+                                        ) : saving[currency.code] ? (
+                                            <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Guardando</>
+                                        ) : (
+                                            'Actualizar'
+                                        )}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            ))}
+
+            <div className="mt-6 p-4 bg-white/5 rounded-xl border border-white/5 text-sm text-white/40 space-y-1">
+                <p className="font-semibold text-white/60">Como funciona:</p>
+                <p>• Todo se almacena internamente en USD como moneda base.</p>
+                <p>• Las tasas aqui configuradas se usan en OPS para convertir montos en Bs. o COP a USD.</p>
+                <p>• Caja Fisica: acepta USD y COP. Caja Electronica: acepta solo VES (Bs.).</p>
+            </div>
+        </div>
     );
 }
 

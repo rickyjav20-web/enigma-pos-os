@@ -8,15 +8,21 @@ export default async function registerRoutes(fastify: FastifyInstance) {
     // Helper: Get Tenant (uses middleware-resolved UUID, not raw header)
     const getTenant = (req: any) => req.tenantId as string;
 
-    // --- OPEN REGISTER ---
+    // --- OPEN REGISTER (DUAL: PHYSICAL + ELECTRONIC) ---
+    const cashBreakdownSchema = z.object({
+        startingCash: z.number().min(0),                 // USD equivalent total
+        startingBreakdown: z.record(z.string(), z.any()).optional()  // { USD:20, COP:150000, rates:{COP:4200} }
+    });
+
     const openSchema = z.object({
         employeeId: z.string(),
-        startingCash: z.number().min(0)
+        physical: cashBreakdownSchema,
+        electronic: cashBreakdownSchema
     });
 
     fastify.post('/register/open', async (request, reply) => {
         const tenantId = getTenant(request);
-        const { employeeId, startingCash } = openSchema.parse(request.body);
+        const { employeeId, physical, electronic } = openSchema.parse(request.body);
 
         // Security: Check employee exists and belongs to tenant
         const employee = await prisma.employee.findFirst({
@@ -26,43 +32,68 @@ export default async function registerRoutes(fastify: FastifyInstance) {
             return reply.status(403).send({ error: 'Employee not found or inactive' });
         }
 
-        // Check if already open (prevent double-open exploit)
+        // Check if already has any open session (prevent double-open)
         const existing = await prisma.registerSession.findFirst({
             where: { employeeId, status: 'open' }
         });
-
         if (existing) {
             return reply.status(400).send({ error: 'Register already open for this user' });
         }
 
-        // Security: Validate startingCash is reasonable (anti-exploit)
-        if (startingCash > 100000) {
+        // Validate amounts
+        if (physical.startingCash > 100000 || electronic.startingCash > 100000) {
             return reply.status(400).send({ error: 'Starting cash amount exceeds maximum allowed' });
         }
 
-        const session = await prisma.registerSession.create({
-            data: {
-                tenantId,
-                employeeId,
-                startingCash,
-                status: 'open'
-            }
+        // Create both sessions atomically
+        const [physicalSession, electronicSession] = await prisma.$transaction(async (tx) => {
+            const phys = await tx.registerSession.create({
+                data: {
+                    tenantId,
+                    employeeId,
+                    registerType: 'PHYSICAL',
+                    startingCash: physical.startingCash,
+                    startingBreakdown: physical.startingBreakdown ?? undefined,
+                    status: 'open'
+                }
+            });
+
+            const elec = await tx.registerSession.create({
+                data: {
+                    tenantId,
+                    employeeId,
+                    registerType: 'ELECTRONIC',
+                    startingCash: electronic.startingCash,
+                    startingBreakdown: electronic.startingBreakdown ?? undefined,
+                    linkedSessionId: phys.id,
+                    status: 'open'
+                }
+            });
+
+            // Link physical -> electronic
+            await tx.registerSession.update({
+                where: { id: phys.id },
+                data: { linkedSessionId: elec.id }
+            });
+
+            return [phys, elec];
         });
 
-        return session;
+        return { physicalSession, electronicSession };
     });
 
-    // --- CLOSE REGISTER ---
+    // --- CLOSE REGISTER (one session at a time) ---
     const closeSchema = z.object({
         sessionId: z.string(),
         declaredCash: z.number().min(0),
         declaredCard: z.number().min(0),
         declaredTransfer: z.number().min(0),
+        declaredBreakdown: z.record(z.string(), z.any()).optional(), // { USD:{amount,rate,usdEquiv}, COP:{...} }
         notes: z.string().optional()
     });
 
     fastify.post('/register/close', async (request, reply) => {
-        const { sessionId, declaredCash, declaredCard, declaredTransfer, notes } = closeSchema.parse(request.body);
+        const { sessionId, declaredCash, declaredCard, declaredTransfer, declaredBreakdown, notes } = closeSchema.parse(request.body);
 
         // Security: Verify session exists and is open
         const existingSession = await prisma.registerSession.findUnique({
@@ -92,7 +123,8 @@ export default async function registerRoutes(fastify: FastifyInstance) {
                 declaredCash,
                 declaredCard,
                 declaredTransfer,
-                expectedCash, // NOW stored for audit trail
+                declaredBreakdown: declaredBreakdown ?? undefined,
+                expectedCash,
                 notes: notes || (Math.abs(difference) > 0.01
                     ? `Diferencia: $${difference.toFixed(2)}. ${notes || ''}`
                     : notes),
@@ -112,13 +144,23 @@ export default async function registerRoutes(fastify: FastifyInstance) {
         };
     });
 
-    // --- GET CURRENT STATUS ---
+    // --- GET CURRENT STATUS (returns { physical, electronic }) ---
     fastify.get('/register/status/:employeeId', async (request, reply) => {
         const { employeeId } = request.params as { employeeId: string };
-        const session = await prisma.registerSession.findFirst({
+
+        const openSessions = await prisma.registerSession.findMany({
             where: { employeeId, status: 'open' }
         });
-        return session || { status: 'closed' };
+
+        if (openSessions.length === 0) {
+            return { physical: null, electronic: null, status: 'closed' };
+        }
+
+        const physical = openSessions.find(s => s.registerType === 'PHYSICAL')
+            || openSessions[0]; // backwards compat: legacy sessions have no type
+        const electronic = openSessions.find(s => s.registerType === 'ELECTRONIC') || null;
+
+        return { physical, electronic, status: 'open' };
     });
 
     // --- GET SESSION TOTALS ---
@@ -402,9 +444,14 @@ export default async function registerRoutes(fastify: FastifyInstance) {
     // --- KEY: TRANSACTION WITH INVENTORY LOGIC ---
     const transactionSchema = z.object({
         sessionId: z.string(),
-        amount: z.number(),
+        amount: z.number(),        // USD equivalent (always)
         type: z.enum(['SALE', 'PURCHASE', 'EXPENSE', 'DEPOSIT', 'WITHDRAWAL']),
         description: z.string(),
+        // Multi-currency fields
+        currency: z.string().default('USD'),       // 'USD', 'VES', 'COP'
+        amountLocal: z.number().optional().nullable(),  // amount in local currency
+        exchangeRate: z.number().optional().nullable(), // rate used
+        // Inventory linkage
         supplyItemId: z.string().optional(),
         quantity: z.number().optional().nullable(),
         unitCost: z.number().optional().nullable()
@@ -427,6 +474,9 @@ export default async function registerRoutes(fastify: FastifyInstance) {
                     amount: data.amount,
                     type: data.type,
                     description: data.description,
+                    currency: data.currency || 'USD',
+                    amountLocal: data.amountLocal || null,
+                    exchangeRate: data.exchangeRate || null,
                     supplyItemId: data.supplyItemId,
                     quantity: data.quantity || null,
                     unitCost: data.unitCost || null,

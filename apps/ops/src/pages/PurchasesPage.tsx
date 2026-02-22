@@ -8,6 +8,8 @@ import {
     findPurchaseUnit
 } from '../utils/unitConversion';
 import { useAuth } from '../context/AuthContext';
+import { useCurrencies } from '../hooks/useCurrencies';
+import CurrencyInput, { CurrencyValue } from '../components/CurrencyInput';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 const TENANT_HEADER = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
@@ -62,6 +64,12 @@ export default function PurchasesPage() {
 
     // Payment State
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'credit'>('cash');
+
+    // Currency State
+    const { currencies, getRate } = useCurrencies();
+    const [purchaseCurrencyVal, setPurchaseCurrencyVal] = useState<CurrencyValue>({
+        currency: 'USD', amountLocal: 0, amountUSD: 0, exchangeRate: 1
+    });
 
     // Items State
     const [allItems, setAllItems] = useState<SupplyItem[]>([]);
@@ -312,11 +320,19 @@ export default function PurchasesPage() {
                 method: 'POST',
                 headers: TENANT_HEADER,
                 body: JSON.stringify({
-                    tenantId: 'enigma_hq', // TODO: Get from context/env
+                    tenantId: 'enigma_hq',
                     supplierId: selectedSupplier.id,
                     status: 'confirmed',
                     paymentMethod,
                     registeredById: employee?.id,
+                    // Multi-currency fields
+                    currency: purchaseCurrencyVal.currency,
+                    totalAmountLocal: purchaseCurrencyVal.currency !== 'USD' && purchaseCurrencyVal.amountLocal > 0
+                        ? purchaseCurrencyVal.amountLocal
+                        : null,
+                    exchangeRate: purchaseCurrencyVal.currency !== 'USD'
+                        ? purchaseCurrencyVal.exchangeRate
+                        : null,
                     items: cart.filter(c => c.quantity > 0).map(c => ({
                         supplyItemId: c.id,
                         quantity: c.normalizedQuantity,  // Send normalized quantity
@@ -775,17 +791,36 @@ export default function PurchasesPage() {
                                             : 'bg-black/30 border-white/10 text-white/50 hover:bg-white/5'
                                             }`}
                                     >
-                                        {method === 'cash' ? 'Efectivo' : method === 'transfer' ? 'Transferencia' : 'Crédito'}
+                                        {method === 'cash' ? 'Efectivo' : method === 'transfer' ? 'Transferencia' : 'Credito'}
                                     </button>
                                 ))}
                             </div>
                             {paymentMethod === 'cash' && (
                                 <p className="text-xs text-amber-400 flex items-center gap-1.5 bg-amber-500/10 p-2 rounded-lg">
                                     <Info className="w-3 h-3" />
-                                    Se descontará automáticamente de la Caja.
+                                    Se descontara automaticamente de la Caja.
                                 </p>
                             )}
                         </div>
+
+                        {/* Currency Selector */}
+                        {currencies.length > 0 && (
+                            <div className="rounded-2xl bg-enigma-gray p-4 border border-white/5 space-y-3">
+                                <p className="text-sm text-white/50">Moneda de Pago</p>
+                                <CurrencyInput
+                                    currencies={currencies}
+                                    defaultCurrency="USD"
+                                    placeholder={total.toFixed(2)}
+                                    label={`Total en moneda seleccionada (total USD: $${total.toFixed(2)})`}
+                                    onChange={val => setPurchaseCurrencyVal(val)}
+                                />
+                                {purchaseCurrencyVal.currency !== 'USD' && purchaseCurrencyVal.amountLocal > 0 && (
+                                    <p className="text-xs text-white/40 italic pl-1">
+                                        Esto es referencial — el sistema guarda el total en USD.
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </main>

@@ -398,8 +398,10 @@ export default async function (fastify: FastifyInstance) {
     });
 
     fastify.post('/purchases', async (request, reply) => {
-        const { supplierId, items = [], tenantId, status, paymentMethod, registeredById } = request.body as any;
+        const { supplierId, items = [], tenantId, status, paymentMethod, registeredById,
+                currency, totalAmountLocal, exchangeRate } = request.body as any;
         // items = [{ supplyItemId, quantity, unitCost }]
+        // currency/totalAmountLocal/exchangeRate: optional multi-currency fields
 
         const totalAmount = items.reduce((acc: number, item: any) => acc + (item.quantity * item.unitCost), 0);
 
@@ -411,6 +413,9 @@ export default async function (fastify: FastifyInstance) {
                 paymentMethod: paymentMethod || 'cash',
                 registeredById,
                 totalAmount,
+                currency: currency || 'USD',
+                totalAmountLocal: totalAmountLocal || null,
+                exchangeRate: exchangeRate || null,
                 lines: {
                     create: items.map((item: any) => ({
                         supplyItemId: item.supplyItemId,

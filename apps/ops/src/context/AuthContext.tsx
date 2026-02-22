@@ -13,15 +13,31 @@ interface RegisterSession {
     id: string;
     startedAt: string;
     status: 'open' | 'closed';
+    registerType?: 'PHYSICAL' | 'ELECTRONIC';
+    linkedSessionId?: string | null;
+    startingCash?: number;
+    startingBreakdown?: any;
+}
+
+export interface OpenRegisterPayload {
+    physical: {
+        startingCash: number;
+        startingBreakdown?: Record<string, any>;
+    };
+    electronic: {
+        startingCash: number;
+        startingBreakdown?: Record<string, any>;
+    };
 }
 
 interface AuthContextType {
     employee: Employee | null;
-    session: RegisterSession | null;
+    session: RegisterSession | null;            // physical session (backwards compat)
+    electronicSession: RegisterSession | null;  // electronic session (VES)
     isLoading: boolean;
     login: (pin: string) => Promise<boolean | string>;
     logout: () => void;
-    openRegister: (amount: number) => Promise<void>;
+    openRegister: (payload: OpenRegisterPayload) => Promise<void>;
     closeRegister: (data: any) => Promise<void>;
 }
 
@@ -34,6 +50,7 @@ const TENANT_ID = 'enigma_hq'; // Hardcoded for MVP
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [employee, setEmployee] = useState<Employee | null>(null);
     const [session, setSession] = useState<RegisterSession | null>(null);
+    const [electronicSession, setElectronicSession] = useState<RegisterSession | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     // Load from localStorage on mount
@@ -59,10 +76,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const res = await axios.get(`${API_URL}/register/status/${employeeId}`, {
                 headers: { 'x-tenant-id': TENANT_ID }
             });
-            if (res.data && res.data.status === 'open') {
-                setSession(res.data);
+            const data = res.data;
+
+            if (data.status === 'open') {
+                // New API returns { physical, electronic, status }
+                if (data.physical) {
+                    setSession(data.physical);
+                    setElectronicSession(data.electronic || null);
+                } else {
+                    // Legacy: single session returned directly
+                    setSession(data);
+                    setElectronicSession(null);
+                }
             } else {
                 setSession(null);
+                setElectronicSession(null);
             }
         } catch (e) {
             console.error("Failed to check session", e);
@@ -97,7 +125,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             setEmployee(empData);
-            setSession(activeSession);
+            // activeSession from login response may be legacy shape; normalize it
+            if (activeSession?.physical) {
+                setSession(activeSession.physical);
+                setElectronicSession(activeSession.electronic || null);
+            } else {
+                setSession(activeSession || null);
+                setElectronicSession(null);
+            }
             localStorage.setItem('ops_employee', JSON.stringify(empData));
             return true;
         } catch (e) {
@@ -109,32 +144,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = () => {
         setEmployee(null);
         setSession(null);
+        setElectronicSession(null);
         localStorage.removeItem('ops_employee');
     };
 
-    const openRegister = async (startingCash: number) => {
+    const openRegister = async (payload: OpenRegisterPayload) => {
         if (!employee) return;
         const res = await axios.post(`${API_URL}/register/open`, {
             employeeId: employee.id,
-            startingCash
+            physical: payload.physical,
+            electronic: payload.electronic
         }, { headers: { 'x-tenant-id': TENANT_ID } });
 
-        setSession(res.data);
+        const { physicalSession, electronicSession: elec } = res.data;
+        setSession(physicalSession);
+        setElectronicSession(elec || null);
     };
 
     const closeRegister = async (data: any) => {
-        if (!session) return;
-        await axios.post(`${API_URL}/register/close`, {
-            sessionId: session.id,
-            ...data
-        }, { headers: { 'x-tenant-id': TENANT_ID } });
+        // data can be: { physical: {...closeData}, electronic: {...closeData} }
+        // or legacy: { sessionId, declaredCash, ... }
+        if (data.physical && session) {
+            await axios.post(`${API_URL}/register/close`, {
+                sessionId: session.id,
+                ...data.physical
+            }, { headers: { 'x-tenant-id': TENANT_ID } });
+        }
 
-        // Auto-logout after close is the safest flow
+        if (data.electronic && electronicSession) {
+            await axios.post(`${API_URL}/register/close`, {
+                sessionId: electronicSession.id,
+                ...data.electronic
+            }, { headers: { 'x-tenant-id': TENANT_ID } });
+        }
+
+        // Legacy close (single session)
+        if (!data.physical && !data.electronic && session) {
+            await axios.post(`${API_URL}/register/close`, {
+                sessionId: session.id,
+                ...data
+            }, { headers: { 'x-tenant-id': TENANT_ID } });
+        }
+
+        // Auto-logout after close
         logout();
     };
 
     return (
-        <AuthContext.Provider value={{ employee, session, isLoading, login, logout, openRegister, closeRegister }}>
+        <AuthContext.Provider value={{ employee, session, electronicSession, isLoading, login, logout, openRegister, closeRegister }}>
             {children}
         </AuthContext.Provider>
     );
