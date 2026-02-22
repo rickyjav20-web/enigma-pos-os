@@ -6,39 +6,40 @@ import {
     ChevronDown
 } from 'lucide-react';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types — match API response field names exactly ───────────────────────────
 interface WasteDashboard {
-    period: { from: string; to: string; days: number };
+    period: { from: string; to: string };
     kpis: {
         totalCost: number;
         totalEvents: number;
         totalQtyLost: number;
         worstItem: { name: string; costLost: number } | null;
-        trendPct: number;
+        trendPct: number | null;
     };
     byItem: {
-        supplyItemId: string;
+        itemId: string;
         name: string;
-        zone: number | null;
-        totalQty: number;
-        totalCostLost: number;
-        eventCount: number;
+        zone: number;
+        qty: number;
+        costLost: number;
+        events: number;
+        unit: string;
     }[];
     byType: {
-        wasteType: string;
+        type: string;
         label: string;
         count: number;
-        totalCostLost: number;
+        costLost: number;
         pct: number;
     }[];
-    byZone: { zone: string; count: number; totalCostLost: number }[];
+    byZone: { zone: number; label: string; count: number; costLost: number }[];
     byEmployee: {
         employeeId: string;
         name: string;
         count: number;
-        totalCostLost: number;
+        costLost: number;
     }[];
-    timeline: { date: string; count: number; totalCostLost: number }[];
+    timeline: { date: string; count: number; costLost: number }[];
     alerts: { itemId: string; name: string; message: string; severity: string }[];
 }
 
@@ -63,21 +64,10 @@ function getDateRange(days: number) {
     };
 }
 
-const WASTE_TYPE_LABELS: Record<string, string> = {
-    WRONG_ORDER: 'Pedido Incorrecto',
-    DAMAGED: 'Dañado',
-    EXPIRED: 'Vencido',
-    OVERPRODUCTION: 'Sobreproducción',
-    SPILLAGE: 'Derrame',
-    QUALITY: 'Calidad',
-    OTHER: 'Otro',
-};
-
-const ZONE_LABELS: Record<string, string> = {
-    '1': 'Zona 1 — Barra',
-    '2': 'Zona 2 — Cocina',
-    '3': 'Zona 3 — Almacén',
-    'unknown': 'Sin zona',
+const ZONE_LABELS: Record<number, string> = {
+    1: 'Zona 1 — Barra',
+    2: 'Zona 2 — Cocina',
+    3: 'Zona 3 — Almacén',
 };
 
 type TabKey = 'items' | 'type' | 'zone' | 'employee' | 'timeline';
@@ -110,8 +100,9 @@ export default function WasteDashboardPage() {
     const periodLabel = PERIODS.find(p => p.days === selectedDays)?.label || `${selectedDays} días`;
     const trend = data?.kpis.trendPct ?? 0;
 
+    // h-screen matches the HQ InventoryPage pattern — avoids h-full=0 inside DashboardLayout's p-8 wrapper
     return (
-        <div className="h-full flex flex-col bg-zinc-950 overflow-hidden">
+        <div className="h-screen flex flex-col bg-zinc-950 overflow-hidden">
             {/* Header */}
             <div className="px-6 pt-6 pb-4 border-b border-white/5 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-3">
@@ -129,7 +120,7 @@ export default function WasteDashboardPage() {
                     <div className="relative">
                         <button
                             onClick={() => setPeriodOpen(v => !v)}
-                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-300 bg-white/5 hover:bg-white/10 rounded-xl border border-white/8 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-300 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-colors"
                         >
                             <Calendar size={14} />
                             {periodLabel}
@@ -153,14 +144,14 @@ export default function WasteDashboardPage() {
                     <button
                         onClick={load}
                         disabled={loading}
-                        className="p-2 text-zinc-500 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl border border-white/8 transition-colors"
+                        className="p-2 text-zinc-500 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-colors"
                     >
                         <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                     </button>
                 </div>
             </div>
 
-            {/* Body */}
+            {/* Scrollable Body */}
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
                 {loading && (
                     <div className="flex items-center justify-center h-40 gap-3 text-zinc-500">
@@ -176,6 +167,10 @@ export default function WasteDashboardPage() {
                     </div>
                 )}
 
+                {!loading && !error && !data && (
+                    <EmptyState label="Sin datos disponibles" />
+                )}
+
                 {!loading && data && (
                     <>
                         {/* KPI Cards */}
@@ -183,7 +178,7 @@ export default function WasteDashboardPage() {
                             <KpiCard
                                 label="Costo Total Perdido"
                                 value={fmtCost(data.kpis.totalCost)}
-                                sub={`${periodLabel}`}
+                                sub={periodLabel}
                                 accent="red"
                                 icon={<Trash2 size={18} />}
                                 trend={trend}
@@ -191,7 +186,7 @@ export default function WasteDashboardPage() {
                             <KpiCard
                                 label="Eventos Reportados"
                                 value={String(data.kpis.totalEvents)}
-                                sub="total"
+                                sub="registros en período"
                                 accent="amber"
                                 icon={<Tag size={18} />}
                             />
@@ -205,7 +200,7 @@ export default function WasteDashboardPage() {
                             />
                             <KpiCard
                                 label="Tendencia"
-                                value={trend === 0 ? '—' : `${trend > 0 ? '+' : ''}${trend.toFixed(0)}%`}
+                                value={!trend ? '—' : `${trend > 0 ? '+' : ''}${trend.toFixed(0)}%`}
                                 sub="vs período anterior"
                                 accent={trend > 10 ? 'red' : trend < -10 ? 'emerald' : 'zinc'}
                                 icon={trend > 0 ? <TrendingUp size={18} /> : trend < 0 ? <TrendingDown size={18} /> : <Minus size={18} />}
@@ -218,15 +213,16 @@ export default function WasteDashboardPage() {
                                 {data.alerts.map((a, i) => (
                                     <div
                                         key={i}
-                                        className={`flex items-start gap-3 p-3 rounded-xl border text-sm ${a.severity === 'HIGH'
-                                            ? 'bg-red-500/8 border-red-500/20 text-red-300'
-                                            : 'bg-amber-500/8 border-amber-500/20 text-amber-300'
+                                        className={`flex items-start gap-3 p-3 rounded-xl border text-sm ${
+                                            a.severity === 'high'
+                                                ? 'bg-red-500/8 border-red-500/20 text-red-300'
+                                                : 'bg-amber-500/8 border-amber-500/20 text-amber-300'
                                         }`}
                                     >
                                         <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
                                         <div>
                                             <span className="font-semibold">{a.name}</span>
-                                            <span className="text-current/70 ml-2">{a.message}</span>
+                                            <span className="opacity-70 ml-2">{a.message}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -246,9 +242,10 @@ export default function WasteDashboardPage() {
                                     <button
                                         key={t.key}
                                         onClick={() => setTab(t.key)}
-                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${tab === t.key
-                                            ? 'bg-white/10 text-white'
-                                            : 'text-zinc-500 hover:text-zinc-300'
+                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                                            tab === t.key
+                                                ? 'bg-white/10 text-white'
+                                                : 'text-zinc-500 hover:text-zinc-300'
                                         }`}
                                     >
                                         {t.icon}
@@ -262,23 +259,23 @@ export default function WasteDashboardPage() {
                                 <div className="space-y-1">
                                     {data.byItem.length === 0 && <EmptyState label="Sin mermas registradas en este período" />}
                                     {data.byItem.map((item, i) => (
-                                        <div key={item.supplyItemId} className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
+                                        <div key={item.itemId} className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
                                             <span className="text-xs text-zinc-600 font-mono w-5">{i + 1}</span>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-semibold text-white truncate">{item.name}</p>
                                                 <p className="text-xs text-zinc-500">
-                                                    {item.eventCount} eventos · {ZONE_LABELS[String(item.zone)] || 'Sin zona'}
+                                                    {item.events} evento{item.events !== 1 ? 's' : ''} · {ZONE_LABELS[item.zone] || 'Sin zona'}
                                                 </p>
                                             </div>
                                             <div className="text-right flex-shrink-0">
-                                                <p className="text-sm font-bold text-red-400">{fmtCost(item.totalCostLost)}</p>
-                                                <p className="text-xs text-zinc-600">{item.totalQty.toLocaleString('es', { maximumFractionDigits: 2 })} unidades</p>
+                                                <p className="text-sm font-bold text-red-400">{fmtCost(item.costLost)}</p>
+                                                <p className="text-xs text-zinc-600">{item.qty.toLocaleString('es', { maximumFractionDigits: 2 })} {item.unit}</p>
                                             </div>
-                                            {/* Cost bar */}
+                                            {/* Cost bar relative to total */}
                                             <div className="w-16 h-1.5 bg-white/5 rounded-full overflow-hidden flex-shrink-0">
                                                 <div
                                                     className="h-full bg-red-500/60 rounded-full"
-                                                    style={{ width: `${Math.min(100, (item.totalCostLost / (data.kpis.totalCost || 1)) * 100)}%` }}
+                                                    style={{ width: `${Math.min(100, (item.costLost / (data.kpis.totalCost || 1)) * 100)}%` }}
                                                 />
                                             </div>
                                         </div>
@@ -286,19 +283,19 @@ export default function WasteDashboardPage() {
                                 </div>
                             )}
 
-                            {/* Tab: By Type */}
+                            {/* Tab: By Type / Cause */}
                             {tab === 'type' && (
                                 <div className="space-y-2">
-                                    {data.byType.length === 0 && <EmptyState label="Sin datos de tipo de merma" />}
+                                    {data.byType.length === 0 && <EmptyState label="Sin datos de causa" />}
                                     {data.byType.map(t => (
-                                        <div key={t.wasteType} className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                                        <div key={t.type} className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
                                             <div className="flex items-center justify-between mb-2">
                                                 <div>
-                                                    <p className="text-sm font-semibold text-white">{WASTE_TYPE_LABELS[t.wasteType] || t.wasteType}</p>
+                                                    <p className="text-sm font-semibold text-white">{t.label}</p>
                                                     <p className="text-xs text-zinc-500">{t.count} eventos</p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-sm font-bold text-red-400">{fmtCost(t.totalCostLost)}</p>
+                                                    <p className="text-sm font-bold text-red-400">{fmtCost(t.costLost)}</p>
                                                     <p className="text-xs text-zinc-500">{t.pct.toFixed(1)}% del total</p>
                                                 </div>
                                             </div>
@@ -320,9 +317,9 @@ export default function WasteDashboardPage() {
                                     {data.byZone.map(z => (
                                         <div key={z.zone} className="p-5 rounded-xl bg-white/[0.02] border border-white/5 text-center">
                                             <MapPin size={24} className="text-zinc-500 mx-auto mb-2" />
-                                            <p className="text-sm font-semibold text-white mb-1">{ZONE_LABELS[z.zone] || `Zona ${z.zone}`}</p>
-                                            <p className="text-2xl font-bold text-red-400">{fmtCost(z.totalCostLost)}</p>
-                                            <p className="text-xs text-zinc-500 mt-1">{z.count} eventos</p>
+                                            <p className="text-sm font-semibold text-white mb-1">{z.label || ZONE_LABELS[z.zone] || `Zona ${z.zone}`}</p>
+                                            <p className="text-2xl font-bold text-red-400">{fmtCost(z.costLost)}</p>
+                                            <p className="text-xs text-zinc-500 mt-1">{z.count} evento{z.count !== 1 ? 's' : ''}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -343,9 +340,9 @@ export default function WasteDashboardPage() {
                                                 <p className="text-xs text-zinc-500">{emp.count} eventos reportados</p>
                                             </div>
                                             <div className="text-right flex-shrink-0">
-                                                <p className="text-sm font-bold text-red-400">{fmtCost(emp.totalCostLost)}</p>
+                                                <p className="text-sm font-bold text-red-400">{fmtCost(emp.costLost)}</p>
                                                 <p className="text-xs text-zinc-500">
-                                                    ${(emp.totalCostLost / Math.max(emp.count, 1)).toFixed(2)} / evento
+                                                    ${(emp.costLost / Math.max(emp.count, 1)).toFixed(2)} / evento
                                                 </p>
                                             </div>
                                         </div>
@@ -356,12 +353,14 @@ export default function WasteDashboardPage() {
                             {/* Tab: Timeline */}
                             {tab === 'timeline' && (
                                 <div>
-                                    {data.timeline.length === 0 && <EmptyState label="Sin datos históricos" />}
+                                    {data.timeline.length === 0 && <EmptyState label="Sin datos históricos en este período" />}
                                     <div className="space-y-1">
                                         {data.timeline.map(day => {
-                                            const maxCost = Math.max(...data.timeline.map(d => d.totalCostLost), 0.01);
-                                            const barPct = (day.totalCostLost / maxCost) * 100;
-                                            const dateLabel = new Date(day.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+                                            const maxCost = Math.max(...data.timeline.map(d => d.costLost), 0.01);
+                                            const barPct = (day.costLost / maxCost) * 100;
+                                            const dateLabel = new Date(day.date + 'T12:00:00').toLocaleDateString('es-ES', {
+                                                weekday: 'short', day: 'numeric', month: 'short'
+                                            });
                                             return (
                                                 <div key={day.date} className="flex items-center gap-4 p-2">
                                                     <span className="text-xs text-zinc-500 w-28 flex-shrink-0 capitalize">{dateLabel}</span>
@@ -372,7 +371,7 @@ export default function WasteDashboardPage() {
                                                         />
                                                     </div>
                                                     <div className="text-right flex-shrink-0 w-20">
-                                                        <p className="text-xs font-bold text-red-400">{fmtCost(day.totalCostLost)}</p>
+                                                        <p className="text-xs font-bold text-red-400">{fmtCost(day.costLost)}</p>
                                                         <p className="text-[10px] text-zinc-600">{day.count} eventos</p>
                                                     </div>
                                                 </div>
