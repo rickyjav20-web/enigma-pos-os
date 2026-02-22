@@ -1,0 +1,6 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/staff/Dockerfile"
+watchPatterns = [
+  "apps/staff/**"
+]

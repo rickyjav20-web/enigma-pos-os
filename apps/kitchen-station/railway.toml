@@ -1,0 +1,9 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/kitchen-station/Dockerfile"
+watchPatterns = [
+  "apps/kitchen-station/**",
+  "packages/types/**",
+  "package.json",
+  "package-lock.json"
+]
