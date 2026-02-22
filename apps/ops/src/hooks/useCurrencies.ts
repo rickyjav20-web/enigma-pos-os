@@ -49,23 +49,26 @@ export function useCurrencies() {
             }
         } catch { /* ignore */ }
 
+        const DEFAULTS: Currency[] = [
+            { id: 'usd', code: 'USD', name: 'Dolar', symbol: '$',   exchangeRate: 1,    isBase: true,  isActive: true },
+            { id: 'ves', code: 'VES', name: 'Bolivar', symbol: 'Bs.', exchangeRate: 55, isBase: false, isActive: true },
+            { id: 'cop', code: 'COP', name: 'Peso', symbol: '$',    exchangeRate: 4200, isBase: false, isActive: true },
+        ];
+
         // Fetch from API
         fetchCurrencies().then(data => {
-            globalCurrencies = data;
+            // Fall back to defaults if API returns empty (not yet seeded)
+            const final = data.length > 0 ? data : DEFAULTS;
+            globalCurrencies = final;
             globalFetchedAt = Date.now();
             try {
-                localStorage.setItem(CACHE_KEY, JSON.stringify({ data, fetchedAt: globalFetchedAt }));
+                localStorage.setItem(CACHE_KEY, JSON.stringify({ data: final, fetchedAt: globalFetchedAt }));
             } catch { /* ignore */ }
-            setCurrencies(data);
+            setCurrencies(final);
             setIsLoading(false);
         }).catch(() => {
             // Fallback to sane defaults if API is down
-            const defaults: Currency[] = [
-                { id: 'usd', code: 'USD', name: 'Dolar', symbol: '$',   exchangeRate: 1,    isBase: true,  isActive: true },
-                { id: 'ves', code: 'VES', name: 'Bolivar', symbol: 'Bs.', exchangeRate: 55, isBase: false, isActive: true },
-                { id: 'cop', code: 'COP', name: 'Peso', symbol: '$',    exchangeRate: 4200, isBase: false, isActive: true },
-            ];
-            setCurrencies(defaults);
+            setCurrencies(DEFAULTS);
             setIsLoading(false);
         });
     }, []);

@@ -109,8 +109,8 @@ export default function RegisterAdminPage() {
 
     const loadCurrencies = async () => {
         try {
-            // Seed first (creates USD/VES/COP if not exist), then load
-            await fetch(`${API_URL}/currencies/seed`, { method: 'POST', headers: TENANT_HEADER });
+            // Seed first — no Content-Type header (empty body POST)
+            await fetch(`${API_URL}/currencies/seed`, { method: 'POST', headers: { 'x-tenant-id': 'enigma_hq' } });
             const res = await fetch(`${API_URL}/currencies`, { headers: TENANT_HEADER });
             const data = await res.json();
             setCurrencies(Array.isArray(data) ? data : []);
