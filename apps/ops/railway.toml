@@ -1,0 +1,9 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/ops/Dockerfile"
+watchPatterns = [
+  "apps/ops/**",
+  "packages/types/**",
+  "package.json",
+  "package-lock.json"
+]
