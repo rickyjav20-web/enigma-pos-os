@@ -373,7 +373,7 @@ export default function InventoryPage() {
                                     <tr key={item.id} className="hover:bg-zinc-800/50 group cursor-pointer" onClick={() => handleEdit(item)}>
                                         <td className="p-4">
                                             <div className="font-medium text-white">{item.name}</div>
-                                            <div className="text-xs text-zinc-500 bg-zinc-800/50 px-1 rounded inline-block">SKU: {item.id.slice(0, 6)}</div>
+                                            <div className="text-xs text-zinc-500 bg-zinc-800/50 px-1 rounded inline-block">{item.sku || item.id.slice(0, 8)}</div>
                                         </td>
                                         <td className="p-4 text-zinc-300">${item.price.toFixed(2)}</td>
                                         <td className="p-4 text-zinc-400">${item.cost.toFixed(2)}</td>
