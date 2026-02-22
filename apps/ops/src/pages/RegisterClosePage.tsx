@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCurrencies } from '../hooks/useCurrencies';
-import { useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle, Calculator, Wallet, Smartphone, ArrowRight } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
@@ -12,12 +11,13 @@ type Step = 'physical' | 'electronic' | 'review';
 export default function RegisterClosePage() {
     const { session, electronicSession, closeRegister } = useAuth();
     const { getRate } = useCurrencies();
-    const navigate = useNavigate();
     const [step, setStep] = useState<Step>('physical');
     const [isLoading, setIsLoading] = useState(false);
 
     const [physAudit, setPhysAudit] = useState<any>(null);
     const [elecAudit, setElecAudit] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [done, setDone] = useState(false);
 
     // Physical fields
     const [physUSD, setPhysUSD] = useState('');
@@ -48,6 +48,7 @@ export default function RegisterClosePage() {
 
     const handleConfirmClose = async () => {
         setIsLoading(true);
+        setError(null);
         try {
             await closeRegister({
                 physical: {
@@ -70,15 +71,29 @@ export default function RegisterClosePage() {
                     notes
                 }
             });
-            navigate('/');
-        } catch (error) {
-            console.error(error);
+            // closeRegister calls logout() which triggers LockScreen — show brief success first
+            setDone(true);
+        } catch (err: any) {
+            const msg = err?.message || 'Error al cerrar la caja. Intenta de nuevo.';
+            setError(msg);
+            console.error('[RegisterClose] Error:', err);
         } finally {
             setIsLoading(false);
         }
     };
 
     const fmt = (n: number) => `$${n.toFixed(2)}`;
+
+    // Success screen (shown briefly before logout() triggers LockScreen)
+    if (done) {
+        return (
+            <div className="min-h-screen bg-enigma-black flex flex-col items-center justify-center p-6 text-white">
+                <CheckCircle className="w-20 h-20 text-emerald-400 mb-6" />
+                <h2 className="text-2xl font-bold text-emerald-400 mb-2">Turno Cerrado</h2>
+                <p className="text-white/50 text-sm text-center">Las cajas han sido cerradas correctamente.<br />Hasta luego.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-enigma-black flex flex-col items-center justify-center p-6 text-white relative overflow-hidden">
@@ -263,15 +278,23 @@ export default function RegisterClosePage() {
                                 placeholder="Si hay diferencias, explica aqui..." />
                         </div>
 
+                        {/* Error display */}
+                        {error && (
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-sm text-red-400">
+                                <p className="font-semibold mb-1">Error al cerrar la caja</p>
+                                <p className="text-red-300/80 font-mono text-xs">{error}</p>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => setStep('electronic')}
+                            <button onClick={() => { setStep('electronic'); setError(null); }}
                                 className="py-4 rounded-2xl bg-white/5 font-medium hover:bg-white/10 transition-colors">
                                 Recontar
                             </button>
                             <button onClick={handleConfirmClose} disabled={isLoading}
-                                className="py-4 rounded-2xl bg-enigma-purple font-bold shadow-lg shadow-enigma-purple/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                                className="py-4 rounded-2xl bg-enigma-purple font-bold shadow-lg shadow-enigma-purple/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:scale-100">
                                 {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
-                                Confirmar Cierre
+                                {isLoading ? 'Cerrando...' : 'Confirmar Cierre'}
                             </button>
                         </div>
                     </div>

@@ -164,26 +164,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const closeRegister = async (data: any) => {
         // data can be: { physical: {...closeData}, electronic: {...closeData} }
         // or legacy: { sessionId, declaredCash, ... }
+        const errors: string[] = [];
+
+        const closeSession = async (sessionId: string, closeData: any) => {
+            try {
+                await axios.post(`${API_URL}/register/close`, {
+                    sessionId,
+                    ...closeData
+                }, { headers: { 'x-tenant-id': TENANT_ID } });
+            } catch (e: any) {
+                const msg: string = e?.response?.data?.error || e?.message || 'Error desconocido';
+                // "already closed" is not a real error — treat as success
+                if (!msg.toLowerCase().includes('already closed')) {
+                    errors.push(msg);
+                }
+            }
+        };
+
         if (data.physical && session) {
-            await axios.post(`${API_URL}/register/close`, {
-                sessionId: session.id,
-                ...data.physical
-            }, { headers: { 'x-tenant-id': TENANT_ID } });
+            await closeSession(session.id, data.physical);
         }
 
         if (data.electronic && electronicSession) {
-            await axios.post(`${API_URL}/register/close`, {
-                sessionId: electronicSession.id,
-                ...data.electronic
-            }, { headers: { 'x-tenant-id': TENANT_ID } });
+            await closeSession(electronicSession.id, data.electronic);
         }
 
         // Legacy close (single session)
         if (!data.physical && !data.electronic && session) {
-            await axios.post(`${API_URL}/register/close`, {
-                sessionId: session.id,
-                ...data
-            }, { headers: { 'x-tenant-id': TENANT_ID } });
+            await closeSession(session.id, data);
+        }
+
+        if (errors.length > 0) {
+            throw new Error(errors.join(' | '));
         }
 
         // Auto-logout after close
