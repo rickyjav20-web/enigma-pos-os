@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Package, ChefHat, ShoppingCart,
-    ArrowUpRight, ArrowDownRight, Search, Filter, Plus, FileDown, Upload, X,
+    ArrowUpRight, ArrowDownRight, ArrowUp, ArrowDown, Search, Filter, Plus, FileDown, Upload, X,
     TrendingUp, FileText, Info, Trash2, ArrowUpDown, AlertTriangle
 } from 'lucide-react';
 import { api, CURRENT_TENANT_ID } from '@/lib/api';
@@ -137,7 +137,17 @@ export default function InventoryPage() {
 
     // --- FILTER & ZONES ---
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortBy, setSortBy] = useState('name');
+    const [sortCol, setSortCol] = useState('name'); // name | price | cost | margin
+    const [sortDir, setSortDir] = useState('asc');
+
+    const handleSort = (col) => {
+        if (sortCol === col) {
+            setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortCol(col);
+            setSortDir('asc');
+        }
+    };
 
     const filteredProducts = products.filter(i =>
         i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -169,15 +179,14 @@ export default function InventoryPage() {
         const costB = getEffectiveCost(b);
         const marginA = a.price > 0 && costA > 0 ? ((a.price - costA) / a.price) * 100 : -Infinity;
         const marginB = b.price > 0 && costB > 0 ? ((b.price - costB) / b.price) * 100 : -Infinity;
-        switch (sortBy) {
-            case 'price_desc': return b.price - a.price;
-            case 'price_asc': return a.price - b.price;
-            case 'cost_asc': return costA - costB;
-            case 'cost_desc': return costB - costA;
-            case 'margin_desc': return marginB - marginA;
-            case 'margin_asc': return marginA - marginB;
-            default: return a.name.localeCompare(b.name);
+        let result = 0;
+        switch (sortCol) {
+            case 'price': result = a.price - b.price; break;
+            case 'cost': result = costA - costB; break;
+            case 'margin': result = marginA - marginB; break;
+            default: result = a.name.localeCompare(b.name);
         }
+        return sortDir === 'asc' ? result : -result;
     });
     const kitchenItems = filteredSupplyItems.filter(i => i.isProduction && !products.some(p => p.sku && i.sku && p.sku === i.sku));
     const pantryItems = filteredSupplyItems.filter(i => !i.isProduction && !products.some(p => p.sku && i.sku && p.sku === i.sku));
@@ -357,24 +366,6 @@ export default function InventoryPage() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    {zone === 'MENU' && (
-                        <div className="relative flex items-center">
-                            <ArrowUpDown className="absolute left-3 text-zinc-500 pointer-events-none" size={14} />
-                            <select
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value)}
-                                className="bg-zinc-900 border border-zinc-700 rounded-lg pl-8 pr-3 py-2 text-sm text-zinc-300 focus:ring-1 focus:ring-emerald-500 appearance-none cursor-pointer"
-                            >
-                                <option value="name">Nombre A-Z</option>
-                                <option value="price_desc">Precio: Mayor → Menor</option>
-                                <option value="price_asc">Precio: Menor → Mayor</option>
-                                <option value="cost_asc">Costo: Menor → Mayor</option>
-                                <option value="cost_desc">Costo: Mayor → Menor</option>
-                                <option value="margin_desc">Margen: Mayor → Menor</option>
-                                <option value="margin_asc">Margen: Menor → Mayor (peores)</option>
-                            </select>
-                        </div>
-                    )}
                     {/* SMART ACTION BUTTON */}
                     <button
                         onClick={handleOpenCreate}
@@ -425,14 +416,59 @@ export default function InventoryPage() {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-zinc-950/80 text-zinc-500 text-[11px] tracking-widest uppercase sticky top-0 z-10 border-b border-zinc-800">
                             <tr>
-                                <th className="px-4 py-3 font-semibold">
-                                    {zone === 'MENU' ? 'Producto' : zone === 'KITCHEN' ? 'Batch / Prep' : 'Insumo'}
+                                {/* COL 1 — Name */}
+                                <th
+                                    className={`px-4 py-3 font-semibold group ${zone === 'MENU' ? 'cursor-pointer select-none hover:text-zinc-300 transition-colors' : ''}`}
+                                    onClick={() => zone === 'MENU' && handleSort('name')}
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        <span className={zone === 'MENU' && sortCol === 'name' ? 'text-white' : ''}>
+                                            {zone === 'MENU' ? 'Producto' : zone === 'KITCHEN' ? 'Batch / Prep' : 'Insumo'}
+                                        </span>
+                                        {zone === 'MENU' && (
+                                            sortCol === 'name'
+                                                ? sortDir === 'asc'
+                                                    ? <ArrowUp size={11} className="text-emerald-400 shrink-0" />
+                                                    : <ArrowDown size={11} className="text-emerald-400 shrink-0" />
+                                                : <ArrowUpDown size={11} className="opacity-0 group-hover:opacity-50 transition-opacity shrink-0" />
+                                        )}
+                                    </div>
                                 </th>
-                                <th className="px-4 py-3 font-semibold w-36 text-right">
-                                    {zone === 'MENU' ? 'Precio Venta' : zone === 'KITCHEN' ? 'Rendimiento' : 'Unidad'}
+                                {/* COL 2 — Price */}
+                                <th
+                                    className={`px-4 py-3 font-semibold w-36 group ${zone === 'MENU' ? 'cursor-pointer select-none hover:text-zinc-300 transition-colors' : 'text-right'}`}
+                                    onClick={() => zone === 'MENU' && handleSort('price')}
+                                >
+                                    <div className={`flex items-center gap-1.5 ${zone === 'MENU' ? 'justify-end' : 'justify-end'}`}>
+                                        {zone === 'MENU' && (
+                                            sortCol === 'price'
+                                                ? sortDir === 'asc'
+                                                    ? <ArrowUp size={11} className="text-emerald-400 shrink-0" />
+                                                    : <ArrowDown size={11} className="text-emerald-400 shrink-0" />
+                                                : <ArrowUpDown size={11} className="opacity-0 group-hover:opacity-50 transition-opacity shrink-0" />
+                                        )}
+                                        <span className={zone === 'MENU' && sortCol === 'price' ? 'text-white' : ''}>
+                                            {zone === 'MENU' ? 'Precio Venta' : zone === 'KITCHEN' ? 'Rendimiento' : 'Unidad'}
+                                        </span>
+                                    </div>
                                 </th>
-                                <th className="px-4 py-3 font-semibold w-36 text-right">
-                                    {zone === 'MENU' ? 'Costo Real' : zone === 'KITCHEN' ? 'Costo/Batch' : zone === 'LOGS' ? 'Motivo' : 'Último Costo'}
+                                {/* COL 3 — Cost */}
+                                <th
+                                    className={`px-4 py-3 font-semibold w-36 group ${zone === 'MENU' ? 'cursor-pointer select-none hover:text-zinc-300 transition-colors' : 'text-right'}`}
+                                    onClick={() => zone === 'MENU' && handleSort('cost')}
+                                >
+                                    <div className={`flex items-center gap-1.5 ${zone === 'MENU' ? 'justify-end' : 'justify-end'}`}>
+                                        {zone === 'MENU' && (
+                                            sortCol === 'cost'
+                                                ? sortDir === 'asc'
+                                                    ? <ArrowUp size={11} className="text-emerald-400 shrink-0" />
+                                                    : <ArrowDown size={11} className="text-emerald-400 shrink-0" />
+                                                : <ArrowUpDown size={11} className="opacity-0 group-hover:opacity-50 transition-opacity shrink-0" />
+                                        )}
+                                        <span className={zone === 'MENU' && sortCol === 'cost' ? 'text-white' : ''}>
+                                            {zone === 'MENU' ? 'Costo Real' : zone === 'KITCHEN' ? 'Costo/Batch' : zone === 'LOGS' ? 'Motivo' : 'Último Costo'}
+                                        </span>
+                                    </div>
                                 </th>
                                 {(zone === 'PANTRY' || zone === 'KITCHEN' || zone === 'LOGS') && (
                                     <>
@@ -440,8 +476,23 @@ export default function InventoryPage() {
                                         <th className="px-4 py-3 font-semibold text-right w-32">{zone === 'LOGS' ? 'Nuevo' : 'Valor Total'}</th>
                                     </>
                                 )}
-                                <th className="px-4 py-3 font-semibold w-36">
-                                    {zone === 'MENU' ? 'Margen' : zone === 'KITCHEN' ? 'POS Link' : zone === 'LOGS' ? 'Variación' : 'Tendencia'}
+                                {/* COL 4 — Margin */}
+                                <th
+                                    className={`px-4 py-3 font-semibold w-36 group ${zone === 'MENU' ? 'cursor-pointer select-none hover:text-zinc-300 transition-colors' : ''}`}
+                                    onClick={() => zone === 'MENU' && handleSort('margin')}
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        <span className={zone === 'MENU' && sortCol === 'margin' ? 'text-white' : ''}>
+                                            {zone === 'MENU' ? 'Margen' : zone === 'KITCHEN' ? 'POS Link' : zone === 'LOGS' ? 'Variación' : 'Tendencia'}
+                                        </span>
+                                        {zone === 'MENU' && (
+                                            sortCol === 'margin'
+                                                ? sortDir === 'asc'
+                                                    ? <ArrowUp size={11} className="text-emerald-400 shrink-0" />
+                                                    : <ArrowDown size={11} className="text-emerald-400 shrink-0" />
+                                                : <ArrowUpDown size={11} className="opacity-0 group-hover:opacity-50 transition-opacity shrink-0" />
+                                        )}
+                                    </div>
                                 </th>
                                 <th className="px-4 py-3 font-semibold w-28 text-right">
                                     {zone === 'LOGS' ? 'Notas' : 'Acciones'}
