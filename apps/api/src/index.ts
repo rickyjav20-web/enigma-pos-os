@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import dotenv from 'dotenv';
+import { alertGroup, ftime } from './services/whatsapp';
 
 dotenv.config();
 
@@ -61,6 +62,14 @@ const start = async () => {
         await fastify.listen({ port: Number(PORT), host: '0.0.0.0' });
         console.log(`🚀 API Server running on port ${PORT}`);
         console.log(fastify.printRoutes()); // DEBUG: Dump Routes
+
+        // Startup notification (non-fatal)
+        alertGroup(
+            `☕ *Enigma Café — Sistema online*\n` +
+            `🚀 Servidor iniciado y listo para el servicio\n` +
+            `🕐 ${ftime()}\n` +
+            `_"El café está listo. Las operaciones también."_`
+        ).catch(() => {});
     } catch (err) {
         fastify.log.error(err);
         process.exit(1);
