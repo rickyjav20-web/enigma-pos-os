@@ -1,18 +1,12 @@
 /**
- * WhatsApp Notification Service (Wazend)
+ * Enigma Notification Service (Telegram Bot API)
+ * Official API, completely free, supports group chats.
  * Non-fatal: all calls are fire-and-forget with silent error handling.
- * Env vars required: WAZEND_INSTANCE, WAZEND_API_KEY, WHATSAPP_GROUP_ID
+ *
+ * Env vars required:
+ *   TELEGRAM_BOT_TOKEN  — from @BotFather on Telegram
+ *   TELEGRAM_CHAT_ID    — group chat ID (negative number, e.g. -1001234567890)
  */
-
-const WAZEND_BASE = 'https://api2.wazend.net';
-
-function cfg() {
-    return {
-        instance: process.env.WAZEND_INSTANCE,
-        apiKey: process.env.WAZEND_API_KEY,
-        groupId: process.env.WHATSAPP_GROUP_ID
-    };
-}
 
 /**
  * Format a Date in Venezuela time (America/Caracas, UTC-4, no DST)
@@ -41,30 +35,35 @@ export function fduration(from: Date, to: Date = new Date()): string {
 }
 
 /**
- * Send a text message to the configured WhatsApp group via Wazend.
- * Non-fatal: resolves silently on error.
+ * Send a message to the configured Telegram group.
+ * Uses MarkdownV2 parse_mode so *bold* works.
+ * Non-fatal: resolves silently on any error.
  */
 export async function alertGroup(message: string): Promise<void> {
-    const { instance, apiKey, groupId } = cfg();
-    if (!instance || !apiKey || !groupId) {
-        console.warn('[WA] Missing env vars — skipping notification.');
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+
+    if (!token || !chatId) {
+        console.warn('[Notify] Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID — skipping.');
         return;
     }
+
     try {
-        const res = await fetch(`${WAZEND_BASE}/message/sendText/${instance}`, {
+        const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apiKey': apiKey
-            },
-            body: JSON.stringify({ number: groupId, text: message })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: message,
+                parse_mode: 'Markdown'   // supports *bold* and `code`
+            })
         });
         if (!res.ok) {
             const body = await res.text().catch(() => '');
-            console.warn(`[WA] Send failed: ${res.status} ${body}`);
+            console.warn(`[Notify] Telegram error: ${res.status} — ${body}`);
         }
     } catch (err: any) {
-        console.warn('[WA] Network error:', err?.message ?? err);
+        console.warn('[Notify] Network error:', err?.message ?? err);
     }
 }
 
