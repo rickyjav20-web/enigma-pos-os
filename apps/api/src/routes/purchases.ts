@@ -3,6 +3,7 @@ import prisma from '../lib/prisma';
 import { eventBus } from '../events/EventBus';
 import { EventType } from '@enigma/types';
 import { randomUUID } from 'crypto';
+import { notifyPurchase } from '../services/whatsapp';
 
 export default async function (fastify: FastifyInstance) {
 
@@ -522,6 +523,16 @@ export default async function (fastify: FastifyInstance) {
                     });
                 }
             }
+        }
+
+        // Notify WhatsApp group if confirmed (non-fatal)
+        if (purchase.status === 'confirmed') {
+            notifyPurchase({
+                supplierName: purchase.supplier?.name ?? 'Proveedor desconocido',
+                totalAmount: purchase.totalAmount,
+                lineCount: purchase.lines.length,
+                currency: purchase.currency || 'USD'
+            });
         }
 
         return purchase;

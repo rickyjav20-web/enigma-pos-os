@@ -2,6 +2,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
+import { notifyRegisterOpen, notifyRegisterClose, notifyCashMovement } from '../services/whatsapp';
 
 export default async function registerRoutes(fastify: FastifyInstance) {
 
@@ -79,6 +80,13 @@ export default async function registerRoutes(fastify: FastifyInstance) {
             return [phys, elec];
         });
 
+        // Notify WhatsApp group (non-fatal)
+        notifyRegisterOpen({
+            employeeName: employee.fullName,
+            physicalCash: physical.startingCash,
+            electronicCash: electronic.startingCash
+        });
+
         return { physicalSession, electronicSession };
     });
 
@@ -132,6 +140,20 @@ export default async function registerRoutes(fastify: FastifyInstance) {
                 endedAt: new Date()
             }
         });
+
+        // Notify WhatsApp group (non-fatal, async employee fetch)
+        prisma.employee.findUnique({
+            where: { id: existingSession.employeeId },
+            select: { fullName: true }
+        }).then(emp => {
+            notifyRegisterClose({
+                employeeName: emp?.fullName ?? existingSession.employeeId,
+                expectedCash,
+                declaredCash,
+                difference,
+                openedAt: existingSession.startedAt
+            });
+        }).catch(() => {});
 
         return {
             ...session,
@@ -542,6 +564,21 @@ export default async function registerRoutes(fastify: FastifyInstance) {
             } catch (e) {
                 console.error("[Register] Failed to recalculate recipe costs", e);
             }
+        }
+
+        // Notify for EXPENSE and DEPOSIT only (non-fatal)
+        if (data.type === 'EXPENSE' || data.type === 'DEPOSIT') {
+            prisma.employee.findUnique({
+                where: { id: session.employeeId },
+                select: { fullName: true }
+            }).then(emp => {
+                notifyCashMovement({
+                    type: data.type as 'EXPENSE' | 'DEPOSIT',
+                    amount: data.amount,
+                    description: data.description,
+                    employeeName: emp?.fullName
+                });
+            }).catch(() => {});
         }
 
         return result;
