@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Package, ChefHat, ShoppingCart,
     ArrowUpRight, ArrowDownRight, ArrowUp, ArrowDown, Search, Filter, Plus, FileDown, Upload, X,
-    TrendingUp, FileText, Info, Trash2, ArrowUpDown, AlertTriangle
+    TrendingUp, FileText, Info, Trash2, ArrowUpDown, AlertTriangle, ListTodo, Loader2
 } from 'lucide-react';
 import { api, CURRENT_TENANT_ID } from '@/lib/api';
 import { UnifiedItemModal } from '../components/UnifiedItemModal';
@@ -29,6 +29,24 @@ export default function InventoryPage() {
     const [productionItem, setProductionItem] = useState(null);
     const [productionQty, setProductionQty] = useState('');
     const [viewingItem, setViewingItem] = useState(null);
+
+    // Task Generation State
+    const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
+    const [taskResult, setTaskResult] = useState(null); // { generated, shift, date } | null
+
+    const handleGenerateTasks = async (shift) => {
+        const today = new Date().toISOString().split('T')[0];
+        setIsGeneratingTasks(true);
+        setTaskResult(null);
+        try {
+            const res = await api.post('/inventory/tasks/generate', { date: today, shift });
+            setTaskResult({ generated: res.data.generated ?? res.data.tasks?.length ?? 0, shift, date: today });
+        } catch (e) {
+            alert('Error generando tareas: ' + (e.response?.data?.message || e.message));
+        } finally {
+            setIsGeneratingTasks(false);
+        }
+    };
 
     const handleOpenProduce = (e, item) => {
         e.stopPropagation();
@@ -366,6 +384,34 @@ export default function InventoryPage() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    {/* KITCHEN: Generate Shift Tasks */}
+                    {zone === 'KITCHEN' && (
+                        <div className="flex items-center gap-2">
+                            {taskResult && (
+                                <span className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2 flex items-center gap-1.5">
+                                    ✓ {taskResult.generated} tarea{taskResult.generated !== 1 ? 's' : ''} generada{taskResult.generated !== 1 ? 's' : ''} ({taskResult.shift === 'MORNING' ? 'Mañana' : 'Cierre'})
+                                </span>
+                            )}
+                            <button
+                                disabled={isGeneratingTasks}
+                                onClick={() => handleGenerateTasks('MORNING')}
+                                className="px-3 py-2 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 rounded-lg text-sm text-amber-400 flex items-center gap-1.5 disabled:opacity-50"
+                                title="Generar tareas de producción para el turno de mañana"
+                            >
+                                {isGeneratingTasks ? <Loader2 size={14} className="animate-spin" /> : <ListTodo size={14} />}
+                                Tareas Mañana
+                            </button>
+                            <button
+                                disabled={isGeneratingTasks}
+                                onClick={() => handleGenerateTasks('EVENING')}
+                                className="px-3 py-2 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 rounded-lg text-sm text-amber-400 flex items-center gap-1.5 disabled:opacity-50"
+                                title="Generar tareas de inventario para el turno de cierre"
+                            >
+                                {isGeneratingTasks ? <Loader2 size={14} className="animate-spin" /> : <ListTodo size={14} />}
+                                Tareas Cierre
+                            </button>
+                        </div>
+                    )}
                     {/* SMART ACTION BUTTON */}
                     <button
                         onClick={handleOpenCreate}
