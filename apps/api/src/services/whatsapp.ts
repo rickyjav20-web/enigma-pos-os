@@ -121,6 +121,19 @@ export function notifyClockIn(opts: {
     ).catch(() => {});
 }
 
+export function notifyClockOut(opts: {
+    employeeName: string;
+    role: string;
+    clockIn: Date;
+}) {
+    return alertGroup(
+        `🏁 *SALIDA DE TURNO*\n` +
+        `👤 ${opts.employeeName} (${opts.role})\n` +
+        `⏱ Turno: ${fduration(opts.clockIn)}\n` +
+        `🕐 ${ftime()}`
+    ).catch(() => {});
+}
+
 export function notifyPurchase(opts: {
     supplierName: string;
     totalAmount: number;

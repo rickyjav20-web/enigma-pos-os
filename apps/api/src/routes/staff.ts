@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
 import { tenantMiddleware } from '../middleware/tenant';
-import { notifyClockIn } from '../services/whatsapp';
+import { notifyClockIn, notifyClockOut } from '../services/whatsapp';
 
 export default async function staffRoutes(fastify: FastifyInstance) {
     // Register Tenant Middleware for all routes in this context
@@ -129,6 +129,20 @@ export default async function staffRoutes(fastify: FastifyInstance) {
                     comments
                 },
             });
+
+            // Notify WhatsApp group (non-fatal)
+            prisma.employee.findUnique({
+                where: { id: employeeId },
+                select: { fullName: true, role: true }
+            }).then(emp => {
+                if (emp) {
+                    notifyClockOut({
+                        employeeName: emp.fullName,
+                        role: emp.role || 'Staff',
+                        clockIn: shift.clockIn
+                    });
+                }
+            }).catch(() => {});
 
             return { shift: updatedShift };
         } catch (error) {
