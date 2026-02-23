@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCurrencies } from '../hooks/useCurrencies';
-import { Loader2, ArrowRight, Smartphone, Wallet } from 'lucide-react';
+import { Loader2, ArrowRight, Smartphone, Wallet, LogOut } from 'lucide-react';
 
 export default function RegisterOpenPage() {
     const { employee, openRegister } = useAuth();
@@ -66,8 +66,19 @@ export default function RegisterOpenPage() {
         );
     }
 
+    const { logout } = useAuth();
+
     return (
         <div className="min-h-screen bg-enigma-black flex flex-col items-center justify-center p-4">
+            {/* Exit button — top left */}
+            <button
+                onClick={logout}
+                className="fixed top-4 left-4 flex items-center gap-2 text-white/30 hover:text-white/70 transition-colors text-sm"
+            >
+                <LogOut className="w-4 h-4" />
+                Salir
+            </button>
+
             <div className="w-full max-w-2xl space-y-6">
 
                 <div className="text-center">

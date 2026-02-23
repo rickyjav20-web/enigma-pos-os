@@ -583,4 +583,35 @@ export default async function registerRoutes(fastify: FastifyInstance) {
 
         return result;
     });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ADMIN: Force-close a single open session (HQ use only)
+    // POST /register/sessions/:id/force-close
+    // ─────────────────────────────────────────────────────────────────────────
+    fastify.post('/register/sessions/:id/force-close', async (request, reply) => {
+        const tenantId = getTenant(request);
+        const { id } = request.params as { id: string };
+
+        const existing = await prisma.registerSession.findUnique({ where: { id } });
+        if (!existing) return reply.status(404).send({ error: 'Session not found' });
+        if (existing.tenantId !== tenantId) return reply.status(403).send({ error: 'Forbidden' });
+        if (existing.status === 'closed') return { message: 'Already closed', session: existing };
+
+        // Calculate expectedCash from transactions
+        const transactions = await prisma.cashTransaction.findMany({ where: { sessionId: id } });
+        const expectedCash = existing.startingCash + transactions.reduce((s, t) => s + t.amount, 0);
+
+        const session = await prisma.registerSession.update({
+            where: { id },
+            data: {
+                status: 'closed',
+                endedAt: new Date(),
+                expectedCash,
+                declaredCash: existing.declaredCash ?? expectedCash,
+                notes: `[Cierre forzado por admin — ${new Date().toISOString()}]`
+            }
+        });
+
+        return { message: 'Force-closed', session };
+    });
 }

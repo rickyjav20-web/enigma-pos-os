@@ -180,6 +180,12 @@ export default function RegisterAdminPage() {
                             expandedSession={expandedSession}
                             setExpandedSession={setExpandedSession}
                             fmt={fmt}
+                            onForceClose={async (id) => {
+                                await fetch(`${API_URL}/register/sessions/${id}/force-close`, {
+                                    method: 'POST', headers: TENANT_HEADER
+                                });
+                                loadData();
+                            }}
                         />
                     )}
                     {activeTab === 'cashiers' && <CashierStatsView stats={cashierStats} fmt={fmt} />}
@@ -321,11 +327,12 @@ function FlowRow({ label, value, fmt, color, bold }: {
 // ═══════════════════════════════════════════════════════════
 // SESSIONS TABLE TAB
 // ═══════════════════════════════════════════════════════════
-function SessionsTable({ sessions, expandedSession, setExpandedSession, fmt }: {
+function SessionsTable({ sessions, expandedSession, setExpandedSession, fmt, onForceClose }: {
     sessions: SessionView[];
     expandedSession: string | null;
     setExpandedSession: (id: string | null) => void;
     fmt: (n: number) => string;
+    onForceClose: (id: string) => Promise<void>;
 }) {
     if (sessions.length === 0) {
         return (
@@ -382,6 +389,20 @@ function SessionsTable({ sessions, expandedSession, setExpandedSession, fmt }: {
                                             className={session.status === 'open' ? 'border-amber-500/50 text-amber-400' : 'bg-emerald-500/20 text-emerald-400 border-0'}>
                                             {session.status === 'open' ? 'Abierta' : 'Cerrada'}
                                         </Badge>
+
+                                        {session.status === 'open' && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (confirm(`¿Forzar cierre de sesión de ${session.employee.fullName}?`)) {
+                                                        onForceClose(session.id);
+                                                    }
+                                                }}
+                                                className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-colors border border-red-500/30 whitespace-nowrap"
+                                            >
+                                                Forzar Cierre
+                                            </button>
+                                        )}
 
                                         {session.difference != null && (
                                             <div className="text-right">
