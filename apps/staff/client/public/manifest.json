@@ -1,12 +1,12 @@
 {
-    "name": "Enigma HQ",
-    "short_name": "HQ",
-    "description": "Enigma HQ — Dashboard de gerencia y control operativo",
+    "name": "Enigma Staff",
+    "short_name": "Staff",
+    "description": "Enigma Staff — Kiosko de empleados, acceso y control de turno",
     "start_url": "/",
     "display": "standalone",
     "orientation": "any",
-    "background_color": "#070500",
-    "theme_color": "#0d0900",
+    "background_color": "#000a05",
+    "theme_color": "#000d07",
     "icons": [
         {
             "src": "/icon.svg",

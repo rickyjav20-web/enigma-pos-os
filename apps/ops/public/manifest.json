@@ -1,12 +1,12 @@
 {
-    "name": "Enigma HQ",
-    "short_name": "HQ",
-    "description": "Enigma HQ — Dashboard de gerencia y control operativo",
+    "name": "Enigma Ops",
+    "short_name": "Ops",
+    "description": "Enigma Ops — Compras, proveedores y control de insumos",
     "start_url": "/",
     "display": "standalone",
     "orientation": "any",
-    "background_color": "#070500",
-    "theme_color": "#0d0900",
+    "background_color": "#000810",
+    "theme_color": "#000d1a",
     "icons": [
         {
             "src": "/icon.svg",

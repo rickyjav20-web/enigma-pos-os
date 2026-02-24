@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ClipboardList, RefreshCw, CheckCircle, AlertTriangle, Package, Loader2, ChefHat } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ClipboardList, RefreshCw, CheckCircle, AlertTriangle, Package, Loader2, ChefHat, Flame } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
@@ -30,6 +31,7 @@ function getStockStatus(stock: number, par: number | null, min: number | null): 
 
 export default function InventoryPage() {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const shift = getShift();
 
     const [items, setItems] = useState<BatchItem[]>([]);
@@ -142,12 +144,21 @@ export default function InventoryPage() {
                     <h2 className="text-xl font-bold text-white mb-1">Conteo Guardado</h2>
                     <p className="text-zinc-400 text-sm">{savedCount} batches actualizados · turno {shift === 'MORNING' ? 'Mañana' : 'Cierre'}</p>
                 </div>
-                <button
-                    onClick={() => { setDone(false); fetchItems(); }}
-                    className="px-6 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl text-white font-semibold text-sm transition-colors"
-                >
-                    Nuevo Conteo
-                </button>
+                <div className="flex flex-col gap-3 w-full max-w-xs">
+                    <button
+                        onClick={() => navigate('/production')}
+                        className="w-full px-6 py-3.5 bg-violet-600 hover:bg-violet-500 active:scale-[0.99] rounded-xl text-white font-bold text-sm transition-all flex items-center justify-center gap-2"
+                    >
+                        <Flame size={16} />
+                        Ver Tareas de Produccion
+                    </button>
+                    <button
+                        onClick={() => { setDone(false); fetchItems(); }}
+                        className="w-full px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white font-semibold text-sm transition-colors"
+                    >
+                        Nuevo Conteo
+                    </button>
+                </div>
             </div>
         );
     }

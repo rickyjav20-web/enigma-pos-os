@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#001a0f"/>
+      <stop offset="100%" stop-color="#000a05"/>
+    </radialGradient>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6ee7b7"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="headGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a7f3d0"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <clipPath id="roundedSquare">
+      <rect width="512" height="512" rx="96" ry="96"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grid -->
+  <g opacity="0.04" clip-path="url(#roundedSquare)">
+    <line x1="0" y1="128" x2="512" y2="128" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="256" x2="512" y2="256" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="384" x2="512" y2="384" stroke="white" stroke-width="1"/>
+    <line x1="128" y1="0" x2="128" y2="512" stroke="white" stroke-width="1"/>
+    <line x1="256" y1="0" x2="256" y2="512" stroke="white" stroke-width="1"/>
+    <line x1="384" y1="0" x2="384" y2="512" stroke="white" stroke-width="1"/>
+  </g>
+
+  <!-- Glow halo behind figure -->
+  <ellipse cx="256" cy="210" rx="110" ry="120" fill="#059669" opacity="0.15" filter="url(#glow)"/>
+
+  <!-- ── PERSON FIGURE ──────────────────────────────── -->
+
+  <!-- Head -->
+  <circle cx="256" cy="148" r="52" fill="url(#headGrad)"/>
+  <!-- Head glow -->
+  <circle cx="256" cy="148" r="52" fill="url(#headGrad)" opacity="0.3" filter="url(#softGlow)"/>
+  <!-- Head highlight -->
+  <ellipse cx="240" cy="130" rx="18" ry="22" fill="rgba(255,255,255,0.18)" transform="rotate(-15,240,130)"/>
+
+  <!-- Shoulders / body arc -->
+  <path
+    d="M136,316 Q156,252 256,244 Q356,252 376,316 L376,330 Q356,272 256,264 Q156,272 136,330 Z"
+    fill="url(#bodyGrad)"
+  />
+  <!-- Body glow -->
+  <path
+    d="M136,316 Q156,252 256,244 Q356,252 376,316"
+    fill="none"
+    stroke="#6ee7b7"
+    stroke-width="3"
+    opacity="0.5"
+    filter="url(#softGlow)"
+  />
+
+  <!-- Collar / shirt detail -->
+  <path
+    d="M224,244 L256,280 L288,244"
+    fill="none"
+    stroke="rgba(255,255,255,0.2)"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Name badge accent -->
+  <rect x="228" y="290" width="56" height="30" rx="6" fill="rgba(255,255,255,0.06)" stroke="rgba(110,231,183,0.3)" stroke-width="1.5"/>
+  <line x1="240" y1="302" x2="272" y2="302" stroke="rgba(110,231,183,0.5)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="240" y1="311" x2="265" y2="311" stroke="rgba(110,231,183,0.3)" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- ── WORDMARK ─────────────────────────────────── -->
+  <line x1="156" y1="358" x2="356" y2="358" stroke="rgba(52,211,153,0.25)" stroke-width="1"/>
+
+  <text
+    x="256" y="394"
+    text-anchor="middle"
+    font-family="'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif"
+    font-size="38"
+    font-weight="800"
+    letter-spacing="12"
+    fill="white"
+    opacity="0.9"
+  >ENIGMA</text>
+
+  <text
+    x="256" y="426"
+    text-anchor="middle"
+    font-family="'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif"
+    font-size="18"
+    font-weight="500"
+    letter-spacing="8"
+    fill="rgba(110,231,183,0.8)"
+  >STAFF</text>
+
+  <!-- Corner dots -->
+  <circle cx="88" cy="88" r="4" fill="rgba(52,211,153,0.3)"/>
+  <circle cx="424" cy="88" r="4" fill="rgba(52,211,153,0.3)"/>
+  <circle cx="88" cy="424" r="4" fill="rgba(52,211,153,0.15)"/>
+  <circle cx="424" cy="424" r="4" fill="rgba(52,211,153,0.15)"/>
+</svg>

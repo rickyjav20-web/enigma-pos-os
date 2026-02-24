@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#1a1200"/>
+      <stop offset="100%" stop-color="#070500"/>
+    </radialGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="barGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </linearGradient>
+    <linearGradient id="barGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="barGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <clipPath id="roundedSquare">
+      <rect width="512" height="512" rx="96" ry="96"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grid -->
+  <g opacity="0.04" clip-path="url(#roundedSquare)">
+    <line x1="0" y1="128" x2="512" y2="128" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="256" x2="512" y2="256" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="384" x2="512" y2="384" stroke="white" stroke-width="1"/>
+    <line x1="128" y1="0" x2="128" y2="512" stroke="white" stroke-width="1"/>
+    <line x1="256" y1="0" x2="256" y2="512" stroke="white" stroke-width="1"/>
+    <line x1="384" y1="0" x2="384" y2="512" stroke="white" stroke-width="1"/>
+  </g>
+
+  <!-- Glow halo -->
+  <ellipse cx="256" cy="220" rx="140" ry="110" fill="#d97706" opacity="0.12" filter="url(#glow)"/>
+
+  <!-- ── BAR CHART ──────────────────────────────────── -->
+  <!-- Floor line -->
+  <line x1="110" y1="316" x2="402" y2="316" stroke="rgba(251,191,36,0.2)" stroke-width="2"/>
+
+  <!-- Bar 1 — short -->
+  <rect x="128" y="256" width="48" height="60" rx="6" fill="url(#barGrad3)" opacity="0.75"/>
+  <!-- Bar 2 — medium -->
+  <rect x="200" y="216" width="48" height="100" rx="6" fill="url(#barGrad1)" opacity="0.85"/>
+  <!-- Bar 3 — tall -->
+  <rect x="272" y="166" width="48" height="150" rx="6" fill="url(#barGrad2)"/>
+  <!-- Bar 3 glow -->
+  <rect x="272" y="166" width="48" height="150" rx="6" fill="url(#barGrad2)" opacity="0.4" filter="url(#glow)"/>
+  <!-- Bar 4 — medium-tall -->
+  <rect x="344" y="196" width="48" height="120" rx="6" fill="url(#barGrad1)" opacity="0.8"/>
+
+  <!-- Trend line over bars -->
+  <polyline
+    points="152,246 224,206 296,156 368,186"
+    fill="none"
+    stroke="#fde68a"
+    stroke-width="3.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity="0.9"
+  />
+
+  <!-- Trend dots -->
+  <circle cx="152" cy="246" r="5" fill="#fde68a"/>
+  <circle cx="224" cy="206" r="5" fill="#fde68a"/>
+  <circle cx="296" cy="156" r="7" fill="#fde68a" filter="url(#glow)"/>
+  <circle cx="368" cy="186" r="5" fill="#fde68a"/>
+
+  <!-- ── WORDMARK ─────────────────────────────────── -->
+  <line x1="156" y1="352" x2="356" y2="352" stroke="rgba(251,191,36,0.25)" stroke-width="1"/>
+
+  <text
+    x="256" y="390"
+    text-anchor="middle"
+    font-family="'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif"
+    font-size="38"
+    font-weight="800"
+    letter-spacing="12"
+    fill="white"
+    opacity="0.9"
+  >ENIGMA</text>
+
+  <text
+    x="256" y="422"
+    text-anchor="middle"
+    font-family="'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif"
+    font-size="18"
+    font-weight="500"
+    letter-spacing="8"
+    fill="rgba(251,191,36,0.75)"
+  >HQ</text>
+
+  <!-- Corner dots -->
+  <circle cx="88" cy="88" r="4" fill="rgba(251,191,36,0.3)"/>
+  <circle cx="424" cy="88" r="4" fill="rgba(251,191,36,0.3)"/>
+  <circle cx="88" cy="424" r="4" fill="rgba(251,191,36,0.15)"/>
+  <circle cx="424" cy="424" r="4" fill="rgba(251,191,36,0.15)"/>
+</svg>

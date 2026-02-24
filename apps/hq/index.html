@@ -1,21 +1,32 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <!-- PWA -->
   <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+
+  <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Enigma OS</title>
+  <meta name="apple-mobile-web-app-title" content="Enigma HQ" />
+  <link rel="apple-touch-icon" href="/icon.svg" />
+
+  <!-- Theme -->
+  <meta name="theme-color" content="#0d0900" />
+  <meta name="msapplication-TileColor" content="#0d0900" />
+
+  <title>Enigma HQ</title>
 </head>
 
 <body>
   <div id="root">
-    <div style="color: white; background: #333; padding: 50px; font-family: sans-serif; text-align: center;">
-      <h1>⏳ Loading Enigma OS...</h1>
-      <p>If you see this for more than 3 seconds, check the browser console for errors.</p>
+    <div style="color: white; background: #0d0900; padding: 50px; font-family: sans-serif; text-align: center;">
+      <h1>Cargando Enigma HQ...</h1>
+      <p>Si esto tarda mas de 3 segundos, revisa la consola del navegador.</p>
     </div>
   </div>
   <script type="module" src="/src/main.tsx"></script>

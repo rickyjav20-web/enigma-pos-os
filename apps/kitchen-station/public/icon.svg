@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- App background gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#1a0f2e"/>
+      <stop offset="100%" stop-color="#06040d"/>
+    </radialGradient>
+    <!-- Hat gradient -->
+    <linearGradient id="hatGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c4b5fd"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <!-- Band gradient -->
+    <linearGradient id="bandGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6d28d9"/>
+      <stop offset="50%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
+    </linearGradient>
+    <!-- Glow filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <!-- Soft glow for hat -->
+    <filter id="hatGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <!-- Clip for rounded square -->
+    <clipPath id="roundedSquare">
+      <rect width="512" height="512" rx="96" ry="96"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.04" clip-path="url(#roundedSquare)">
+    <line x1="0" y1="128" x2="512" y2="128" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="256" x2="512" y2="256" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="384" x2="512" y2="384" stroke="white" stroke-width="1"/>
+    <line x1="128" y1="0" x2="128" y2="512" stroke="white" stroke-width="1"/>
+    <line x1="256" y1="0" x2="256" y2="512" stroke="white" stroke-width="1"/>
+    <line x1="384" y1="0" x2="384" y2="512" stroke="white" stroke-width="1"/>
+  </g>
+
+  <!-- Glow halo behind hat -->
+  <ellipse cx="256" cy="220" rx="120" ry="100" fill="#7c3aed" opacity="0.18" filter="url(#hatGlow)"/>
+
+  <!-- ── CHEF HAT ───────────────────────────────── -->
+
+  <!-- Hat base band -->
+  <rect x="136" y="296" width="240" height="52" rx="10" fill="url(#bandGrad)"/>
+  <!-- Band highlight line -->
+  <rect x="136" y="296" width="240" height="3" rx="1.5" fill="rgba(255,255,255,0.25)"/>
+  <!-- Band bottom edge shadow -->
+  <rect x="136" y="345" width="240" height="3" rx="1.5" fill="rgba(0,0,0,0.3)"/>
+
+  <!-- Hat body — puffy dome shape -->
+  <!-- Left puff -->
+  <ellipse cx="196" cy="240" rx="62" ry="72" fill="url(#hatGrad)"/>
+  <!-- Right puff -->
+  <ellipse cx="316" cy="240" rx="62" ry="72" fill="url(#hatGrad)"/>
+  <!-- Center — taller puff -->
+  <ellipse cx="256" cy="214" rx="78" ry="92" fill="url(#hatGrad)"/>
+  <!-- Fill gaps between puffs -->
+  <rect x="160" y="200" width="192" height="100" fill="#8b5cf6"/>
+  <!-- Smooth the bottom of the dome into the band -->
+  <rect x="136" y="270" width="240" height="30" rx="0" fill="#7c3aed"/>
+
+  <!-- Hat highlights — light reflection on dome -->
+  <ellipse cx="224" cy="186" rx="22" ry="32" fill="rgba(255,255,255,0.12)" transform="rotate(-15,224,186)"/>
+  <ellipse cx="218" cy="180" rx="8" ry="14" fill="rgba(255,255,255,0.2)" transform="rotate(-15,218,180)"/>
+
+  <!-- Hat top crease line -->
+  <path d="M220 148 Q256 132 292 148" stroke="rgba(255,255,255,0.15)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Tiny fold lines on the hat -->
+  <path d="M192 290 Q196 250 198 220" stroke="rgba(0,0,0,0.1)" stroke-width="1.5" fill="none"/>
+  <path d="M320 290 Q316 250 314 220" stroke="rgba(0,0,0,0.1)" stroke-width="1.5" fill="none"/>
+
+  <!-- ── STEAM WISPS ─────────────────────────────── -->
+  <path d="M210 108 Q204 92 210 76 Q216 60 210 44" stroke="rgba(139,92,246,0.5)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M256 96 Q248 78 256 60 Q264 42 256 24" stroke="rgba(139,92,246,0.4)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M302 108 Q308 92 302 76 Q296 60 302 44" stroke="rgba(139,92,246,0.5)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- ── BOTTOM WORDMARK ─────────────────────────── -->
+  <!-- Separator line -->
+  <line x1="156" y1="384" x2="356" y2="384" stroke="rgba(139,92,246,0.3)" stroke-width="1"/>
+
+  <!-- "ENIGMA" text -->
+  <text
+    x="256" y="420"
+    text-anchor="middle"
+    font-family="'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif"
+    font-size="38"
+    font-weight="800"
+    letter-spacing="12"
+    fill="white"
+    opacity="0.9"
+  >ENIGMA</text>
+
+  <!-- "KITCHEN" subtext -->
+  <text
+    x="256" y="452"
+    text-anchor="middle"
+    font-family="'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif"
+    font-size="18"
+    font-weight="500"
+    letter-spacing="8"
+    fill="rgba(167,139,250,0.8)"
+  >KITCHEN</text>
+
+  <!-- Corner dot accents -->
+  <circle cx="88" cy="88" r="4" fill="rgba(139,92,246,0.3)"/>
+  <circle cx="424" cy="88" r="4" fill="rgba(139,92,246,0.3)"/>
+  <circle cx="88" cy="424" r="4" fill="rgba(139,92,246,0.15)"/>
+  <circle cx="424" cy="424" r="4" fill="rgba(139,92,246,0.15)"/>
+</svg>

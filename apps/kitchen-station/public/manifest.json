@@ -1,12 +1,12 @@
 {
-    "name": "Enigma HQ",
-    "short_name": "HQ",
-    "description": "Enigma HQ — Dashboard de gerencia y control operativo",
+    "name": "Enigma Kitchen",
+    "short_name": "Kitchen",
+    "description": "Enigma Kitchen Station — Produccion, Inventario y Mermas",
     "start_url": "/",
     "display": "standalone",
     "orientation": "any",
-    "background_color": "#070500",
-    "theme_color": "#0d0900",
+    "background_color": "#06040d",
+    "theme_color": "#0a0710",
     "icons": [
         {
             "src": "/icon.svg",
