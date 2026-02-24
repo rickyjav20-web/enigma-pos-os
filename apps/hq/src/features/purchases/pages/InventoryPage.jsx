@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Package, ChefHat, ShoppingCart,
     ArrowUpRight, ArrowDownRight, ArrowUp, ArrowDown, Search, Filter, Plus, FileDown, Upload, X,
-    TrendingUp, FileText, Info, Trash2, ArrowUpDown, AlertTriangle, ListTodo, Loader2
+    TrendingUp, FileText, Info, Trash2, ArrowUpDown, AlertTriangle, ListTodo, Loader2,
+    CheckCircle2, AlertCircle, ClipboardList, Pencil, Check
 } from 'lucide-react';
 import { api, CURRENT_TENANT_ID } from '@/lib/api';
 import { UnifiedItemModal } from '../components/UnifiedItemModal';
@@ -34,6 +35,12 @@ export default function InventoryPage() {
     const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
     const [taskResult, setTaskResult] = useState(null); // { generated, shift, date } | null
 
+    // Kitchen subview + inline stock edit
+    const [kitchenSubview, setKitchenSubview] = useState('INVENTORY'); // 'INVENTORY' | 'TASKS'
+    const [quickEditId, setQuickEditId] = useState(null);
+    const [quickEditValue, setQuickEditValue] = useState('');
+    const [isSavingStock, setIsSavingStock] = useState(false);
+
     const handleGenerateTasks = async (shift) => {
         const today = new Date().toISOString().split('T')[0];
         setIsGeneratingTasks(true);
@@ -41,6 +48,7 @@ export default function InventoryPage() {
         try {
             const res = await api.post('/inventory/tasks/generate', { date: today, shift });
             setTaskResult({ generated: res.data.generated ?? res.data.tasks?.length ?? 0, shift, date: today });
+            setKitchenSubview('TASKS');
         } catch (e) {
             alert('Error generando tareas: ' + (e.response?.data?.message || e.message));
         } finally {
@@ -71,6 +79,32 @@ export default function InventoryPage() {
             alert("Failed to record production");
         } finally {
             setLoading(false);
+        }
+    };
+
+    // --- STOCK STATUS HELPER ---
+    const getStockStatus = (item) => {
+        const stock = item.stockQuantity || 0;
+        if (item.minStock != null && stock < item.minStock) return 'CRITICAL';
+        if (item.parLevel != null && stock < item.parLevel) return 'LOW';
+        if (item.parLevel != null) return 'OK';
+        return 'UNKNOWN';
+    };
+
+    // --- QUICK STOCK EDIT ---
+    const handleQuickStockSave = async (itemId) => {
+        const val = parseFloat(quickEditValue);
+        if (isNaN(val)) return;
+        setIsSavingStock(true);
+        try {
+            await api.put(`/supply-items/${itemId}`, { stockQuantity: val });
+            setQuickEditId(null);
+            setQuickEditValue('');
+            fetchData();
+        } catch (e) {
+            alert('Error: ' + (e.response?.data?.message || e.message));
+        } finally {
+            setIsSavingStock(false);
         }
     };
 
@@ -384,14 +418,31 @@ export default function InventoryPage() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    {/* KITCHEN: Generate Shift Tasks */}
+                    {/* KITCHEN: Subview tabs + Generate Shift Tasks */}
                     {zone === 'KITCHEN' && (
                         <div className="flex items-center gap-2">
+                            {/* Subview switcher */}
+                            <div className="flex bg-zinc-900 border border-zinc-700 rounded-lg p-0.5">
+                                <button
+                                    onClick={() => setKitchenSubview('INVENTORY')}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 ${kitchenSubview === 'INVENTORY' ? 'bg-amber-500/20 text-amber-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                    <Package size={12} /> Inventario
+                                </button>
+                                <button
+                                    onClick={() => setKitchenSubview('TASKS')}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 ${kitchenSubview === 'TASKS' ? 'bg-amber-500/20 text-amber-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                    <ClipboardList size={12} /> Producción
+                                </button>
+                            </div>
+                            {/* Task result badge */}
                             {taskResult && (
                                 <span className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2 flex items-center gap-1.5">
-                                    ✓ {taskResult.generated} tarea{taskResult.generated !== 1 ? 's' : ''} generada{taskResult.generated !== 1 ? 's' : ''} ({taskResult.shift === 'MORNING' ? 'Mañana' : 'Cierre'})
+                                    ✓ {taskResult.generated} tarea{taskResult.generated !== 1 ? 's' : ''} ({taskResult.shift === 'MORNING' ? 'Mañana' : 'Cierre'})
                                 </span>
                             )}
+                            {/* Generate tasks buttons */}
                             <button
                                 disabled={isGeneratingTasks}
                                 onClick={() => handleGenerateTasks('MORNING')}
@@ -629,52 +680,211 @@ export default function InventoryPage() {
                                 )
                             })}
 
-                            {zone === 'KITCHEN' && kitchenItems.map(item => (
-                                <tr key={item.id} className={`hover:bg-zinc-800/50 group cursor-pointer ${!item.yieldQuantity ? 'opacity-70' : ''}`} onClick={() => handleEdit(item)}>
-                                    <td className="p-4">
-                                        <div className="font-medium text-amber-100">{item.name}</div>
-                                        {!item.yieldQuantity && (
-                                            <div className="text-[10px] text-orange-400 font-bold mt-0.5">⚠ Sin yield configurado</div>
-                                        )}
-                                    </td>
-                                    <td className="p-4">
-                                        {item.yieldQuantity
-                                            ? <span className="text-zinc-300 font-mono">{item.yieldQuantity} {item.yieldUnit}</span>
-                                            : <span className="text-orange-400/60 text-xs italic">No definido</span>
-                                        }
-                                    </td>
-                                    <td className="p-4 text-zinc-300">
-                                        ${(item.currentCost || 0).toFixed(2)} <span className="text-xs text-zinc-500">/ batch</span>
-                                    </td>
-                                    <td className="p-4 text-zinc-200 font-bold">
-                                        {(item.stockQuantity || 0).toFixed(2)} <span className="text-xs text-zinc-500 font-normal">{item.yieldUnit || 'und'}</span>
-                                    </td>
-                                    <td className="p-4 text-emerald-400 font-bold">
-                                        ${((item.stockQuantity || 0) * (item.currentCost || 0)).toFixed(2)}
-                                    </td>
-                                    <td className="p-4 text-center">
-                                        <div className="w-2 h-2 rounded-full bg-zinc-600 mx-auto" title="Not linked to POS"></div>
-                                    </td>
-                                    <td className="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={(e) => handleOpenProduce(e, item)}
-                                                className="px-3 py-1 bg-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-black rounded text-xs font-bold transition-colors"
-                                            >
-                                                PRODUCE
-                                            </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); setViewingItem({ ...item, type: 'BATCH' }); }}
-                                                className="p-1.5 hover:bg-zinc-700 rounded text-zinc-400 hover:text-amber-400 transition-colors"
-                                            >
-                                                <Search size={16} />
-                                            </button>
-                                            <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="text-zinc-500 hover:text-white">Edit</button>
-                                            <button onClick={(e) => handleDelete(e, item)} className="p-1.5 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300 transition-colors" title="Dar de baja"><Trash2 size={16} /></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {/* KITCHEN — TASKS subview: production panel inside table */}
+                            {zone === 'KITCHEN' && kitchenSubview === 'TASKS' && (() => {
+                                const withPar = kitchenItems.filter(i => i.parLevel != null);
+                                const needsProd = withPar.filter(i => getStockStatus(i) !== 'OK').sort((a, b) => {
+                                    const order = { CRITICAL: 0, LOW: 1 };
+                                    return (order[getStockStatus(a)] ?? 2) - (order[getStockStatus(b)] ?? 2);
+                                });
+                                const okItems = withPar.filter(i => getStockStatus(i) === 'OK');
+                                return (
+                                    <tr>
+                                        <td colSpan={7} className="p-0 align-top">
+                                            <div className="p-6 space-y-4">
+                                                {/* Header */}
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="text-amber-400 font-bold flex items-center gap-2 text-base">
+                                                        <ClipboardList size={18} /> Tareas de Producción — {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                    </h3>
+                                                    <span className="text-xs text-zinc-500 bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1">
+                                                        {needsProd.length} pendiente{needsProd.length !== 1 ? 's' : ''} · {okItems.length} en nivel óptimo
+                                                    </span>
+                                                </div>
+
+                                                {/* Pending tasks */}
+                                                {needsProd.length === 0 ? (
+                                                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                                                        <CheckCircle2 size={44} className="text-emerald-500 mb-3" />
+                                                        <p className="text-emerald-400 font-bold text-lg">Todo en orden</p>
+                                                        <p className="text-zinc-500 text-sm">Todos los batches tienen stock igual o por encima del par level</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        {needsProd.map(item => {
+                                                            const status = getStockStatus(item);
+                                                            const stock = item.stockQuantity || 0;
+                                                            const par = item.parLevel || 0;
+                                                            const yieldQty = item.yieldQuantity || 1;
+                                                            const needed = par - stock;
+                                                            const batchesToProduce = Math.max(1, Math.ceil(needed / yieldQty));
+                                                            const unitsAfter = stock + batchesToProduce * yieldQty;
+                                                            const isCritical = status === 'CRITICAL';
+                                                            return (
+                                                                <div key={item.id} className={`border rounded-xl p-4 ${isCritical ? 'bg-red-500/10 border-red-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
+                                                                    <div className="flex items-start justify-between gap-4">
+                                                                        <div className="flex-1">
+                                                                            <div className="flex items-center gap-2 mb-1.5">
+                                                                                <div className={`w-2 h-2 rounded-full shrink-0 ${isCritical ? 'bg-red-500' : 'bg-amber-400'}`}></div>
+                                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${isCritical ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                                                                                    {isCritical ? 'Crítico' : 'Bajo'}
+                                                                                </span>
+                                                                                <span className="font-bold text-white">{item.name}</span>
+                                                                                <span className="text-xs text-zinc-500 font-mono">({item.sku})</span>
+                                                                            </div>
+                                                                            <div className="text-xs text-zinc-400 ml-4 space-y-0.5">
+                                                                                <div>
+                                                                                    Stock actual: <span className="text-white font-mono font-bold">{stock % 1 === 0 ? stock.toFixed(0) : stock.toFixed(2)} {item.yieldUnit || 'und'}</span>
+                                                                                    {' '}— Par: <span className="text-amber-300 font-mono">{par} {item.yieldUnit || 'und'}</span>
+                                                                                    {item.minStock != null && <span className="text-zinc-500"> — Mín: {item.minStock}</span>}
+                                                                                </div>
+                                                                                <div className="text-zinc-300">
+                                                                                    → Producir <span className="text-amber-400 font-bold">{batchesToProduce} tanda{batchesToProduce !== 1 ? 's' : ''}</span>
+                                                                                    {yieldQty > 1 && <span className="text-zinc-500"> (= {batchesToProduce * yieldQty} {item.yieldUnit || 'und'})</span>}
+                                                                                    {' '}→ stock quedará en <span className="text-emerald-400 font-mono font-bold">{unitsAfter.toFixed(0)} {item.yieldUnit || 'und'}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); setProductionItem(item); setProductionQty(String(batchesToProduce)); setIsProductionModalOpen(true); }}
+                                                                            className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-lg transition-colors shrink-0 flex items-center gap-1.5"
+                                                                        >
+                                                                            <ChefHat size={14} /> Producir
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+
+                                                {/* OK items summary */}
+                                                {okItems.length > 0 && (
+                                                    <div className="pt-3 border-t border-zinc-800">
+                                                        <p className="text-xs text-zinc-600 mb-2 uppercase font-bold tracking-wider">En nivel óptimo</p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {okItems.map(item => (
+                                                                <span key={item.id} className="text-xs px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 flex items-center gap-1.5">
+                                                                    <CheckCircle2 size={11} />
+                                                                    {item.name}
+                                                                    <span className="text-emerald-600 font-mono">
+                                                                        {(item.stockQuantity || 0) % 1 === 0 ? (item.stockQuantity || 0).toFixed(0) : (item.stockQuantity || 0).toFixed(2)}/{item.parLevel} {item.yieldUnit || 'und'}
+                                                                    </span>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* No par levels set */}
+                                                {withPar.length === 0 && (
+                                                    <div className="flex items-center gap-3 p-4 bg-zinc-800/50 border border-zinc-700 rounded-xl text-zinc-400 text-sm">
+                                                        <AlertCircle size={18} className="text-zinc-500 shrink-0" />
+                                                        Ningún batch tiene par level configurado. Edita los batches en la pestaña "Inventario" para configurar par levels y habilitar las tareas automáticas.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })()}
+
+                            {/* KITCHEN — INVENTORY subview: enhanced batch rows */}
+                            {zone === 'KITCHEN' && kitchenSubview === 'INVENTORY' && kitchenItems.map(item => {
+                                const status = getStockStatus(item);
+                                const stock = item.stockQuantity || 0;
+                                const isEditing = quickEditId === item.id;
+                                const rowBg = status === 'CRITICAL' ? 'bg-red-950/20 hover:bg-red-950/30'
+                                    : status === 'LOW' ? 'bg-amber-950/10 hover:bg-amber-950/20'
+                                    : 'hover:bg-zinc-800/50';
+                                const stockColor = status === 'CRITICAL' ? 'text-red-400'
+                                    : status === 'LOW' ? 'text-amber-400'
+                                    : status === 'OK' ? 'text-emerald-400'
+                                    : 'text-zinc-200';
+                                const stockDot = status === 'CRITICAL' ? 'bg-red-500'
+                                    : status === 'LOW' ? 'bg-amber-400'
+                                    : status === 'OK' ? 'bg-emerald-500'
+                                    : 'bg-zinc-600';
+                                return (
+                                    <tr key={item.id} className={`group cursor-pointer transition-colors ${rowBg} ${!item.yieldQuantity ? 'opacity-70' : ''}`} onClick={() => !isEditing && handleEdit(item)}>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-2 h-2 rounded-full shrink-0 ${stockDot}`}></div>
+                                                <div>
+                                                    <div className="font-medium text-amber-100">{item.name}</div>
+                                                    {!item.yieldQuantity && <div className="text-[10px] text-orange-400 font-bold mt-0.5">⚠ Sin yield configurado</div>}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            {item.yieldQuantity
+                                                ? <span className="text-zinc-300 font-mono">{item.yieldQuantity} {item.yieldUnit}</span>
+                                                : <span className="text-orange-400/60 text-xs italic">No definido</span>
+                                            }
+                                        </td>
+                                        <td className="p-4 text-zinc-300">
+                                            ${(item.currentCost || 0).toFixed(2)} <span className="text-xs text-zinc-500">/ batch</span>
+                                        </td>
+                                        {/* Stock cell — inline edit mode */}
+                                        <td className="p-4">
+                                            {isEditing ? (
+                                                <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                                                    <input
+                                                        type="number"
+                                                        autoFocus
+                                                        className="w-20 bg-zinc-800 border border-amber-500/50 rounded px-2 py-1 text-white text-sm font-mono focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                                        value={quickEditValue}
+                                                        onChange={e => setQuickEditValue(e.target.value)}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter') handleQuickStockSave(item.id);
+                                                            if (e.key === 'Escape') { setQuickEditId(null); setQuickEditValue(''); }
+                                                        }}
+                                                    />
+                                                    <span className="text-xs text-zinc-500">{item.yieldUnit || 'und'}</span>
+                                                    <button onClick={() => handleQuickStockSave(item.id)} disabled={isSavingStock} className="p-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded disabled:opacity-50">
+                                                        {isSavingStock ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                                                    </button>
+                                                    <button onClick={() => { setQuickEditId(null); setQuickEditValue(''); }} className="p-1 text-zinc-500 hover:text-white rounded">
+                                                        <X size={13} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <div className={`font-bold ${stockColor}`}>
+                                                        {stock % 1 === 0 ? stock.toFixed(0) : stock.toFixed(2)} <span className="text-xs font-normal text-zinc-500">{item.yieldUnit || 'und'}</span>
+                                                    </div>
+                                                    {item.parLevel != null && (
+                                                        <div className="text-[10px] text-zinc-600 mt-0.5">
+                                                            par: {item.parLevel}{item.minStock != null ? ` · mín: ${item.minStock}` : ''}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="p-4 text-emerald-400 font-bold">
+                                            ${(stock * (item.currentCost || 0)).toFixed(2)}
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            <div className="w-2 h-2 rounded-full bg-zinc-600 mx-auto" title="Not linked to POS"></div>
+                                        </td>
+                                        <td className="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setQuickEditId(item.id); setQuickEditValue(String(stock)); }}
+                                                    className="p-1.5 hover:bg-zinc-700 rounded text-zinc-500 hover:text-amber-400 transition-colors"
+                                                    title="Editar stock"
+                                                >
+                                                    <Pencil size={14} />
+                                                </button>
+                                                <button onClick={(e) => handleOpenProduce(e, item)} className="px-3 py-1 bg-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-black rounded text-xs font-bold transition-colors">PRODUCE</button>
+                                                <button onClick={(e) => { e.stopPropagation(); setViewingItem({ ...item, type: 'BATCH' }); }} className="p-1.5 hover:bg-zinc-700 rounded text-zinc-400 hover:text-amber-400 transition-colors"><Search size={16} /></button>
+                                                <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="text-zinc-500 hover:text-white">Edit</button>
+                                                <button onClick={(e) => handleDelete(e, item)} className="p-1.5 hover:bg-zinc-700 rounded text-red-400 hover:text-red-300 transition-colors" title="Dar de baja"><Trash2 size={16} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
 
                             {zone === 'PANTRY' && pantryItems.map(item => {
                                 const costChange = item.averageCost > 0 ? ((item.currentCost - item.averageCost) / item.averageCost) * 100 : 0;
