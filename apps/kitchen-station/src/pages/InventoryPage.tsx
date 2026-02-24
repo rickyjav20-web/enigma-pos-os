@@ -192,7 +192,7 @@ export default function InventoryPage() {
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+            <div className="flex-1 overflow-y-auto px-4 py-3 portrait:px-3 landscape:grid landscape:grid-cols-2 landscape:gap-x-3 landscape:content-start landscape:items-start portrait:space-y-2">
                 {loading && (
                     <div className="flex items-center justify-center h-40 gap-3 text-zinc-500">
                         <Loader2 size={20} className="animate-spin text-violet-400" />
@@ -208,12 +208,13 @@ export default function InventoryPage() {
                 )}
 
                 {!loading && items.map(item => (
-                    <CountRow
-                        key={item.id}
-                        item={item}
-                        value={counts[item.id] ?? ''}
-                        onChange={(v) => setCounts(prev => ({ ...prev, [item.id]: v }))}
-                    />
+                    <div key={item.id} className="landscape:mb-2">
+                        <CountRow
+                            item={item}
+                            value={counts[item.id] ?? ''}
+                            onChange={(v) => setCounts(prev => ({ ...prev, [item.id]: v }))}
+                        />
+                    </div>
                 ))}
 
                 {error && (
@@ -230,7 +231,7 @@ export default function InventoryPage() {
                     <button
                         onClick={handleSubmit}
                         disabled={submitting || filledCount === 0}
-                        className="w-full py-3.5 rounded-2xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-white transition-all flex items-center justify-center gap-2"
+                        className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-500 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed font-extrabold text-base text-white transition-all flex items-center justify-center gap-2"
                     >
                         {submitting
                             ? <><Loader2 size={18} className="animate-spin" /> Guardando...</>
@@ -276,29 +277,26 @@ function CountRow({ item, value, onChange }: {
     };
 
     return (
-        <div className={`rounded-xl border transition-colors ${rowCls}`}>
-            <div className="flex items-center gap-3 px-4 py-3">
+        <div className={`rounded-2xl border transition-colors ${rowCls}`}>
+            <div className="flex items-center gap-3 px-4 py-3.5 tablet:py-4">
                 {/* Status dot */}
-                <div className={`w-2 h-2 rounded-full shrink-0 ${statusDot[status]}`} />
+                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${statusDot[status]}`} />
 
                 {/* Name + system qty */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                        <ChefHat size={11} className="text-zinc-600 shrink-0" />
-                        <p className="text-sm font-semibold text-white truncate">{item.name}</p>
+                        <ChefHat size={12} className="text-zinc-600 shrink-0" />
+                        <p className="text-sm font-bold text-white truncate">{item.name}</p>
                     </div>
-                    <p className="text-[11px] text-zinc-500 mt-0.5">
+                    <p className="text-xs text-zinc-500 mt-0.5">
                         Sistema: <span className="text-zinc-400 font-mono">{system.toLocaleString('es', { maximumFractionDigits: 2 })}</span> {unit}
                         {item.parLevel !== null && (
                             <span className="ml-2 text-zinc-600">· par {item.parLevel}</span>
                         )}
-                        {item.yieldQuantity !== null && (
-                            <span className="ml-2 text-zinc-700">· {item.yieldQuantity} {unit}/batch</span>
-                        )}
                     </p>
                 </div>
 
-                {/* Input */}
+                {/* Input — large touch-friendly */}
                 <div className="flex items-center gap-2 shrink-0">
                     <input
                         type="number"
@@ -307,14 +305,14 @@ function CountRow({ item, value, onChange }: {
                         value={value}
                         onChange={e => onChange(e.target.value)}
                         placeholder={String(system)}
-                        className="w-20 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white text-sm font-mono text-right focus:border-violet-500 focus:outline-none placeholder:text-zinc-700"
+                        className="w-24 h-11 bg-black/40 border border-white/10 rounded-xl px-3 text-white text-base font-mono text-right focus:border-violet-500 focus:outline-none placeholder:text-zinc-700"
                     />
-                    <span className="text-[11px] text-zinc-500 w-7 shrink-0">{unit}</span>
+                    <span className="text-xs text-zinc-500 w-8 shrink-0 font-medium">{unit}</span>
                 </div>
 
                 {/* Variance badge */}
                 {hasCounted && variance !== null && (
-                    <div className={`text-[11px] font-mono font-bold px-2 py-1 rounded-lg shrink-0 min-w-[44px] text-center ${
+                    <div className={`text-xs font-mono font-bold px-2.5 py-1.5 rounded-lg shrink-0 min-w-[48px] text-center ${
                         Math.abs(variance) < 0.01
                             ? 'text-emerald-400 bg-emerald-500/10'
                             : variance > 0

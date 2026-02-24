@@ -67,8 +67,8 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="h-screen flex items-center justify-center p-4">
-            <div className="w-full max-w-sm glass-card rounded-2xl p-8 shadow-2xl">
+        <div className="h-screen flex items-center justify-center p-4 landscape:items-center">
+            <div className="w-full max-w-xs tablet:max-w-sm glass-card rounded-3xl p-8 tablet:p-10 shadow-2xl">
                 <div className="flex flex-col items-center mb-8">
                     <div className="relative w-14 h-14 flex items-center justify-center mb-4">
                         <div className="absolute inset-0 bg-violet-500/20 rounded-2xl blur-xl" />
@@ -98,13 +98,13 @@ export default function LoginPage() {
                     </div>
                 )}
 
-                {/* NUMPAD */}
-                <div className="grid grid-cols-3 gap-3">
+                {/* NUMPAD — 44px minimum touch targets, 64px on tablet */}
+                <div className="grid grid-cols-3 gap-3 tablet:gap-4">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
                         <button
                             key={num}
                             onClick={() => handleIdx(num)}
-                            className="h-14 bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/5 rounded-xl text-xl font-bold text-white transition-all duration-150"
+                            className="h-14 tablet:h-16 bg-white/5 hover:bg-white/10 active:bg-white/20 active:scale-95 border border-white/5 rounded-2xl text-2xl font-bold text-white transition-all duration-100 select-none"
                         >
                             {num}
                         </button>
@@ -112,22 +112,22 @@ export default function LoginPage() {
                     <div />
                     <button
                         onClick={() => handleIdx(0)}
-                        className="h-14 bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/5 rounded-xl text-xl font-bold text-white transition-all duration-150"
+                        className="h-14 tablet:h-16 bg-white/5 hover:bg-white/10 active:bg-white/20 active:scale-95 border border-white/5 rounded-2xl text-2xl font-bold text-white transition-all duration-100 select-none"
                     >
                         0
                     </button>
                     <button
                         onClick={handleClear}
-                        className="h-14 bg-white/5 hover:bg-red-500/10 active:bg-red-500/20 border border-white/5 rounded-xl flex items-center justify-center text-zinc-500 hover:text-red-400 transition-all duration-150"
+                        className="h-14 tablet:h-16 bg-white/5 hover:bg-red-500/10 active:bg-red-500/20 active:scale-95 border border-white/5 rounded-2xl flex items-center justify-center text-zinc-500 hover:text-red-400 transition-all duration-100"
                     >
-                        <Delete size={22} />
+                        <Delete size={24} />
                     </button>
                 </div>
 
                 <button
                     onClick={handleSubmit}
                     disabled={loading || pin.length < 4}
-                    className="w-full mt-6 py-3.5 bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-white font-bold text-sm shadow-lg shadow-violet-500/20 hover:shadow-violet-500/30 transition-all duration-200"
+                    className="w-full mt-5 py-4 tablet:py-5 bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed rounded-2xl text-white font-extrabold text-base shadow-lg shadow-violet-500/20 transition-all duration-200 select-none"
                 >
                     {loading ? 'Verificando...' : 'Entrar'}
                 </button>

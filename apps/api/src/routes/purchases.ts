@@ -461,6 +461,19 @@ export default async function (fastify: FastifyInstance) {
                         }
                     });
 
+                    // Inventory Log entry for this purchase line
+                    await prisma.inventoryLog.create({
+                        data: {
+                            tenantId: purchase.tenantId,
+                            supplyItemId: item.id,
+                            previousStock: currentStock,
+                            newStock: currentStock + purchaseQty,
+                            changeAmount: purchaseQty,
+                            reason: 'purchase',
+                            notes: `Compra de ${purchase.supplier?.name ?? 'proveedor'} · $${purchaseCost.toFixed(2)}/u · Orden ${purchase.id.slice(0, 8)}`
+                        }
+                    });
+
                     // Log History
                     if (Math.abs(oldCost - newCost) > 0.01) {
                         await prisma.priceHistory.create({

@@ -100,7 +100,7 @@ export default function WastePage() {
     };
 
     return (
-        <div className="h-full flex flex-col p-6 max-w-3xl mx-auto">
+        <div className="h-full flex flex-col p-5 tablet:p-6 max-w-3xl mx-auto">
             {/* Header */}
             <header className="mb-6">
                 <div className="flex items-center gap-3 mb-1">
@@ -216,7 +216,7 @@ export default function WastePage() {
                         <div className="flex gap-3">
                             <input
                                 type="number"
-                                className="flex-1 glass-input rounded-xl p-3.5 text-xl text-white focus:ring-2 focus:ring-red-500/30 outline-none font-mono"
+                                className="flex-1 glass-input rounded-xl p-4 text-2xl text-white focus:ring-2 focus:ring-red-500/30 outline-none font-mono h-14"
                                 placeholder="0.00"
                                 value={quantity}
                                 onChange={e => setQuantity(e.target.value)}
@@ -231,19 +231,19 @@ export default function WastePage() {
                     {/* Step 2: Type */}
                     <div>
                         <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wider">Tipo de Merma</label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-3 gap-2 tablet:gap-3">
                             {WASTE_TYPES.map(type => (
                                 <button
                                     key={type.id}
                                     onClick={() => setWasteType(type.id)}
-                                    className={`p-3 rounded-xl border text-left transition-all duration-200 ${wasteType === type.id
+                                    className={`p-3.5 tablet:p-4 rounded-2xl border text-left transition-all duration-200 active:scale-95 ${wasteType === type.id
                                         ? 'bg-red-500/15 border-red-500/40 ring-1 ring-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.1)]'
                                         : 'glass-card hover:bg-white/[0.04] hover:border-white/10'
                                         }`}
                                 >
-                                    <div className="text-xl mb-1">{type.icon}</div>
-                                    <div className={`font-bold text-xs ${wasteType === type.id ? 'text-red-400' : 'text-zinc-300'}`}>{type.label}</div>
-                                    <div className="text-[10px] text-zinc-600 mt-0.5 line-clamp-1">{type.description}</div>
+                                    <div className="text-2xl mb-1.5">{type.icon}</div>
+                                    <div className={`font-bold text-xs tablet:text-sm ${wasteType === type.id ? 'text-red-400' : 'text-zinc-300'}`}>{type.label}</div>
+                                    <div className="text-[10px] text-zinc-600 mt-0.5 line-clamp-1 hidden tablet:block">{type.description}</div>
                                 </button>
                             ))}
                         </div>

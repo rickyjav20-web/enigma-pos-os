@@ -126,7 +126,7 @@ export default function ProductionPage() {
     return (
         <div className="h-full flex flex-col bg-zinc-950 overflow-hidden">
             {/* Header */}
-            <div className="px-5 pt-5 pb-4 border-b border-white/5 flex items-center justify-between shrink-0">
+            <div className="px-5 pt-5 pb-4 border-b border-white/5 flex items-center justify-between shrink-0 portrait:px-4 portrait:pt-4">
                 <div className="flex items-center gap-3">
                     <ChefHat size={22} className="text-violet-400" />
                     <div>
@@ -155,21 +155,22 @@ export default function ProductionPage() {
                 </div>
             )}
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+            {/* landscape: 2-col grid, portrait: 1-col */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 portrait:px-3">
 
                 {/* ── URGENTE ──────────────────────────────────── */}
                 {urgent.length > 0 && (
                     <section>
-                        <div className="flex items-center gap-2 mb-2.5">
-                            <Zap size={13} className="text-amber-400" />
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-400">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Zap size={14} className="text-amber-400" />
+                            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
                                 Producir ahora
                             </span>
                             {urgentPending.length === 0 && (
-                                <span className="text-[10px] text-emerald-500 font-semibold ml-1">— todo hecho</span>
+                                <span className="text-[11px] text-emerald-500 font-semibold ml-1">— todo listo</span>
                             )}
                         </div>
-                        <div className="space-y-2">
+                        <div className="landscape:grid landscape:grid-cols-2 landscape:gap-2 portrait:space-y-2">
                             {urgentPending.map(item => (
                                 <BatchCard
                                     key={item.id}
@@ -201,14 +202,14 @@ export default function ProductionPage() {
                 {/* ── OK / EXTRA ────────────────────────────────── */}
                 {okItems.length > 0 && (
                     <section>
-                        <div className="flex items-center gap-2 mb-2.5">
-                            <CheckCircle size={13} className="text-emerald-500" />
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-500/70">
+                        <div className="flex items-center gap-2 mb-3">
+                            <CheckCircle size={14} className="text-emerald-500" />
+                            <span className="text-xs font-bold uppercase tracking-widest text-emerald-500/70">
                                 Stock cubierto
                             </span>
-                            <span className="text-[10px] text-zinc-600 ml-1">— puedes producir extra</span>
+                            <span className="text-[11px] text-zinc-600 ml-1">— extra opcional</span>
                         </div>
-                        <div className="space-y-2">
+                        <div className="landscape:grid landscape:grid-cols-2 landscape:gap-2 portrait:space-y-2">
                             {okItems.map(item => (
                                 <BatchCard
                                     key={item.id}
@@ -228,13 +229,13 @@ export default function ProductionPage() {
                 {/* ── LIBRE ─────────────────────────────────────── */}
                 {free.length > 0 && (
                     <section>
-                        <div className="flex items-center gap-2 mb-2.5">
-                            <Package size={13} className="text-zinc-600" />
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-600">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Package size={14} className="text-zinc-600" />
+                            <span className="text-xs font-bold uppercase tracking-widest text-zinc-600">
                                 Sin par configurado
                             </span>
                         </div>
-                        <div className="space-y-2">
+                        <div className="landscape:grid landscape:grid-cols-2 landscape:gap-2 portrait:space-y-2">
                             {free.map(item => (
                                 <BatchCard
                                     key={item.id}
@@ -299,34 +300,33 @@ function BatchCard({
         : 'bg-violet-600 hover:bg-violet-500 shadow-violet-500/20';
 
     return (
-        <div className={`rounded-xl border transition-all ${containerCls}`}>
-            <div className="flex items-center gap-3 px-4 py-3.5">
-                <div className={`w-1 h-11 rounded-full shrink-0 ${accentCls}`} />
+        <div className={`rounded-2xl border transition-all ${containerCls}`}>
+            <div className="flex items-center gap-3 px-4 py-4 tablet:py-5">
+                <div className={`w-1 h-12 rounded-full shrink-0 ${accentCls}`} />
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                        <p className="text-sm font-bold text-white leading-none truncate">{item.name}</p>
-                        {variant === 'urgent' && !isDone && <AlertTriangle size={11} className="text-amber-400 shrink-0" />}
-                        {isDone && <CheckCircle size={11} className="text-emerald-400 shrink-0" />}
+                    <div className="flex items-center gap-2 mb-1">
+                        <p className="text-base font-bold text-white leading-tight truncate">{item.name}</p>
+                        {variant === 'urgent' && !isDone && <AlertTriangle size={13} className="text-amber-400 shrink-0" />}
+                        {isDone && <CheckCircle size={13} className="text-emerald-400 shrink-0" />}
                     </div>
 
                     {isDone ? (
-                        <p className="text-[11px] text-emerald-400/70">
-                            +{batches * yieldQty} {unit} registrado — total ~{willHave} {unit}
+                        <p className="text-xs text-emerald-400/80">
+                            +{batches * yieldQty} {unit} agregado · stock ~{willHave} {unit}
                         </p>
                     ) : (
                         <>
-                            <p className="text-[11px] text-zinc-400">
+                            <p className="text-xs text-zinc-400">
                                 {item.parLevel !== null
-                                    ? `Tienes ${stock} · necesitas ${item.parLevel} ${unit}`
-                                    : `Tienes ${stock} ${unit}`
+                                    ? `Stock: ${stock} ${unit} · meta: ${item.parLevel} ${unit}`
+                                    : `Stock actual: ${stock} ${unit}`
                                 }
                             </p>
-                            <p className="text-[10px] text-zinc-600 mt-0.5">
+                            <p className="text-[11px] text-zinc-600 mt-0.5">
                                 1 batch = {yieldQty} {unit}
                                 {batchesNeeded > 0 && ` · recomendado: ${batchesNeeded} batch${batchesNeeded > 1 ? 'es' : ''}`}
-                                {` · producir ${batches}: dara ${willHave} ${unit}`}
                             </p>
                         </>
                     )}
@@ -335,41 +335,41 @@ function BatchCard({
                 {/* Controls */}
                 {!isDone ? (
                     <div className="flex items-center gap-2 shrink-0">
-                        {/* +/- counter */}
-                        <div className="flex items-center bg-black/40 border border-white/8 rounded-xl overflow-hidden">
+                        {/* +/- counter — min 44px touch targets */}
+                        <div className="flex items-center bg-black/40 border border-white/10 rounded-xl overflow-hidden">
                             <button
                                 onClick={() => onAdjust(-1)}
-                                className="w-8 h-9 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/10 transition-colors"
+                                className="w-11 h-11 flex items-center justify-center text-zinc-400 hover:text-white active:bg-white/10 transition-colors"
                             >
-                                <Minus size={13} />
+                                <Minus size={16} />
                             </button>
-                            <div className="w-9 text-center">
-                                <span className="text-sm font-bold text-white tabular-nums">{batches}</span>
+                            <div className="w-10 text-center select-none">
+                                <span className="text-lg font-extrabold text-white tabular-nums">{batches}</span>
                             </div>
                             <button
                                 onClick={() => onAdjust(1)}
-                                className="w-8 h-9 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/10 transition-colors"
+                                className="w-11 h-11 flex items-center justify-center text-zinc-400 hover:text-white active:bg-white/10 transition-colors"
                             >
-                                <Plus size={13} />
+                                <Plus size={16} />
                             </button>
                         </div>
 
-                        {/* Hecho button */}
+                        {/* Hecho — big, clear CTA */}
                         <button
                             onClick={onProduce}
                             disabled={isProducing}
-                            className={`h-9 px-4 rounded-xl font-bold text-[12px] text-white transition-all flex items-center gap-1.5 shadow-lg ${btnCls} disabled:opacity-50`}
+                            className={`h-11 px-5 rounded-xl font-extrabold text-sm text-white transition-all active:scale-95 flex items-center gap-2 shadow-lg ${btnCls} disabled:opacity-50`}
                         >
                             {isProducing
-                                ? <Loader2 size={13} className="animate-spin" />
-                                : <ChefHat size={13} />
+                                ? <Loader2 size={15} className="animate-spin" />
+                                : <ChefHat size={15} />
                             }
                             {!isProducing && 'Hecho'}
                         </button>
                     </div>
                 ) : (
-                    <div className="shrink-0 w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                        <CheckCircle size={15} className="text-emerald-400" />
+                    <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                        <CheckCircle size={18} className="text-emerald-400" />
                     </div>
                 )}
             </div>
