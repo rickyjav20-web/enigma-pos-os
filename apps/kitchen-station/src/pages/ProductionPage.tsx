@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChefHat, Plus, Minus, CheckCircle, Package, Loader2, Zap, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ChefHat, Plus, Minus, CheckCircle, Package, Loader2, Zap, AlertTriangle, RefreshCw, Flame } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
@@ -15,6 +15,8 @@ interface BatchItem {
     minStock: number | null;
 }
 
+type Urgency = 'critical' | 'low' | 'ok' | 'none';
+
 function getShift(): 'MORNING' | 'EVENING' {
     return new Date().getHours() < 15 ? 'MORNING' : 'EVENING';
 }
@@ -26,6 +28,14 @@ function calcBatchesNeeded(item: BatchItem): number {
     const unitsNeeded = Math.max(0, par - stock);
     if (unitsNeeded === 0) return 0;
     return Math.ceil(unitsNeeded / yieldQty);
+}
+
+function getUrgency(item: BatchItem): Urgency {
+    const stock = Math.max(0, item.stockQuantity || 0);
+    if (item.parLevel === null) return 'none';
+    if (stock === 0 || (item.minStock !== null && stock < item.minStock)) return 'critical';
+    if (stock < item.parLevel) return 'low';
+    return 'ok';
 }
 
 export default function ProductionPage() {
@@ -116,12 +126,14 @@ export default function ProductionPage() {
         );
     }
 
-    const urgent = items.filter(i => i.parLevel !== null && Math.max(0, i.stockQuantity) < i.parLevel!);
+    // Split urgent items by urgency level, sort critical first
+    const needProduction = items.filter(i => i.parLevel !== null && Math.max(0, i.stockQuantity) < i.parLevel!);
+    const criticalItems = needProduction.filter(i => getUrgency(i) === 'critical');
+    const lowItems = needProduction.filter(i => getUrgency(i) === 'low');
     const okItems = items.filter(i => i.parLevel !== null && Math.max(0, i.stockQuantity) >= i.parLevel!);
     const free = items.filter(i => i.parLevel === null);
 
-    const urgentPending = urgent.filter(i => !done.has(i.id));
-    const urgentDone = urgent.filter(i => done.has(i.id));
+    const pendingCount = needProduction.filter(i => !done.has(i.id)).length;
 
     return (
         <div className="h-full flex flex-col bg-zinc-950 overflow-hidden">
@@ -133,10 +145,21 @@ export default function ProductionPage() {
                         <h1 className="text-lg font-bold text-white leading-none">Producción</h1>
                         <p className="text-[11px] text-zinc-500 mt-0.5">
                             Turno {getShift() === 'MORNING' ? 'Mañana' : 'Tarde-Noche'}
-                            {urgent.length > 0 && !urgentPending.length
+                            {pendingCount === 0 && needProduction.length > 0
                                 ? <span className="ml-2 text-emerald-400 font-semibold">Todo listo</span>
-                                : urgentPending.length > 0
-                                    ? <span className="ml-2 text-amber-400 font-semibold">{urgentPending.length} pendiente{urgentPending.length > 1 ? 's' : ''}</span>
+                                : pendingCount > 0
+                                    ? <>
+                                        {criticalItems.filter(i => !done.has(i.id)).length > 0 && (
+                                            <span className="ml-2 text-red-400 font-semibold">
+                                                {criticalItems.filter(i => !done.has(i.id)).length} crítico{criticalItems.filter(i => !done.has(i.id)).length > 1 ? 's' : ''}
+                                            </span>
+                                        )}
+                                        {lowItems.filter(i => !done.has(i.id)).length > 0 && (
+                                            <span className="ml-1.5 text-amber-400 font-semibold">
+                                                {lowItems.filter(i => !done.has(i.id)).length} bajo
+                                            </span>
+                                        )}
+                                    </>
                                     : null
                             }
                         </p>
@@ -155,51 +178,71 @@ export default function ProductionPage() {
                 </div>
             )}
 
-            {/* landscape: 2-col grid, portrait: 1-col */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 portrait:px-3">
 
-                {/* ── URGENTE ──────────────────────────────────── */}
-                {urgent.length > 0 && (
+                {/* ── CRÍTICO — stock = 0 o bajo mínimo ─────────── */}
+                {criticalItems.length > 0 && (
                     <section>
                         <div className="flex items-center gap-2 mb-3">
-                            <Zap size={14} className="text-amber-400" />
-                            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
-                                Producir ahora
+                            <Flame size={14} className="text-red-400" />
+                            <span className="text-xs font-bold uppercase tracking-widest text-red-400">
+                                Crítico — sin stock
                             </span>
-                            {urgentPending.length === 0 && (
-                                <span className="text-[11px] text-emerald-500 font-semibold ml-1">— todo listo</span>
-                            )}
+                            <span className="text-[11px] text-zinc-600 ml-1">
+                                {criticalItems.filter(i => !done.has(i.id)).length > 0
+                                    ? `· ${criticalItems.filter(i => !done.has(i.id)).length} pendiente${criticalItems.filter(i => !done.has(i.id)).length > 1 ? 's' : ''}`
+                                    : '· todo listo'}
+                            </span>
                         </div>
                         <div className="landscape:grid landscape:grid-cols-2 landscape:gap-2 portrait:space-y-2">
-                            {urgentPending.map(item => (
+                            {criticalItems.map(item => (
                                 <BatchCard
                                     key={item.id}
                                     item={item}
                                     batches={batchCounts[item.id] || 1}
-                                    isDone={false}
+                                    isDone={done.has(item.id)}
                                     isProducing={producing === item.id}
+                                    urgency="critical"
                                     onAdjust={(d) => adjustBatch(item.id, d)}
                                     onProduce={() => handleProduce(item)}
-                                    variant="urgent"
-                                />
-                            ))}
-                            {urgentDone.map(item => (
-                                <BatchCard
-                                    key={item.id}
-                                    item={item}
-                                    batches={batchCounts[item.id] || 1}
-                                    isDone={true}
-                                    isProducing={false}
-                                    onAdjust={(d) => adjustBatch(item.id, d)}
-                                    onProduce={() => handleProduce(item)}
-                                    variant="urgent"
                                 />
                             ))}
                         </div>
                     </section>
                 )}
 
-                {/* ── OK / EXTRA ────────────────────────────────── */}
+                {/* ── BAJO STOCK — queda algo pero < par ─────────── */}
+                {lowItems.length > 0 && (
+                    <section>
+                        <div className="flex items-center gap-2 mb-3">
+                            <Zap size={14} className="text-amber-400" />
+                            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
+                                Bajo stock
+                            </span>
+                            <span className="text-[11px] text-zinc-600 ml-1">
+                                {lowItems.filter(i => !done.has(i.id)).length > 0
+                                    ? `· ${lowItems.filter(i => !done.has(i.id)).length} pendiente${lowItems.filter(i => !done.has(i.id)).length > 1 ? 's' : ''}`
+                                    : '· todo listo'}
+                            </span>
+                        </div>
+                        <div className="landscape:grid landscape:grid-cols-2 landscape:gap-2 portrait:space-y-2">
+                            {lowItems.map(item => (
+                                <BatchCard
+                                    key={item.id}
+                                    item={item}
+                                    batches={batchCounts[item.id] || 1}
+                                    isDone={done.has(item.id)}
+                                    isProducing={producing === item.id}
+                                    urgency="low"
+                                    onAdjust={(d) => adjustBatch(item.id, d)}
+                                    onProduce={() => handleProduce(item)}
+                                />
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* ── OK / CUBIERTO ──────────────────────────────── */}
                 {okItems.length > 0 && (
                     <section>
                         <div className="flex items-center gap-2 mb-3">
@@ -217,16 +260,16 @@ export default function ProductionPage() {
                                     batches={batchCounts[item.id] || 1}
                                     isDone={done.has(item.id)}
                                     isProducing={producing === item.id}
+                                    urgency="ok"
                                     onAdjust={(d) => adjustBatch(item.id, d)}
                                     onProduce={() => handleProduce(item)}
-                                    variant="ok"
                                 />
                             ))}
                         </div>
                     </section>
                 )}
 
-                {/* ── LIBRE ─────────────────────────────────────── */}
+                {/* ── SIN PAR CONFIGURADO ────────────────────────── */}
                 {free.length > 0 && (
                     <section>
                         <div className="flex items-center gap-2 mb-3">
@@ -243,9 +286,9 @@ export default function ProductionPage() {
                                     batches={batchCounts[item.id] || 1}
                                     isDone={done.has(item.id)}
                                     isProducing={producing === item.id}
+                                    urgency="none"
                                     onAdjust={(d) => adjustBatch(item.id, d)}
                                     onProduce={() => handleProduce(item)}
-                                    variant="free"
                                 />
                             ))}
                         </div>
@@ -264,16 +307,54 @@ export default function ProductionPage() {
 }
 
 /* ─── Batch Card ────────────────────────────────────────────────────────── */
+
+const URGENCY_STYLES: Record<Urgency, {
+    container: string;
+    accent: string;
+    btn: string;
+    icon: string;
+    text: string;
+}> = {
+    critical: {
+        container: 'border-red-500/30 bg-red-500/5',
+        accent: 'bg-red-500',
+        btn: 'bg-red-600 hover:bg-red-500 shadow-red-500/20',
+        icon: 'text-red-400',
+        text: 'text-red-400',
+    },
+    low: {
+        container: 'border-amber-500/25 bg-amber-500/5',
+        accent: 'bg-amber-500',
+        btn: 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/20',
+        icon: 'text-amber-400',
+        text: 'text-amber-400',
+    },
+    ok: {
+        container: 'border-white/8 bg-white/[0.02]',
+        accent: 'bg-emerald-600',
+        btn: 'bg-violet-600 hover:bg-violet-500 shadow-violet-500/20',
+        icon: 'text-emerald-500',
+        text: 'text-zinc-400',
+    },
+    none: {
+        container: 'border-white/8 bg-white/[0.02]',
+        accent: 'bg-zinc-700',
+        btn: 'bg-violet-600 hover:bg-violet-500 shadow-violet-500/20',
+        icon: 'text-zinc-600',
+        text: 'text-zinc-500',
+    },
+};
+
 function BatchCard({
-    item, batches, isDone, isProducing, onAdjust, onProduce, variant,
+    item, batches, isDone, isProducing, urgency, onAdjust, onProduce,
 }: {
     item: BatchItem;
     batches: number;
     isDone: boolean;
     isProducing: boolean;
+    urgency: Urgency;
     onAdjust: (d: number) => void;
     onProduce: () => void;
-    variant: 'urgent' | 'ok' | 'free';
 }) {
     const stock = Math.max(0, item.stockQuantity);
     const yieldQty = item.yieldQuantity || 1;
@@ -281,35 +362,32 @@ function BatchCard({
     const batchesNeeded = calcBatchesNeeded(item);
     const willHave = stock + batches * yieldQty;
 
+    const styles = URGENCY_STYLES[urgency];
+
     const containerCls = isDone
         ? 'border-emerald-500/25 bg-emerald-500/5'
-        : variant === 'urgent'
-            ? 'border-amber-500/25 bg-amber-500/5'
-            : 'border-white/8 bg-white/[0.02]';
+        : styles.container;
 
-    const accentCls = isDone
-        ? 'bg-emerald-500'
-        : variant === 'urgent'
-            ? 'bg-amber-500'
-            : variant === 'ok'
-                ? 'bg-emerald-600'
-                : 'bg-zinc-700';
-
-    const btnCls = variant === 'urgent' && !isDone
-        ? 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/20'
-        : 'bg-violet-600 hover:bg-violet-500 shadow-violet-500/20';
+    const accentCls = isDone ? 'bg-emerald-500' : styles.accent;
 
     return (
         <div className={`rounded-2xl border transition-all ${containerCls}`}>
             <div className="flex items-center gap-3 px-4 py-4 tablet:py-5">
+                {/* Urgency accent bar */}
                 <div className={`w-1 h-12 rounded-full shrink-0 ${accentCls}`} />
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                         <p className="text-base font-bold text-white leading-tight truncate">{item.name}</p>
-                        {variant === 'urgent' && !isDone && <AlertTriangle size={13} className="text-amber-400 shrink-0" />}
-                        {isDone && <CheckCircle size={13} className="text-emerald-400 shrink-0" />}
+                        {isDone
+                            ? <CheckCircle size={13} className="text-emerald-400 shrink-0" />
+                            : urgency === 'critical'
+                                ? <Flame size={13} className="text-red-400 shrink-0" />
+                                : urgency === 'low'
+                                    ? <AlertTriangle size={13} className="text-amber-400 shrink-0" />
+                                    : null
+                        }
                     </div>
 
                     {isDone ? (
@@ -318,7 +396,7 @@ function BatchCard({
                         </p>
                     ) : (
                         <>
-                            <p className="text-xs text-zinc-400">
+                            <p className={`text-xs ${urgency === 'critical' ? 'text-red-400/80' : urgency === 'low' ? 'text-amber-400/80' : 'text-zinc-400'}`}>
                                 {item.parLevel !== null
                                     ? `Stock: ${stock} ${unit} · meta: ${item.parLevel} ${unit}`
                                     : `Stock actual: ${stock} ${unit}`
@@ -335,7 +413,6 @@ function BatchCard({
                 {/* Controls */}
                 {!isDone ? (
                     <div className="flex items-center gap-2 shrink-0">
-                        {/* +/- counter — min 44px touch targets */}
                         <div className="flex items-center bg-black/40 border border-white/10 rounded-xl overflow-hidden">
                             <button
                                 onClick={() => onAdjust(-1)}
@@ -354,11 +431,10 @@ function BatchCard({
                             </button>
                         </div>
 
-                        {/* Hecho — big, clear CTA */}
                         <button
                             onClick={onProduce}
                             disabled={isProducing}
-                            className={`h-11 px-5 rounded-xl font-extrabold text-sm text-white transition-all active:scale-95 flex items-center gap-2 shadow-lg ${btnCls} disabled:opacity-50`}
+                            className={`h-11 px-5 rounded-xl font-extrabold text-sm text-white transition-all active:scale-95 flex items-center gap-2 shadow-lg ${styles.btn} disabled:opacity-50`}
                         >
                             {isProducing
                                 ? <Loader2 size={15} className="animate-spin" />
