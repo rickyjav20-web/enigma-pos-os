@@ -262,7 +262,8 @@ function CountRow({ item, value, onChange }: {
     onChange: (v: string) => void;
 }) {
     const system = item.stockQuantity;
-    const unit = item.yieldUnit || item.defaultUnit;
+    // Use defaultUnit for stock/par display (consistent with how stockQuantity is stored)
+    const unit = item.defaultUnit;
     const counted = parseFloat(value);
     const hasCounted = value !== '' && !isNaN(counted);
     const variance = hasCounted ? counted - system : null;

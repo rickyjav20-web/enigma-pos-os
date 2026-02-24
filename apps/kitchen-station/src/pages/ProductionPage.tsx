@@ -358,9 +358,13 @@ function BatchCard({
 }) {
     const stock = Math.max(0, item.stockQuantity);
     const yieldQty = item.yieldQuantity || 1;
-    const unit = item.yieldUnit || item.defaultUnit;
+    // stockUnit: the unit stock/par are measured in (defaultUnit)
+    // yieldDisplayUnit: the unit each batch produces (yieldUnit if different, else same)
+    const stockUnit = item.defaultUnit;
+    const yieldDisplayUnit = item.yieldUnit || item.defaultUnit;
+    const sameUnit = stockUnit === yieldDisplayUnit;
     const batchesNeeded = calcBatchesNeeded(item);
-    const willHave = stock + batches * yieldQty;
+    const willHave = stock + (sameUnit ? batches * yieldQty : batches);
 
     const styles = URGENCY_STYLES[urgency];
 
@@ -392,18 +396,18 @@ function BatchCard({
 
                     {isDone ? (
                         <p className="text-xs text-emerald-400/80">
-                            +{batches * yieldQty} {unit} agregado · stock ~{willHave} {unit}
+                            +{batches * yieldQty} {yieldDisplayUnit} producido · stock ~{willHave} {stockUnit}
                         </p>
                     ) : (
                         <>
                             <p className={`text-xs ${urgency === 'critical' ? 'text-red-400/80' : urgency === 'low' ? 'text-amber-400/80' : 'text-zinc-400'}`}>
                                 {item.parLevel !== null
-                                    ? `Stock: ${stock} ${unit} · meta: ${item.parLevel} ${unit}`
-                                    : `Stock actual: ${stock} ${unit}`
+                                    ? `Stock: ${stock} ${stockUnit} · meta: ${item.parLevel} ${stockUnit}`
+                                    : `Stock actual: ${stock} ${stockUnit}`
                                 }
                             </p>
                             <p className="text-[11px] text-zinc-600 mt-0.5">
-                                1 batch = {yieldQty} {unit}
+                                1 batch = {yieldQty} {yieldDisplayUnit}
                                 {batchesNeeded > 0 && ` · recomendado: ${batchesNeeded} batch${batchesNeeded > 1 ? 'es' : ''}`}
                             </p>
                         </>
