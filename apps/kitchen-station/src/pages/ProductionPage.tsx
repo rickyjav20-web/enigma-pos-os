@@ -1,350 +1,377 @@
 import { useState, useEffect } from 'react';
-import { ChefHat, Plus, Minus, CheckCircle, Package, Loader2, Zap, AlertTriangle } from 'lucide-react';
+import { ChefHat, Plus, Minus, CheckCircle, Package, Loader2, Zap, AlertTriangle, RefreshCw } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
-interface ProductionItem {
+interface BatchItem {
     id: string;
     name: string;
-    category: string;
-    yieldQuantity: number;
-    yieldUnit: string;
+    category: string | null;
+    yieldQuantity: number | null;
+    yieldUnit: string | null;
+    defaultUnit: string;
     stockQuantity: number;
-}
-
-interface ShiftTask {
-    id: string;
-    supplyItemId: string;
-    targetQty: number | null;
-    priority: number;
-    reason: string;
-    status: string;
-    supplyItem: {
-        id: string;
-        name: string;
-        yieldUnit: string | null;
-        defaultUnit: string;
-        stockQuantity: number;
-        parLevel: number | null;
-        yieldQuantity: number | null;
-    };
-}
-
-function getToday(): string {
-    return new Date().toISOString().slice(0, 10);
+    parLevel: number | null;
+    minStock: number | null;
 }
 
 function getShift(): 'MORNING' | 'EVENING' {
     return new Date().getHours() < 15 ? 'MORNING' : 'EVENING';
 }
 
+function calcBatchesNeeded(item: BatchItem): number {
+    const stock = Math.max(0, item.stockQuantity || 0);
+    const par = item.parLevel || 0;
+    const yieldQty = item.yieldQuantity || 1;
+    const unitsNeeded = Math.max(0, par - stock);
+    if (unitsNeeded === 0) return 0;
+    return Math.ceil(unitsNeeded / yieldQty);
+}
+
 export default function ProductionPage() {
     const { user } = useAuth();
-    const [items, setItems] = useState<ProductionItem[]>([]);
+    const [items, setItems] = useState<BatchItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedItem, setSelectedItem] = useState<ProductionItem | null>(null);
-    const [quantity, setQuantity] = useState(1);
-    const [isProducing, setIsProducing] = useState(false);
-    const [successMessage, setSuccessMessage] = useState('');
-    const [tasks, setTasks] = useState<ShiftTask[]>([]);
-    const [tasksLoading, setTasksLoading] = useState(true);
-    const [completingTask, setCompletingTask] = useState<string | null>(null);
-
-    useEffect(() => {
-        fetchItems();
-        fetchTasks();
-    }, []);
+    const [producing, setProducing] = useState<string | null>(null);
+    const [done, setDone] = useState<Set<string>>(new Set());
+    const [batchCounts, setBatchCounts] = useState<Record<string, number>>({});
+    const [successMsg, setSuccessMsg] = useState('');
 
     const fetchItems = async () => {
+        setLoading(true);
         try {
-            const res = await api.get('/supply-items');
-            const allItems = res.data.data || [];
-            const zone2 = allItems.filter((i: any) => i.isProduction);
-            setItems(zone2);
+            const res = await api.get('/supply-items?limit=500');
+            const all = res.data.data || [];
+            const batches: BatchItem[] = all
+                .filter((i: any) => i.isProduction)
+                .map((i: any) => ({
+                    id: i.id,
+                    name: i.name,
+                    category: i.category || null,
+                    yieldQuantity: i.yieldQuantity || null,
+                    yieldUnit: i.yieldUnit || null,
+                    defaultUnit: i.defaultUnit || 'und',
+                    stockQuantity: Math.max(0, i.stockQuantity || 0),
+                    parLevel: i.parLevel || null,
+                    minStock: i.minStock || null,
+                }));
+            setItems(batches);
+            const initial: Record<string, number> = {};
+            for (const b of batches) {
+                initial[b.id] = Math.max(1, calcBatchesNeeded(b));
+            }
+            setBatchCounts(initial);
         } catch (e) {
-            console.error("Failed to fetch production items", e);
+            console.error('Failed to fetch items', e);
         } finally {
             setLoading(false);
         }
     };
 
-    const fetchTasks = async () => {
-        setTasksLoading(true);
-        try {
-            const res = await api.get('/inventory/tasks', {
-                params: { date: getToday(), shift: getShift(), type: 'PRODUCTION' }
-            });
-            const pending = (res.data || []).filter((t: ShiftTask) => t.status === 'PENDING');
-            setTasks(pending);
-        } catch (e) {
-            console.error('Failed to fetch shift tasks', e);
-        } finally {
-            setTasksLoading(false);
-        }
-    };
+    useEffect(() => { fetchItems(); }, []);
 
-    const handleProduceTask = async (task: ShiftTask) => {
+    const handleProduce = async (item: BatchItem) => {
         if (!user) return;
-        setCompletingTask(task.id);
+        setProducing(item.id);
+        const batches = batchCounts[item.id] || 1;
+        const totalUnits = batches * (item.yieldQuantity || 1);
         try {
-            const item = task.supplyItem;
-            const batchQty = (item.yieldQuantity || 1) * (task.targetQty || 1);
             await api.post('/production', {
                 supplyItemId: item.id,
-                quantity: batchQty,
+                quantity: totalUnits,
                 unit: item.yieldUnit || item.defaultUnit,
-                reason: `Tarea de producción (turno ${getShift()})`,
+                reason: `Produccion turno ${getShift()} - ${batches} batch${batches > 1 ? 'es' : ''}`,
                 userId: user.id,
-                userName: user.name
+                userName: user.name,
             });
-            await api.patch(`/inventory/tasks/${task.id}`, {
-                status: 'DONE',
-                completedQty: task.targetQty || 0,
-                completedBy: user.id
-            });
-            setSuccessMessage(`✓ Completado: ${item.name}`);
-            setTimeout(() => setSuccessMessage(''), 4000);
-            fetchTasks();
-            fetchItems();
+            setDone(prev => new Set([...prev, item.id]));
+            setSuccessMsg(`Listo: ${item.name} — ${batches} batch${batches > 1 ? 'es' : ''}`);
+            setTimeout(() => setSuccessMsg(''), 4000);
+            setItems(prev => prev.map(i =>
+                i.id === item.id
+                    ? { ...i, stockQuantity: Math.max(0, i.stockQuantity) + totalUnits }
+                    : i
+            ));
         } catch (e) {
-            console.error('Failed to complete task', e);
+            console.error('Production error', e);
+            alert('Error al registrar. Intenta de nuevo.');
         } finally {
-            setCompletingTask(null);
+            setProducing(null);
         }
     };
 
-    const handleSelect = (item: ProductionItem) => {
-        setSelectedItem(item);
-        setQuantity(1);
-        setSuccessMessage('');
+    const adjustBatch = (itemId: string, delta: number) => {
+        setBatchCounts(prev => ({
+            ...prev,
+            [itemId]: Math.max(1, (prev[itemId] || 1) + delta),
+        }));
     };
 
-    const handleProduce = async () => {
-        if (!selectedItem) return;
-        setIsProducing(true);
+    if (loading) {
+        return (
+            <div className="h-full flex items-center justify-center gap-3 text-zinc-500">
+                <Loader2 size={28} className="animate-spin text-violet-400" />
+                <span>Cargando...</span>
+            </div>
+        );
+    }
 
-        try {
-            const payload = {
-                supplyItemId: selectedItem.id,
-                quantity: quantity * (selectedItem.yieldQuantity || 1),
-                unit: selectedItem.yieldUnit || 'und',
-                reason: 'Manual Production (Kitchen Station)',
-                userId: user?.id,
-                userName: user?.name
-            };
+    const urgent = items.filter(i => i.parLevel !== null && Math.max(0, i.stockQuantity) < i.parLevel!);
+    const okItems = items.filter(i => i.parLevel !== null && Math.max(0, i.stockQuantity) >= i.parLevel!);
+    const free = items.filter(i => i.parLevel === null);
 
-            await api.post('/production', payload);
-
-            setSuccessMessage(`✓ Producido: ${quantity} batch de ${selectedItem.name}`);
-            setSelectedItem(null);
-            fetchItems();
-
-            setTimeout(() => setSuccessMessage(''), 4000);
-        } catch (e) {
-            console.error(e);
-            alert("Error al registrar producción");
-        } finally {
-            setIsProducing(false);
-        }
-    };
-
-    const getStockColor = (stock: number) => {
-        if (stock <= 0) return { bg: 'bg-red-500/15', text: 'text-red-400', border: 'border-red-500/20' };
-        if (stock < 5) return { bg: 'bg-amber-500/15', text: 'text-amber-400', border: 'border-amber-500/20' };
-        return { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/20' };
-    };
+    const urgentPending = urgent.filter(i => !done.has(i.id));
+    const urgentDone = urgent.filter(i => done.has(i.id));
 
     return (
-        <div className="h-full flex flex-col p-6 overflow-hidden">
+        <div className="h-full flex flex-col bg-zinc-950 overflow-hidden">
             {/* Header */}
-            <header className="mb-6">
-                <div className="flex items-center gap-3 mb-1">
-                    <ChefHat className="text-violet-400" size={28} />
-                    <h1 className="text-2xl font-bold text-white tracking-tight">Producción</h1>
-                    <span className="text-xs font-bold text-zinc-500 bg-white/5 px-2.5 py-1 rounded-full border border-white/5 uppercase tracking-wider">Zone 2</span>
+            <div className="px-5 pt-5 pb-4 border-b border-white/5 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                    <ChefHat size={22} className="text-violet-400" />
+                    <div>
+                        <h1 className="text-lg font-bold text-white leading-none">Producción</h1>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">
+                            Turno {getShift() === 'MORNING' ? 'Mañana' : 'Tarde-Noche'}
+                            {urgent.length > 0 && !urgentPending.length
+                                ? <span className="ml-2 text-emerald-400 font-semibold">Todo listo</span>
+                                : urgentPending.length > 0
+                                    ? <span className="ml-2 text-amber-400 font-semibold">{urgentPending.length} pendiente{urgentPending.length > 1 ? 's' : ''}</span>
+                                    : null
+                            }
+                        </p>
+                    </div>
                 </div>
-                <p className="text-zinc-500 text-sm ml-[40px]">Seleccione un item y registre la producción del batch.</p>
-            </header>
+                <button onClick={fetchItems} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors">
+                    <RefreshCw size={15} />
+                </button>
+            </div>
 
-            {/* Success Toast */}
-            {successMessage && (
-                <div className="mb-4 glass-card px-5 py-3 rounded-xl flex items-center gap-3 animate-fade-in border-emerald-500/20 bg-emerald-500/10">
-                    <CheckCircle size={18} className="text-emerald-400 shrink-0" />
-                    <span className="text-emerald-300 font-medium text-sm">{successMessage}</span>
-                </div>
-            )}
-
-            {/* Shift Tasks Section */}
-            {!tasksLoading && tasks.length > 0 && (
-                <div className="mb-5">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Zap size={14} className="text-amber-400" />
-                        <span className="text-xs font-bold uppercase tracking-widest text-amber-400/80">Tareas del Turno</span>
-                        <span className="text-xs text-zinc-500">— generadas del conteo de anoche</span>
-                    </div>
-                    <div className="space-y-2">
-                        {tasks.map(task => {
-                            const item = task.supplyItem;
-                            const unit = item.yieldUnit || item.defaultUnit;
-                            const isUrgent = task.priority >= 3;
-                            const isHigh = task.priority === 2;
-                            return (
-                                <div
-                                    key={task.id}
-                                    className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${isUrgent
-                                        ? 'bg-red-500/5 border-red-500/25'
-                                        : isHigh
-                                            ? 'bg-amber-500/5 border-amber-500/25'
-                                            : 'bg-white/[0.02] border-white/8'
-                                    }`}
-                                >
-                                    <div className={`w-1.5 h-10 rounded-full flex-shrink-0 ${isUrgent ? 'bg-red-500' : isHigh ? 'bg-amber-500' : 'bg-violet-500'}`} />
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-sm font-bold text-white">{item.name}</p>
-                                            {isUrgent && <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />}
-                                        </div>
-                                        <p className="text-xs text-zinc-500 mt-0.5">{task.reason}</p>
-                                    </div>
-                                    <div className="text-right flex-shrink-0">
-                                        <p className="text-lg font-bold text-white font-mono">{task.targetQty}</p>
-                                        <p className="text-[10px] text-zinc-500 uppercase">{unit}</p>
-                                    </div>
-                                    <button
-                                        onClick={() => handleProduceTask(task)}
-                                        disabled={completingTask === task.id}
-                                        className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-xl text-white text-xs font-bold transition-colors flex-shrink-0"
-                                    >
-                                        {completingTask === task.id
-                                            ? <Loader2 size={14} className="animate-spin" />
-                                            : <ChefHat size={14} />
-                                        }
-                                        Producir
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                    <div className="mt-3 border-t border-white/5 pt-3">
-                        <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-bold">Producción Manual</p>
-                    </div>
+            {/* Toast */}
+            {successMsg && (
+                <div className="mx-4 mt-3 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5 shrink-0">
+                    <CheckCircle size={15} className="text-emerald-400 shrink-0" />
+                    <span className="text-sm text-emerald-300 font-medium">{successMsg}</span>
                 </div>
             )}
 
-            {/* Grid */}
-            <div className="flex-1 overflow-y-auto pb-28">
-                {loading ? (
-                    <div className="flex flex-col items-center justify-center h-64 gap-3">
-                        <Loader2 className="text-violet-400 animate-spin" size={32} />
-                        <p className="text-zinc-500 text-sm">Cargando items de producción...</p>
-                    </div>
-                ) : items.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-64 gap-3">
-                        <Package className="text-zinc-700" size={48} />
-                        <p className="text-zinc-500">No hay items de producción configurados.</p>
-                        <p className="text-zinc-600 text-sm">Configure batches desde HQ → Inventory</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                        {items.map((item, idx) => {
-                            const stock = getStockColor(item.stockQuantity);
-                            const isSelected = selectedItem?.id === item.id;
-                            return (
-                                <button
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+
+                {/* ── URGENTE ──────────────────────────────────── */}
+                {urgent.length > 0 && (
+                    <section>
+                        <div className="flex items-center gap-2 mb-2.5">
+                            <Zap size={13} className="text-amber-400" />
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-400">
+                                Producir ahora
+                            </span>
+                            {urgentPending.length === 0 && (
+                                <span className="text-[10px] text-emerald-500 font-semibold ml-1">— todo hecho</span>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            {urgentPending.map(item => (
+                                <BatchCard
                                     key={item.id}
-                                    onClick={() => handleSelect(item)}
-                                    className={`glass-card p-5 rounded-xl flex flex-col items-start transition-all duration-200 text-left relative overflow-hidden group animate-fade-in ${isSelected
-                                            ? 'ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/10 shadow-[0_0_20px_rgba(139,92,246,0.15)]'
-                                            : 'hover:bg-white/[0.04] hover:border-white/10'
-                                        }`}
-                                    style={{ animationDelay: `${idx * 30}ms` }}
-                                >
-                                    {/* Name — large and prominent */}
-                                    <h3 className={`text-base font-bold mb-2 leading-tight line-clamp-2 transition-colors ${isSelected ? 'text-violet-300' : 'text-white group-hover:text-violet-300'
-                                        }`}>
-                                        {item.name}
-                                    </h3>
+                                    item={item}
+                                    batches={batchCounts[item.id] || 1}
+                                    isDone={false}
+                                    isProducing={producing === item.id}
+                                    onAdjust={(d) => adjustBatch(item.id, d)}
+                                    onProduce={() => handleProduce(item)}
+                                    variant="urgent"
+                                />
+                            ))}
+                            {urgentDone.map(item => (
+                                <BatchCard
+                                    key={item.id}
+                                    item={item}
+                                    batches={batchCounts[item.id] || 1}
+                                    isDone={true}
+                                    isProducing={false}
+                                    onAdjust={(d) => adjustBatch(item.id, d)}
+                                    onProduce={() => handleProduce(item)}
+                                    variant="urgent"
+                                />
+                            ))}
+                        </div>
+                    </section>
+                )}
 
-                                    {/* Category */}
-                                    {item.category && (
-                                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-3">
-                                            {item.category}
-                                        </span>
-                                    )}
+                {/* ── OK / EXTRA ────────────────────────────────── */}
+                {okItems.length > 0 && (
+                    <section>
+                        <div className="flex items-center gap-2 mb-2.5">
+                            <CheckCircle size={13} className="text-emerald-500" />
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-500/70">
+                                Stock cubierto
+                            </span>
+                            <span className="text-[10px] text-zinc-600 ml-1">— puedes producir extra</span>
+                        </div>
+                        <div className="space-y-2">
+                            {okItems.map(item => (
+                                <BatchCard
+                                    key={item.id}
+                                    item={item}
+                                    batches={batchCounts[item.id] || 1}
+                                    isDone={done.has(item.id)}
+                                    isProducing={producing === item.id}
+                                    onAdjust={(d) => adjustBatch(item.id, d)}
+                                    onProduce={() => handleProduce(item)}
+                                    variant="ok"
+                                />
+                            ))}
+                        </div>
+                    </section>
+                )}
 
-                                    {/* Bottom row — batch size + stock */}
-                                    <div className="mt-auto w-full flex items-center justify-between gap-2 pt-2">
-                                        {item.yieldQuantity ? (
-                                            <span className="text-xs text-zinc-400 font-mono">
-                                                {item.yieldQuantity} {item.yieldUnit || 'und'}/batch
-                                            </span>
-                                        ) : (
-                                            <span className="text-xs text-zinc-600 italic">Sin receta</span>
-                                        )}
+                {/* ── LIBRE ─────────────────────────────────────── */}
+                {free.length > 0 && (
+                    <section>
+                        <div className="flex items-center gap-2 mb-2.5">
+                            <Package size={13} className="text-zinc-600" />
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-600">
+                                Sin par configurado
+                            </span>
+                        </div>
+                        <div className="space-y-2">
+                            {free.map(item => (
+                                <BatchCard
+                                    key={item.id}
+                                    item={item}
+                                    batches={batchCounts[item.id] || 1}
+                                    isDone={done.has(item.id)}
+                                    isProducing={producing === item.id}
+                                    onAdjust={(d) => adjustBatch(item.id, d)}
+                                    onProduce={() => handleProduce(item)}
+                                    variant="free"
+                                />
+                            ))}
+                        </div>
+                    </section>
+                )}
 
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${stock.bg} ${stock.text} ${stock.border} border`}>
-                                            {item.stockQuantity}
-                                        </span>
-                                    </div>
-                                </button>
-                            );
-                        })}
+                {items.length === 0 && (
+                    <div className="text-center py-16 text-zinc-600">
+                        <Package size={36} className="mx-auto mb-3 opacity-30" />
+                        <p className="text-sm">Sin items de produccion.</p>
                     </div>
                 )}
             </div>
+        </div>
+    );
+}
 
-            {/* Action Bar (Fixed Bottom) */}
-            <div className={`fixed bottom-0 left-20 right-0 transition-all duration-300 ${selectedItem ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
-                <div className="bg-black/60 backdrop-blur-2xl border-t border-white/5 p-5">
-                    {selectedItem && (
-                        <div className="max-w-4xl mx-auto flex items-center justify-between gap-6">
-                            {/* Item info */}
-                            <div className="min-w-0">
-                                <p className="text-[10px] text-violet-400 uppercase tracking-wider font-bold">Produciendo</p>
-                                <h2 className="text-lg font-bold text-white truncate">{selectedItem.name}</h2>
-                                {selectedItem.yieldQuantity ? (
-                                    <p className="text-xs text-zinc-500">{selectedItem.yieldQuantity} {selectedItem.yieldUnit || 'und'} por batch</p>
-                                ) : null}
-                            </div>
+/* ─── Batch Card ────────────────────────────────────────────────────────── */
+function BatchCard({
+    item, batches, isDone, isProducing, onAdjust, onProduce, variant,
+}: {
+    item: BatchItem;
+    batches: number;
+    isDone: boolean;
+    isProducing: boolean;
+    onAdjust: (d: number) => void;
+    onProduce: () => void;
+    variant: 'urgent' | 'ok' | 'free';
+}) {
+    const stock = Math.max(0, item.stockQuantity);
+    const yieldQty = item.yieldQuantity || 1;
+    const unit = item.yieldUnit || item.defaultUnit;
+    const batchesNeeded = calcBatchesNeeded(item);
+    const willHave = stock + batches * yieldQty;
 
-                            {/* Quantity Control */}
-                            <div className="flex items-center gap-3 glass-card rounded-xl p-1.5 shrink-0">
-                                <button
-                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                    className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-                                >
-                                    <Minus size={18} />
-                                </button>
-                                <div className="text-center min-w-[56px]">
-                                    <span className="text-2xl font-bold text-white tabular-nums">{quantity}</span>
-                                    <span className="block text-[9px] text-zinc-500 uppercase tracking-wider">batch</span>
-                                </div>
-                                <button
-                                    onClick={() => setQuantity(quantity + 1)}
-                                    className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-                                >
-                                    <Plus size={18} />
-                                </button>
-                            </div>
+    const containerCls = isDone
+        ? 'border-emerald-500/25 bg-emerald-500/5'
+        : variant === 'urgent'
+            ? 'border-amber-500/25 bg-amber-500/5'
+            : 'border-white/8 bg-white/[0.02]';
 
-                            {/* Produce Button */}
-                            <button
-                                onClick={handleProduce}
-                                disabled={isProducing}
-                                className="h-12 px-8 bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-white text-sm shadow-lg shadow-violet-500/20 hover:shadow-violet-500/30 flex items-center justify-center gap-2 transition-all duration-200 shrink-0"
-                            >
-                                {isProducing ? (
-                                    <Loader2 size={18} className="animate-spin" />
-                                ) : (
-                                    <>
-                                        <ChefHat size={18} />
-                                        PRODUCIR
-                                    </>
-                                )}
-                            </button>
-                        </div>
+    const accentCls = isDone
+        ? 'bg-emerald-500'
+        : variant === 'urgent'
+            ? 'bg-amber-500'
+            : variant === 'ok'
+                ? 'bg-emerald-600'
+                : 'bg-zinc-700';
+
+    const btnCls = variant === 'urgent' && !isDone
+        ? 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/20'
+        : 'bg-violet-600 hover:bg-violet-500 shadow-violet-500/20';
+
+    return (
+        <div className={`rounded-xl border transition-all ${containerCls}`}>
+            <div className="flex items-center gap-3 px-4 py-3.5">
+                <div className={`w-1 h-11 rounded-full shrink-0 ${accentCls}`} />
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                        <p className="text-sm font-bold text-white leading-none truncate">{item.name}</p>
+                        {variant === 'urgent' && !isDone && <AlertTriangle size={11} className="text-amber-400 shrink-0" />}
+                        {isDone && <CheckCircle size={11} className="text-emerald-400 shrink-0" />}
+                    </div>
+
+                    {isDone ? (
+                        <p className="text-[11px] text-emerald-400/70">
+                            +{batches * yieldQty} {unit} registrado — total ~{willHave} {unit}
+                        </p>
+                    ) : (
+                        <>
+                            <p className="text-[11px] text-zinc-400">
+                                {item.parLevel !== null
+                                    ? `Tienes ${stock} · necesitas ${item.parLevel} ${unit}`
+                                    : `Tienes ${stock} ${unit}`
+                                }
+                            </p>
+                            <p className="text-[10px] text-zinc-600 mt-0.5">
+                                1 batch = {yieldQty} {unit}
+                                {batchesNeeded > 0 && ` · recomendado: ${batchesNeeded} batch${batchesNeeded > 1 ? 'es' : ''}`}
+                                {` · producir ${batches}: dara ${willHave} ${unit}`}
+                            </p>
+                        </>
                     )}
                 </div>
+
+                {/* Controls */}
+                {!isDone ? (
+                    <div className="flex items-center gap-2 shrink-0">
+                        {/* +/- counter */}
+                        <div className="flex items-center bg-black/40 border border-white/8 rounded-xl overflow-hidden">
+                            <button
+                                onClick={() => onAdjust(-1)}
+                                className="w-8 h-9 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/10 transition-colors"
+                            >
+                                <Minus size={13} />
+                            </button>
+                            <div className="w-9 text-center">
+                                <span className="text-sm font-bold text-white tabular-nums">{batches}</span>
+                            </div>
+                            <button
+                                onClick={() => onAdjust(1)}
+                                className="w-8 h-9 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/10 transition-colors"
+                            >
+                                <Plus size={13} />
+                            </button>
+                        </div>
+
+                        {/* Hecho button */}
+                        <button
+                            onClick={onProduce}
+                            disabled={isProducing}
+                            className={`h-9 px-4 rounded-xl font-bold text-[12px] text-white transition-all flex items-center gap-1.5 shadow-lg ${btnCls} disabled:opacity-50`}
+                        >
+                            {isProducing
+                                ? <Loader2 size={13} className="animate-spin" />
+                                : <ChefHat size={13} />
+                            }
+                            {!isProducing && 'Hecho'}
+                        </button>
+                    </div>
+                ) : (
+                    <div className="shrink-0 w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                        <CheckCircle size={15} className="text-emerald-400" />
+                    </div>
+                )}
             </div>
         </div>
     );
