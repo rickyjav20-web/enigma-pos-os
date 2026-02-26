@@ -1,0 +1,7 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/wave-landing/Dockerfile"
+watchPatterns = ["apps/wave-landing/**"]
+
+[deploy]
+startCommand = ""

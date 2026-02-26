@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave | Lista de Espera</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* Waitlist Specific Styles */
+        .waitlist-page {
+            /* Rich charcoal / polished concrete feel */
+            background-color: #1a1a1c;
+            background-image:
+                radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.03) 0%, transparent 60%),
+                radial-gradient(circle at 100% 100%, rgba(0, 0, 0, 0.4) 0%, transparent 50%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle background glow effect (mint/teal accent) */
+        .waitlist-bg-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70vw;
+            height: 70vw;
+            background: radial-gradient(circle, rgba(0, 208, 132, 0.04) 0%, rgba(26, 26, 28, 0) 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Minimal Nav */
+        .waitlist-nav {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 2rem 5%;
+            z-index: 10;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .back-link {
+            font-family: var(--font-sans);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--text-primary);
+        }
+
+        /* Main Container */
+        .waitlist-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 5%;
+            position: relative;
+            z-index: 10;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .waitlist-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            color: var(--action-primary);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        .waitlist-title {
+            font-family: var(--font-serif);
+            font-size: 4.5rem;
+            line-height: 1.05;
+            margin-bottom: 1.5rem;
+            font-weight: 400;
+            letter-spacing: -0.02em;
+        }
+
+        .waitlist-sub {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            line-height: 1.6;
+            margin-bottom: 3rem;
+            max-width: 480px;
+        }
+
+        /* Form Styles */
+        .waitlist-form {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .input-group {
+            position: relative;
+            width: 100%;
+        }
+
+        .waitlist-input {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            outline: none;
+            backdrop-filter: blur(10px);
+        }
+
+        .waitlist-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .waitlist-input:focus {
+            border-color: rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+        }
+
+        .waitlist-btn {
+            width: 100%;
+            background-color: var(--action-primary);
+            color: #000;
+            font-family: var(--font-sans);
+            font-weight: 600;
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .waitlist-btn:hover {
+            background-color: var(--action-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 208, 132, 0.2);
+        }
+
+        /* Success State */
+        .success-state {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            background-color: transparent;
+            /* Changed to let the background subtle glow show */
+            z-index: 5;
+        }
+
+        .success-state.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .success-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background-color: rgba(0, 208, 132, 0.1);
+            color: var(--action-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(0, 208, 132, 0.3);
+        }
+
+        .success-title {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .success-text {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .waitlist-bg-glow {
+                width: 100vw;
+                height: 100vw;
+            }
+
+            .waitlist-title {
+                font-size: 3rem;
+            }
+
+            .waitlist-sub {
+                font-size: 1rem;
+            }
+
+            .waitlist-input {
+                padding: 1rem 1.25rem;
+            }
+
+            .waitlist-btn {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .waitlist-title {
+                font-size: 2.5rem;
+            }
+
+            .waitlist-container {
+                padding: 0 8%;
+            }
+        }
+    </style>
+</head>
+
+<body class="waitlist-page">
+    <div class="waitlist-bg-glow"></div>
+
+    <nav class="waitlist-nav">
+        <a href="index.html" class="back-link">
+            <span>←</span> Volver al inicio
+        </a>
+    </nav>
+
+    <main class="waitlist-container">
+        <div class="fade-up-element is-visible">
+            <div class="waitlist-eyebrow">Exclusivo para Pioneros</div>
+            <h1 class="waitlist-title">Domina tu operación.<br>Libera tu tiempo.</h1>
+            <p class="waitlist-sub">Únete a la lista privada. Sé uno de los primeros en experimentar el ecosistema
+                diseñado para administrar el trabajo pesado por ti.</p>
+        </div>
+
+        <div class="waitlist-form-wrapper fade-up-element is-visible"
+            style="width: 100%; position: relative; min-height: 150px; transition-delay: 0.1s;">
+
+            <form id="waitlistForm" class="waitlist-form">
+                <div class="input-group">
+                    <input type="email" id="emailInput" class="waitlist-input" placeholder="tu@correo.com" required
+                        autocomplete="email">
+                </div>
+                <button type="submit" class="waitlist-btn">
+                    Solicitar Acceso <span>→</span>
+                </button>
+            </form>
+
+            <div id="successState" class="success-state">
+                <div class="success-icon">✓</div>
+                <h2 class="success-title">Estás dentro.</h2>
+                <p class="success-text">Te notificaremos antes que a nadie cuando abramos acceso.</p>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // =====================================================
+            // SUPABASE CONFIG — Replace these with your real values
+            // =====================================================
+            const SUPABASE_URL = 'https://ifeiqowrdoogucdjcmzo.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_anmTtouYrAHIIbHiyK2BUA_3nXlCTTc';
+
+            const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            const form = document.getElementById('waitlistForm');
+            const successState = document.getElementById('successState');
+            const submitBtn = form.querySelector('.waitlist-btn');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const email = document.getElementById('emailInput').value.trim();
+                if (!email) return;
+
+                // Disable button while sending
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Enviando... <span>⏳</span>';
+
+                try {
+                    const { error } = await sb
+                        .from('waitlist')
+                        .insert({ email });
+
+                    if (error) {
+                        // Handle duplicate email gracefully
+                        if (error.code === '23505') {
+                            showSuccess('Ya estás en la lista.', 'Tu correo ya fue registrado. Te contactaremos pronto.');
+                        } else {
+                            throw error;
+                        }
+                    } else {
+                        showSuccess('Estás dentro.', 'Te notificaremos antes que a nadie cuando abramos acceso.');
+                    }
+                } catch (err) {
+                    console.error('Waitlist error:', err);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Solicitar Acceso <span>→</span>';
+                    alert('Hubo un error. Por favor intenta de nuevo.');
+                }
+            });
+
+            function showSuccess(title, text) {
+                document.querySelector('.success-title').textContent = title;
+                document.querySelector('.success-text').textContent = text;
+                form.style.opacity = '0';
+                form.style.visibility = 'hidden';
+                setTimeout(() => {
+                    successState.classList.add('active');
+                }, 300);
+            }
+        });
+    </script>
+</body>
+
+</html>

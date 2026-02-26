@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wave — El Sistema Operativo Autónomo</title>
+  <meta name="description"
+    content="Wave es el sistema operativo para el comercio físico. Deja de perder tiempo con dashboards. Nosotros operamos y tomamos decisiones por ti." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Serif for Headers, Inter for Body -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-brand">
+        <span class="logo-text">wave</span>
+        <span class="logo-tag">by Flow</span>
+      </div>
+      <div class="nav-links">
+        <a href="#infrastructure">Infraestructura</a>
+        <a href="#intelligence">Inteligencia</a>
+        <a href="#audiences">Soluciones</a>
+        <a href="#pricing">Precios</a>
+      </div>
+      <div class="nav-actions">
+        <a href="waitlist.html" class="btn-ghost" style="border:none;">Iniciar sesión</a>
+        <a href="waitlist.html" class="btn-primary btn-nav">Ver un Demo</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero-fullscreen" id="hero">
+    <div class="hero-bg-wrapper">
+      <img
+        src="assets/wave_hero.png"
+        alt="Un joven barista interactuando fluidamente con un terminal POS" class="hero-fullscreen-img" />
+      <div class="hero-overlay"></div>
+    </div>
+    <div class="hero-content">
+      <h1 class="hero-title">Leyenda local o ícono global.<br>Hazlo en grande en tu zona.</h1>
+      <p class="hero-sub" style="font-size: 1.5rem; margin-bottom: 2rem;">
+        El sistema operativo todo-en-uno con inteligencia integrada que toma decisiones por ti.
+      </p>
+      <div class="hero-cta">
+        <a href="waitlist.html" class="btn-primary btn-large">Comenzar ahora</a>
+        <a href="waitlist.html" class="btn-primary btn-blue ml-4">Contactar ventas</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIDE THE WAVE (MIMICKING SQUARE'S FLOATING GRID) -->
+  <section class="section base-bg overflow-hidden py-10" id="flavor">
+    <div class="flavor-scatter-container">
+
+      <!-- Text firmly in the absolute center -->
+      <div class="flavor-center fade-up-element">
+        <h2 class="flavor-title">Sea cual sea la esencia de tu negocio,<br>construye y crece bajo tus propias reglas.
+        </h2>
+      </div>
+
+      <!-- Floating Images -->
+      <!-- Top Left -->
+      <div class="scatter-item fade-up-element" style="top: 5%; left: 10%; transition-delay: 0.1s;">
+        <img
+          src="assets/wave_niche_bakery.png"
+          alt="Bakery" class="scatter-img" />
+      </div>
+
+      <!-- Top Right -->
+      <div class="scatter-item fade-up-element" style="top: 15%; right: 15%; transition-delay: 0.2s;">
+        <img
+          src="assets/wave_niche_kitchen.png"
+          alt="Kitchen" class="scatter-img" />
+      </div>
+
+      <!-- Center Left -->
+      <div class="scatter-item fade-up-element" style="top: 45%; left: 5%; transition-delay: 0.3s;">
+        <img
+          src="assets/wave_niche_retail.png"
+          alt="Retail" class="scatter-img" />
+      </div>
+
+      <!-- Center Right -->
+      <div class="scatter-item fade-up-element" style="top: 55%; right: 5%; transition-delay: 0.4s;">
+        <img
+          src="assets/wave_niche_bar.png"
+          alt="Bar" class="scatter-img" />
+      </div>
+
+      <!-- Bottom Center -->
+      <div class="scatter-item fade-up-element"
+        style="bottom: 10%; left: 50%; transform: translateX(-50%); transition-delay: 0.5s;">
+        <img
+          src="assets/wave_niche_barber.png"
+          alt="Barber" class="scatter-img" />
+      </div>
+
+    </div>
+  </section>
+
+  <!-- INTERACTIVE FEATURES SHOWCASE (SQUARE STYLE) -->
+  <section class="section base-bg interactive-features-section" id="features">
+    <div class="features-split-container">
+
+      <!-- Left: Accordion & Text -->
+      <div class="features-left fade-up-element">
+        <div class="section-badge highlight"
+          style="font-family: var(--font-sans); font-weight: 600; margin-bottom: 1rem; border: none; padding-left:0;">EL
+          ECOSISTEMA</div>
+        <h2 class="section-title" style="font-size: 3.5rem; margin-bottom: 3rem;">Mira cómo todo tu negocio encaja
+          perfectamente.</h2>
+
+        <div class="feature-accordion">
+
+          <!-- Item 1 (Active by default) -->
+          <div class="accordion-item active" data-target="feature-1">
+            <div class="accordion-header">
+              <h4 class="mono-header">Punto de Venta (POS)</h4>
+              <span class="accordion-icon">−</span>
+            </div>
+            <div class="accordion-body">
+              <p>POS ultra rápido, manejo de caja multimoneda y torre de control en vivo para el salón.</p>
+            </div>
+          </div>
+
+          <!-- Item 2 -->
+          <div class="accordion-item" data-target="feature-2">
+            <div class="accordion-header">
+              <h4 class="mono-header">Gestión de equipo</h4>
+              <span class="accordion-icon">+</span>
+            </div>
+            <div class="accordion-body">
+              <p>Gestiona staff, módulo de entrada/salida (clock in/out), nóminas y planificación de turnos.</p>
+            </div>
+          </div>
+
+          <!-- Item 3 -->
+          <div class="accordion-item" data-target="feature-3">
+            <div class="accordion-header">
+              <h4 class="mono-header">Fidelidad y clientes</h4>
+              <span class="accordion-icon">+</span>
+            </div>
+            <div class="accordion-body">
+              <p>Sistema de fidelidad automatizado y gestión integral del ciclo de vida de tus clientes.</p>
+            </div>
+          </div>
+
+          <!-- Item 4 -->
+          <div class="accordion-item" data-target="feature-4">
+            <div class="accordion-header">
+              <h4 class="mono-header">Inventario Jerárquico</h4>
+              <span class="accordion-icon">+</span>
+            </div>
+            <div class="accordion-body">
+              <p>Ideal para restaurantes: compras que actualizan proveedores, márgenes automáticos en vivo y generación
+                de tareas de producción acorde al inventario para que nunca falte nada.</p>
+            </div>
+          </div>
+
+          <!-- Item 5 -->
+          <div class="accordion-item" data-target="feature-5">
+            <div class="accordion-header">
+              <h4 class="mono-header">Finanzas en vivo</h4>
+              <span class="accordion-icon">+</span>
+            </div>
+            <div class="accordion-body">
+              <p>Gestión completa de finanzas: control exacto del flujo de caja (cash flow), cuentas por pagar y cuentas
+                por cobrar.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Right: Dynamic Visual Showcase -->
+      <div class="features-right fade-up-element" style="transition-delay: 0.2s;">
+        <!-- Placeholder Images (To be replaced with real product photos later) -->
+        <div class="feature-showcase active" id="feature-1">
+          <img
+            src="assets/wave_pos_ui_mockup.png"
+            alt="POS UI" class="feature-showcase-img" />
+        </div>
+        <div class="feature-showcase" id="feature-2">
+          <img
+            src="assets/wave_staff_ui_mockup.png"
+            alt="Staff Management" class="feature-showcase-img" />
+        </div>
+        <div class="feature-showcase" id="feature-3">
+          <img
+            src="assets/wave_loyalty_ui_mockup.png"
+            alt="Loyalty Management" class="feature-showcase-img" />
+        </div>
+        <div class="feature-showcase" id="feature-4">
+          <img
+            src="assets/wave_inventory_ui_mockup.png"
+            alt="Inventory Systems" class="feature-showcase-img" />
+        </div>
+        <div class="feature-showcase" id="feature-5">
+          <img
+            src="assets/wave_finance_ui_mockup.png"
+            alt="Financial Flow" class="feature-showcase-img" />
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- INTELLIGENCE MULTI-PART SECTION (LIKE SQUARE AI) -->
+
+  <!-- Part 1: The Dark Intro -->
+  <section class="section dark-bg ai-intro-section" id="intelligence">
+    <div class="container center-text ai-intro-container">
+      <h2 class="ai-intro-text fade-up-element">
+        Wave AI está integrado en tus herramientas diarias para extraer insights accionables de tus datos y manejar
+        tareas rutinarias para ayudarte a avanzar.
+      </h2>
+      <div class="ai-pulse-icon fade-up-element" style="transition-delay: 0.2s;">
+        <div class="ai-sparkle">✦</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Part 2: The Warm Product Showcase -->
+  <section class="ai-showcase-section">
+    <div class="ai-showcase-bg">
+      <img
+        src="assets/wave_intelligence_mobile_ui.png"
+        alt="Wave AI Mobile Interface" class="ai-showcase-img" />
+    </div>
+    <div class="container ai-showcase-content">
+      <div class="ai-text-block fade-up-element">
+        <div class="section-badge highlight"
+          style="font-family: var(--font-mono); font-weight: 600; font-size: 0.65rem; border: none; padding-left:0; letter-spacing: 0.2em;">
+          WAVE AI</div>
+        <h2 class="ai-showcase-title">Toma decisiones inteligentes, rápido.</h2>
+        <p class="ai-showcase-sub">Pídele a Wave AI cualquier cosa sobre tu negocio para obtener insights inmediatos.
+        </p>
+        <a href="waitlist.html" class="ai-link">Saber más <span>→</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- BODY: OPERATIONAL INFRASTRUCTURE -->
+  <section class="section dark-bg" id="infrastructure">
+    <div class="container">
+      <div class="section-badge" style="font-family: var(--font-sans); font-weight: 600;">1. El Cuerpo</div>
+      <h2 class="section-title">La Infraestructura Operativa.</h2>
+      <p class="section-sub">
+        Olvídate de hacer malabares con 6 aplicaciones diferentes. Te damos el cuerpo físico completo requerido para
+        manejar tus operaciones diarias a la perfección.
+      </p>
+
+      <div class="cards-grid">
+        <div class="card">
+          <h3 class="mono-header">Punto de Venta (POS) & KDS</h3>
+          <p>Súper rápido, cero entrenamiento requerido. Toma órdenes y enrrútalas directo a la cocina sin
+            interrupciones.</p>
+        </div>
+        <div class="card">
+          <h3 class="mono-header">Inventario Crítico & Márgenes</h3>
+          <p>Rastreamos cada gramo y gota. Conoce tu margen exacto en cada ticket, actualizado constantemente en tiempo
+            real.</p>
+        </div>
+        <div class="card">
+          <h3 class="mono-header">Personal & Flujo de Efectivo</h3>
+          <p>Quién está trabajando, quién vende más, y exactamente cuánto efectivo hay en la caja registradora contra el
+            banco.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta section dark-bg" id="pricing">
+    <div class="container center-text">
+      <h2 class="section-title">Deja que la máquina administre la tienda.<br>Tú enfócate en tu arte.</h2>
+      <p class="section-sub">Cero contratos forzosos. Cero fricción. Solo un negocio más inteligente desde el primer
+        día.</p>
+      <div class="cta-buttons">
+        <a href="waitlist.html" class="btn-primary btn-large">Comenzar gratis</a>
+        <a href="waitlist.html" class="btn-ghost btn-large">Ver precios transparentes</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <div class="nav-brand">
+          <span class="logo-text">wave</span>
+        </div>
+        <p>El sistema operativo cognitivo.</p>
+      </div>
+      <div class="footer-links">
+        <div class="col">
+          <h5 class="mono-header">Producto</h5>
+          <a href="#">POS & Hardware</a>
+          <a href="#">Inventario Vivo</a>
+          <a href="#">Motor Cognitivo</a>
+        </div>
+        <div class="col">
+          <h5 class="mono-header">Casos de Uso</h5>
+          <a href="#">Cafeterías</a>
+          <a href="#">Restaurantes</a>
+          <a href="#">Retail Especializado</a>
+        </div>
+        <div class="col">
+          <h5 class="mono-header">Compañía</h5>
+          <a href="#">Flow Inc.</a>
+          <a href="#">Manifiesto</a>
+          <a href="#">Contacto</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll Animation Observer for fluid fade up on scroll
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+
+    document.querySelectorAll('.fade-up-element').forEach((el) => {
+      observer.observe(el);
+    });
+
+    // Accordion Logic for Features Section
+    const accordionItems = document.querySelectorAll('.accordion-item');
+    const showcases = document.querySelectorAll('.feature-showcase');
+
+    accordionItems.forEach(item => {
+      item.addEventListener('click', () => {
+        // If already active, do nothing
+        if (item.classList.contains('active')) return;
+
+        // Strip active from all items and flip icon to +
+        accordionItems.forEach(i => {
+          i.classList.remove('active');
+          if (i.querySelector('.accordion-icon')) {
+            i.querySelector('.accordion-icon').textContent = '+';
+          }
+        });
+        // Hide all showcases
+        showcases.forEach(s => s.classList.remove('active'));
+
+        // Activate clicked item and corresponding showcase
+        item.classList.add('active');
+        if (item.querySelector('.accordion-icon')) {
+          item.querySelector('.accordion-icon').textContent = '−';
+        }
+
+        const targetId = item.getAttribute('data-target');
+        const targetShowcase = document.getElementById(targetId);
+        if (targetShowcase) targetShowcase.classList.add('active');
+      });
+    });
+  </script>
+</body>
+
+</html>
