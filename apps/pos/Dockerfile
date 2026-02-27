@@ -17,7 +17,7 @@ COPY apps/pos/package.json ./apps/pos/package.json
 RUN mkdir -p apps/staff apps/wave-landing && \
     echo '{"name":"staff","version":"0.0.0","private":true}' > apps/staff/package.json && \
     echo '{"name":"wave-landing","version":"0.0.0","private":true}' > apps/wave-landing/package.json
-RUN npm ci
+RUN npm install --ignore-scripts
 
 # Builder stage
 FROM base AS builder
