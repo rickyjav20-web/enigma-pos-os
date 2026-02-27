@@ -3,8 +3,7 @@ import { useAuth } from './context/AuthContext';
 
 // Pages
 import LoginPage from './pages/LoginPage';
-import HomePage from './pages/HomePage';
-import NewOrderPage from './pages/NewOrderPage';
+import SaleScreen from './pages/SaleScreen';
 import PaymentPage from './pages/PaymentPage';
 import OpenTicketsPage from './pages/OpenTicketsPage';
 
@@ -24,12 +23,9 @@ export default function App() {
         employee ? <Navigate to="/" replace /> : <LoginPage />
       } />
 
-      {/* Protected */}
+      {/* Protected — Sale Screen is the main page */}
       <Route path="/" element={
-        <ProtectedRoute><HomePage /></ProtectedRoute>
-      } />
-      <Route path="/order/new" element={
-        <ProtectedRoute><NewOrderPage /></ProtectedRoute>
+        <ProtectedRoute><SaleScreen /></ProtectedRoute>
       } />
       <Route path="/payment" element={
         <ProtectedRoute><PaymentPage /></ProtectedRoute>

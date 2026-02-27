@@ -13,14 +13,17 @@ export interface CartItem {
 interface CartStore {
     items: CartItem[];
     orderType: 'dine_in' | 'takeaway';
-    customerId: string | null;
+    ticketName: string;
+    ticketId: string | null;
 
     // Actions
     addItem: (product: { id: string; name: string; price: number; category?: string }) => void;
     removeItem: (productId: string) => void;
     updateQuantity: (productId: string, delta: number) => void;
     setOrderType: (type: 'dine_in' | 'takeaway') => void;
-    setCustomerId: (id: string | null) => void;
+    setTicketName: (name: string) => void;
+    setTicketId: (id: string | null) => void;
+    loadTicket: (ticket: { id: string; name: string; items: CartItem[]; orderType?: 'dine_in' | 'takeaway' }) => void;
     clearCart: () => void;
 
     // Computed
@@ -31,7 +34,8 @@ interface CartStore {
 export const useCartStore = create<CartStore>((set, get) => ({
     items: [],
     orderType: 'dine_in',
-    customerId: null,
+    ticketName: 'Ticket',
+    ticketId: null,
 
     addItem: (product) => {
         set((state) => {
@@ -72,8 +76,17 @@ export const useCartStore = create<CartStore>((set, get) => ({
     },
 
     setOrderType: (type) => set({ orderType: type }),
-    setCustomerId: (id) => set({ customerId: id }),
-    clearCart: () => set({ items: [], customerId: null }),
+    setTicketName: (name) => set({ ticketName: name }),
+    setTicketId: (id) => set({ ticketId: id }),
+
+    loadTicket: (ticket) => set({
+        ticketId: ticket.id,
+        ticketName: ticket.name,
+        items: ticket.items,
+        orderType: ticket.orderType || 'dine_in',
+    }),
+
+    clearCart: () => set({ items: [], ticketName: 'Ticket', ticketId: null }),
 
     total: () => get().items.reduce((sum, i) => sum + (i.price * i.quantity), 0),
     itemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
