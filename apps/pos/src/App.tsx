@@ -1,35 +1,45 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 
-function App() {
-  const [count, setCount] = useState(0)
+// Pages
+import LoginPage from './pages/LoginPage';
+import HomePage from './pages/HomePage';
+import NewOrderPage from './pages/NewOrderPage';
+import PaymentPage from './pages/PaymentPage';
+import OpenTicketsPage from './pages/OpenTicketsPage';
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { employee } = useAuth();
+  if (!employee) return <Navigate to="/login" replace />;
+  return <>{children}</>;
 }
 
-export default App
+export default function App() {
+  const { employee } = useAuth();
+
+  return (
+    <Routes>
+      {/* Public */}
+      <Route path="/login" element={
+        employee ? <Navigate to="/" replace /> : <LoginPage />
+      } />
+
+      {/* Protected */}
+      <Route path="/" element={
+        <ProtectedRoute><HomePage /></ProtectedRoute>
+      } />
+      <Route path="/order/new" element={
+        <ProtectedRoute><NewOrderPage /></ProtectedRoute>
+      } />
+      <Route path="/payment" element={
+        <ProtectedRoute><PaymentPage /></ProtectedRoute>
+      } />
+      <Route path="/tickets" element={
+        <ProtectedRoute><OpenTicketsPage /></ProtectedRoute>
+      } />
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to={employee ? "/" : "/login"} replace />} />
+    </Routes>
+  );
+}
