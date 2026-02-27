@@ -34,7 +34,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
             canAccessOps: false,
             canAccessHq: false,
             canAccessKiosk: true,
-            canAccessKitchen: false
+            canAccessKitchen: false,
+            canAccessPos: true
         };
 
         try {
@@ -50,7 +51,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
                     canAccessOps: systemRole.canAccessOps,
                     canAccessHq: systemRole.canAccessHq,
                     canAccessKiosk: systemRole.canAccessKiosk,
-                    canAccessKitchen: systemRole.canAccessKitchen
+                    canAccessKitchen: systemRole.canAccessKitchen,
+                    canAccessPos: (systemRole as any).canAccessPos ?? true
                 };
             }
         } catch (e) {

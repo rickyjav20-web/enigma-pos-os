@@ -51,6 +51,7 @@ model SystemRole {
   canAccessHq       Boolean @default(false)   // Back office (HQ)
   canAccessKiosk    Boolean @default(true)    // Clock-in kiosk
   canAccessKitchen  Boolean @default(false)   // Kitchen station
+  canAccessPos      Boolean @default(true)    // POS Mobile (WAVE)
 
   isSystem    Boolean  @default(false)      // Prevents deletion
   createdAt   DateTime @default(now())

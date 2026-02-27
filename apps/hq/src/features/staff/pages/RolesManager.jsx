@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '@/lib/api';
-import { Shield, Plus, Trash2, Edit2, Check, X, ArrowLeft, Monitor, LayoutDashboard, Clock, AlertCircle, Lock, ChefHat } from 'lucide-react';
+import { Shield, Plus, Trash2, Edit2, Check, X, ArrowLeft, Monitor, LayoutDashboard, Clock, AlertCircle, Lock, ChefHat, Smartphone } from 'lucide-react';
 
 const SYSTEM_ICONS = {
     ops: Monitor,
     hq: LayoutDashboard,
     kiosk: Clock,
     kitchen: ChefHat,
+    pos: Smartphone,
 };
 
 const SYSTEM_LABELS = {
@@ -15,6 +16,7 @@ const SYSTEM_LABELS = {
     hq: 'Oficina (HQ)',
     kiosk: 'Kiosko',
     kitchen: 'Cocina',
+    pos: 'POS Mobile',
 };
 
 export default function RolesManager() {
@@ -23,7 +25,7 @@ export default function RolesManager() {
     const [editingId, setEditingId] = useState(null);
     const [editData, setEditData] = useState({});
     const [showCreate, setShowCreate] = useState(false);
-    const [newRole, setNewRole] = useState({ name: '', description: '', color: '#8b5cf6', canAccessOps: false, canAccessHq: false, canAccessKiosk: true, canAccessKitchen: false });
+    const [newRole, setNewRole] = useState({ name: '', description: '', color: '#8b5cf6', canAccessOps: false, canAccessHq: false, canAccessKiosk: true, canAccessKitchen: false, canAccessPos: true });
     const [error, setError] = useState('');
     const [employeeCounts, setEmployeeCounts] = useState({});
 
@@ -68,7 +70,7 @@ export default function RolesManager() {
         try {
             await api.post('/roles', newRole);
             setShowCreate(false);
-            setNewRole({ name: '', description: '', color: '#8b5cf6', canAccessOps: false, canAccessHq: false, canAccessKiosk: true, canAccessKitchen: false });
+            setNewRole({ name: '', description: '', color: '#8b5cf6', canAccessOps: false, canAccessHq: false, canAccessKiosk: true, canAccessKitchen: false, canAccessPos: true });
             fetchRoles();
         } catch (e) {
             setError(e.response?.data?.error || 'Error al crear rol');
@@ -245,16 +247,19 @@ export default function RolesManager() {
                             <th className="p-6 pb-4 text-center">
                                 <div className="flex items-center justify-center gap-1.5"><ChefHat className="w-3.5 h-3.5" /> Kitchen</div>
                             </th>
+                            <th className="p-6 pb-4 text-center">
+                                <div className="flex items-center justify-center gap-1.5"><Smartphone className="w-3.5 h-3.5" /> POS</div>
+                            </th>
                             <th className="p-6 pb-4 text-center">Staff</th>
                             <th className="p-6 pb-4 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
                         {loading ? (
-                            <tr><td colSpan="7" className="p-12 text-center text-enigma-text-muted">Loading roles...</td></tr>
+                            <tr><td colSpan="8" className="p-12 text-center text-enigma-text-muted">Loading roles...</td></tr>
                         ) : roles.length === 0 ? (
                             <tr>
-                                <td colSpan="7" className="p-16 text-center">
+                                <td colSpan="8" className="p-16 text-center">
                                     <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <Shield className="w-8 h-8 text-white/20" />
                                     </div>
@@ -312,7 +317,7 @@ export default function RolesManager() {
                                 </td>
 
                                 {/* Permission toggles */}
-                                {['canAccessOps', 'canAccessHq', 'canAccessKiosk', 'canAccessKitchen'].map(field => (
+                                {['canAccessOps', 'canAccessHq', 'canAccessKiosk', 'canAccessKitchen', 'canAccessPos'].map(field => (
                                     <td key={field} className="p-6 text-center">
                                         <button
                                             onClick={() => handleToggle(role, field)}
@@ -367,6 +372,7 @@ export default function RolesManager() {
                 <div className="flex items-center gap-2"><LayoutDashboard className="w-3.5 h-3.5" /> <strong>HQ</strong> = Back office</div>
                 <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5" /> <strong>Kiosk</strong> = Clock-in/out</div>
                 <div className="flex items-center gap-2"><ChefHat className="w-3.5 h-3.5" /> <strong>Kitchen</strong> = Producción y Merma</div>
+                <div className="flex items-center gap-2"><Smartphone className="w-3.5 h-3.5" /> <strong>POS</strong> = WAVE Point of Sale</div>
                 <div className="flex items-center gap-2"><Lock className="w-3 h-3" /> = System role (cannot delete)</div>
             </div>
         </div>
