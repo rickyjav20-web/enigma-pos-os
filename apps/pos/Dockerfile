@@ -2,25 +2,27 @@
 FROM node:20-alpine AS base
 WORKDIR /app
 
-# Dependencies stage — install ALL workspace deps
+# Dependencies stage — install deps with proper workspace resolution
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+# Only copy workspace package.json files that exist in the repo
 COPY packages/types/package.json ./packages/types/package.json
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/hq/package.json ./apps/hq/package.json
 COPY apps/kitchen-station/package.json ./apps/kitchen-station/package.json
 COPY apps/ops/package.json ./apps/ops/package.json
 COPY apps/pos/package.json ./apps/pos/package.json
-COPY apps/staff/package.json ./apps/staff/package.json
-COPY apps/wave-landing/package.json ./apps/wave-landing/package.json
+# Create stubs for workspaces referenced in package.json but not needed
+RUN mkdir -p apps/staff apps/wave-landing && \
+    echo '{"name":"staff","version":"0.0.0","private":true}' > apps/staff/package.json && \
+    echo '{"name":"wave-landing","version":"0.0.0","private":true}' > apps/wave-landing/package.json
 RUN npm ci
 
 # Builder stage
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/pos/node_modules ./apps/pos/node_modules 2>/dev/null || true
 COPY package.json package-lock.json ./
 COPY packages/types ./packages/types
 COPY apps/pos ./apps/pos
@@ -32,7 +34,7 @@ ENV VITE_API_URL=${VITE_API_URL}
 # Force create .env file
 RUN echo "VITE_API_URL=${VITE_API_URL}" > apps/pos/.env
 
-# Build POS (skip tsc for Docker builds — Vite handles TS)
+# Build POS (Vite handles TS transpilation)
 RUN cd apps/pos && npx vite build
 
 # Runner stage
