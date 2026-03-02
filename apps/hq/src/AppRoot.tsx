@@ -16,6 +16,7 @@ import ShiftHistory from "./features/staff/pages/ShiftHistory";
 import RolesManager from "./features/staff/pages/RolesManager";
 // @ts-ignore
 import KioskAuth from "./features/staff/pages/KioskAuth";
+import DailyGoals from "./features/staff/pages/DailyGoals";
 // @ts-ignore
 import AccountPage from "./features/account/pages/AccountPage";
 // @ts-ignore
@@ -58,6 +59,7 @@ function AppRoot() {
               <Route path="staff/schedule" element={<Scheduler />} />
               <Route path="staff/history" element={<ShiftHistory />} />
               <Route path="staff/roles" element={<RolesManager />} />
+              <Route path="staff/goals" element={<DailyGoals />} />
               {/* REMOVED: KioskAuth moved to standalone route */}
               <Route path="account" element={<AccountPage />} />
               <Route path="settings" element={<Navigate to="/account" replace />} />

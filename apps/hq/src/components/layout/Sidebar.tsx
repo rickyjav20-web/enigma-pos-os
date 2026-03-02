@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
     Settings, LogOut, Package, Brain, LayoutDashboard,
     Users, Calendar, ShoppingCart, Building2, Wallet,
-    TrendingUp, Trash2, FileUp
+    TrendingUp, Trash2, FileUp, Target
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -41,8 +41,8 @@ type NavSection = {
 const SECTIONS: NavSection[] = [
     {
         items: [
-            { icon: LayoutDashboard, label: 'Dashboard',  href: '/dashboard', activeColor: 'text-violet-400', exact: true },
-            { icon: Wallet,          label: 'Caja',        href: '/register',   activeColor: 'text-emerald-400', exact: true },
+            { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', activeColor: 'text-violet-400', exact: true },
+            { icon: Wallet, label: 'Caja', href: '/register', activeColor: 'text-emerald-400', exact: true },
         ],
     },
     {
@@ -50,8 +50,9 @@ const SECTIONS: NavSection[] = [
         headerText: 'text-blue-400/60',
         headerLine: 'bg-blue-500/10',
         items: [
-            { icon: Users,    label: 'Staff',   href: '/staff',          activeColor: 'text-blue-400', exact: true },
-            { icon: Calendar, label: 'Turnos',  href: '/staff/schedule', activeColor: 'text-blue-300' },
+            { icon: Users, label: 'Staff', href: '/staff', activeColor: 'text-blue-400', exact: true },
+            { icon: Calendar, label: 'Turnos', href: '/staff/schedule', activeColor: 'text-blue-300' },
+            { icon: Target, label: 'Metas', href: '/staff/goals', activeColor: 'text-pink-400', exact: true },
         ],
     },
     {
@@ -60,7 +61,7 @@ const SECTIONS: NavSection[] = [
         headerLine: 'bg-amber-500/10',
         items: [
             { icon: Package, label: 'Inventario', href: '/purchases/inventory', activeColor: 'text-amber-400' },
-            { icon: Trash2,  label: 'Mermas',     href: '/purchases/waste',     activeColor: 'text-orange-400', exact: true },
+            { icon: Trash2, label: 'Mermas', href: '/purchases/waste', activeColor: 'text-orange-400', exact: true },
         ],
     },
     {
@@ -68,9 +69,9 @@ const SECTIONS: NavSection[] = [
         headerText: 'text-green-400/60',
         headerLine: 'bg-green-500/10',
         items: [
-            { icon: Building2,   label: 'Proveedores',    href: '/purchases/suppliers',    activeColor: 'text-green-400' },
-            { icon: ShoppingCart, label: 'Nueva Compra',  href: '/purchases/new',          activeColor: 'text-teal-400',  exact: true },
-            { icon: FileUp,       label: 'Importar Ventas', href: '/purchases/import-sales', activeColor: 'text-cyan-400',  exact: true },
+            { icon: Building2, label: 'Proveedores', href: '/purchases/suppliers', activeColor: 'text-green-400' },
+            { icon: ShoppingCart, label: 'Nueva Compra', href: '/purchases/new', activeColor: 'text-teal-400', exact: true },
+            { icon: FileUp, label: 'Importar Ventas', href: '/purchases/import-sales', activeColor: 'text-cyan-400', exact: true },
         ],
     },
     {
@@ -78,8 +79,8 @@ const SECTIONS: NavSection[] = [
         headerText: 'text-pink-400/60',
         headerLine: 'bg-pink-500/10',
         items: [
-            { icon: Brain,     label: 'Smart Order',  href: '/purchases/smart-order',       activeColor: 'text-pink-400', exact: true },
-            { icon: TrendingUp, label: 'Menu Intel',  href: '/purchases/menu-intelligence', activeColor: 'text-rose-400', exact: true },
+            { icon: Brain, label: 'Smart Order', href: '/purchases/smart-order', activeColor: 'text-pink-400', exact: true },
+            { icon: TrendingUp, label: 'Menu Intel', href: '/purchases/menu-intelligence', activeColor: 'text-rose-400', exact: true },
         ],
     },
 ];
