@@ -176,7 +176,13 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         const { status } = request.query as { status?: string };
 
         const where: any = { tenantId };
-        if (status) where.status = status;
+        if (status) {
+            if (status.includes(',')) {
+                where.status = { in: status.split(',').map((s: string) => s.trim()) };
+            } else {
+                where.status = status;
+            }
+        }
 
         const sales = await prisma.salesOrder.findMany({
             where,
