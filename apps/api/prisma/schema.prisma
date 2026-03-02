@@ -35,6 +35,7 @@ model Tenant {
   currencies      Currency[]
   inventoryCounts InventoryCount[]
   shiftTasks      ShiftTask[]
+  diningTables    DiningTable[]
 }
 
 // --- MODULE: ACCESS CONTROL ---
@@ -475,13 +476,21 @@ model SalesOrder {
   
   totalAmount     Float
   paymentMethod   String   // 'cash', 'card', 'transfer'
-  status          String   @default("completed") // 'completed', 'cancelled'
+  status          String   @default("completed") // 'open', 'completed', 'cancelled'
+  
+  // Table & Ticket
+  tableId         String?  // Linked to DiningTable
+  tableName       String?  // Snapshot of table name
+  ticketName      String?  // Customer/ticket label
+  notes           String?  // POS notes
   
   createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt @default(now())
   
   // Relations
   tenant          Tenant          @relation(fields: [tenantId], references: [id])
   session         RegisterSession @relation(fields: [sessionId], references: [id])
+  table           DiningTable?    @relation(fields: [tableId], references: [id])
   items           SalesItem[]
 }
 
@@ -653,4 +662,22 @@ model ShiftTask {
 
   @@index([tenantId, date, shift])
   @@index([supplyItemId])
+}
+
+// --- MODULE: DINING TABLES ---
+
+model DiningTable {
+  id        String  @id @default(uuid())
+  tenantId  String
+  name      String        // "Mesa 1", "Bar 2"
+  zone      String?       // "Terraza", "Interior", "Bar"
+  capacity  Int?          // 2, 4, 6 seats
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+  createdAt DateTime @default(now())
+  
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  salesOrders SalesOrder[]
+  
+  @@unique([tenantId, name])
 }

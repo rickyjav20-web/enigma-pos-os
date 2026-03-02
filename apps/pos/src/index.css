@@ -1,21 +1,19 @@
 @import "tailwindcss";
 
-/* ═══ WAVE POS Design System — Premium Dark ═══ */
+/* ═══ WAVE POS — Dark Organic Tech ═══ */
 @theme {
-  --color-wave-bg: #0f0f14;
-  --color-wave-surface: #1a1a24;
-  --color-wave-card: rgba(255, 255, 255, 0.04);
-  --color-wave-border: rgba(255, 255, 255, 0.06);
-  --color-wave-purple: #7c3aed;
-  --color-wave-purple-glow: rgba(124, 58, 237, 0.15);
-  --color-wave-green: #10b981;
-  --color-wave-green-glow: rgba(16, 185, 129, 0.12);
-  --color-wave-red: #ef4444;
-  --color-wave-amber: #f59e0b;
-  --color-wave-blue: #3b82f6;
-  --color-wave-text: #f0f0f5;
-  --color-wave-text-secondary: rgba(240, 240, 245, 0.7);
-  --color-wave-text-muted: rgba(240, 240, 245, 0.35);
+  --color-onyx: #121413;
+  --color-charcoal: #222524;
+  --color-forest: #1C402E;
+  --color-sage: #93B59D;
+  --color-cream: #F4F0EA;
+  --color-cream-secondary: rgba(244, 240, 234, 0.6);
+  --color-cream-muted: rgba(244, 240, 234, 0.3);
+  --color-cream-ghost: rgba(244, 240, 234, 0.08);
+  --color-sage-glow: rgba(147, 181, 157, 0.15);
+  --color-forest-deep: rgba(28, 64, 46, 0.4);
+  --color-red: #ef4444;
+  --color-amber: #f59e0b;
 }
 
 /* ═══ Base ═══ */
@@ -28,16 +26,15 @@
 html,
 body,
 #root {
-  background-color: #0f0f14;
-  color: #f0f0f5;
+  background-color: #121413;
+  color: #F4F0EA;
   overflow-x: hidden;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Google font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif&display=swap');
 
 /* Safe areas */
 .safe-top {
@@ -96,6 +93,18 @@ body,
   }
 }
 
+@keyframes slide-down {
+  from {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 @keyframes scale-in {
   from {
     transform: scale(0.85);
@@ -128,44 +137,6 @@ body,
   }
 }
 
-@keyframes pulse-glow {
-
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.3);
-  }
-
-  50% {
-    box-shadow: 0 0 16px 4px rgba(124, 58, 237, 0.15);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-@keyframes item-add {
-  0% {
-    transform: scale(0.95);
-    opacity: 0.5;
-  }
-
-  50% {
-    transform: scale(1.02);
-  }
-
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
 }
@@ -176,6 +147,10 @@ body,
 
 .animate-slide-right {
   animation: slide-right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-slide-down {
+  animation: slide-down 0.2s ease-out both;
 }
 
 .animate-scale-in {
@@ -190,25 +165,17 @@ body,
   animation: spin 0.8s linear infinite;
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.animate-item-add {
-  animation: item-add 0.2s ease-out;
-}
-
-/* ═══ Glassmorphism ═══ */
+/* ═══ Glass — Organic Dark ═══ */
 .glass {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(244, 240, 234, 0.03);
+  border: 1px solid rgba(244, 240, 234, 0.06);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
 .glass-strong {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(244, 240, 234, 0.06);
+  border: 1px solid rgba(244, 240, 234, 0.08);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
@@ -223,7 +190,7 @@ body,
   opacity: 0.9;
 }
 
-/* ═══ Product row interactive ═══ */
+/* ═══ Product row — Organic ═══ */
 .product-row {
   position: relative;
   overflow: hidden;
@@ -234,7 +201,7 @@ body,
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at var(--tap-x, 50%) var(--tap-y, 50%), rgba(124, 58, 237, 0.12) 0%, transparent 70%);
+  background: radial-gradient(circle at var(--tap-x, 50%) var(--tap-y, 50%), rgba(147, 181, 157, 0.1) 0%, transparent 70%);
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
@@ -245,48 +212,40 @@ body,
 }
 
 .product-row:active {
-  background-color: rgba(124, 58, 237, 0.05);
+  background-color: rgba(147, 181, 157, 0.04);
 }
 
-/* Category chip active state */
-.cat-chip-active {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(124, 58, 237, 0.1));
-  border-color: rgba(124, 58, 237, 0.4);
-  color: #c4b5fd;
-  box-shadow: 0 0 12px rgba(124, 58, 237, 0.15);
-}
-
-/* Action button gradient */
+/* Action button gradient — Forest */
 .btn-charge {
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
-  box-shadow: 0 4px 24px rgba(124, 58, 237, 0.3);
+  background: linear-gradient(135deg, #1C402E, #255639);
+  box-shadow: 0 4px 24px rgba(28, 64, 46, 0.4);
 }
 
 .btn-charge:active {
-  box-shadow: 0 2px 12px rgba(124, 58, 237, 0.2);
+  box-shadow: 0 2px 12px rgba(28, 64, 46, 0.3);
 }
 
 .btn-save {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(244, 240, 234, 0.05);
+  border: 1px solid rgba(244, 240, 234, 0.08);
 }
 
-/* ═══ Login page ═══ */
+/* ═══ Login ═══ */
 .bg-wave-dark {
-  background-color: #0f0f14;
+  background-color: #121413;
   background-image:
-    radial-gradient(ellipse at 20% 50%, rgba(124, 58, 237, 0.06) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 30%, rgba(16, 185, 129, 0.04) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 50%, rgba(28, 64, 46, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 30%, rgba(147, 181, 157, 0.04) 0%, transparent 50%);
 }
 
-/* ═══ Number pad (Login) ═══ */
+/* Number pad keys */
 .num-key {
   width: 72px;
   height: 56px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  color: #f0f0f5;
+  border-radius: 12px;
+  background: rgba(244, 240, 234, 0.04);
+  border: 1px solid rgba(244, 240, 234, 0.06);
+  color: #F4F0EA;
   font-size: 20px;
   font-weight: 600;
   display: flex;
@@ -299,15 +258,33 @@ body,
 
 .num-key:active {
   transform: scale(0.92);
-  background: rgba(124, 58, 237, 0.15);
-  border-color: rgba(124, 58, 237, 0.3);
+  background: rgba(147, 181, 157, 0.12);
+  border-color: rgba(147, 181, 157, 0.2);
 }
 
 .num-key-delete {
   background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.12);
 }
 
 .num-key-delete:active {
   background: rgba(239, 68, 68, 0.2);
+}
+
+/* ═══ Table selector ═══ */
+.table-card {
+  transition: all 0.15s ease;
+}
+
+.table-card:active {
+  transform: scale(0.96);
+}
+
+.table-card-free {
+  border-color: rgba(147, 181, 157, 0.2);
+}
+
+.table-card-occupied {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.05);
 }
