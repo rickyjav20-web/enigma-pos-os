@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, Check, Search, Trash2, ShoppingCart, GripHorizontal, List } from 'lucide-react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Loader2, Check, Search, Trash2, ShoppingCart, GripHorizontal, List, MapPin } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
@@ -19,10 +19,15 @@ interface CartItem {
 }
 
 export default function ManualSalePage() {
-    const { session } = useAuth();
+    const { session, employee } = useAuth();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+
+    // Table context from URL params (when navigating from TablesPage)
+    const tableId = searchParams.get('tableId') || undefined;
+    const tableName = searchParams.get('tableName') || undefined;
 
     // POS State
     const [products, setProducts] = useState<Product[]>([]);
@@ -94,7 +99,10 @@ export default function ManualSalePage() {
                     price: item.product.price
                 })),
                 paymentMethod: method,
-                notes: notes
+                notes: notes,
+                employeeId: employee?.id,
+                tableId: tableId,
+                tableName: tableName,
             };
 
             const res = await fetch(`${API_URL}/sales`, {
@@ -108,7 +116,8 @@ export default function ManualSalePage() {
 
             if (res.ok) {
                 setSuccess(true);
-                setTimeout(() => navigate('/'), 1500);
+                // Return to tables view if sale was from a table, else home
+                setTimeout(() => navigate(tableId ? '/tables' : '/'), 1500);
             } else {
                 alert("Error registering sale");
             }
@@ -132,6 +141,11 @@ export default function ManualSalePage() {
                     <Check className="w-10 h-10 text-emerald-400" />
                 </div>
                 <h2 className="text-2xl font-bold mb-2">¡Venta Exitosa!</h2>
+                {tableName && (
+                    <p className="flex items-center gap-1.5 text-sm text-[#93B59D] mb-2">
+                        <MapPin className="w-3.5 h-3.5" />{tableName}
+                    </p>
+                )}
                 <p className="text-emerald-400 font-mono text-xl mb-4">${total.toFixed(2)}</p>
                 <p className="text-white/40 text-sm">Inventario actualizado.</p>
             </div>
@@ -143,11 +157,17 @@ export default function ManualSalePage() {
             {/* LEFT: Product Catalog */}
             <div className={`flex-1 flex flex-col ${showPayment ? 'opacity-50 pointer-events-none' : ''}`}>
                 {/* Header */}
-                <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                    <Link to="/" className="p-2 bg-white/5 rounded-lg hover:bg-white/10">
+                <div className="p-4 border-b border-white/5 flex items-center gap-3">
+                    <Link to={tableId ? '/tables' : '/'} className="p-2 bg-white/5 rounded-lg hover:bg-white/10 flex-shrink-0">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
-                    <div className="flex-1 mx-4 relative">
+                    {tableName && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#93B59D]/10 border border-[#93B59D]/30 rounded-xl flex-shrink-0">
+                            <MapPin className="w-3.5 h-3.5 text-[#93B59D]" />
+                            <span className="text-sm font-semibold text-[#93B59D]">{tableName}</span>
+                        </div>
+                    )}
+                    <div className="flex-1 relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                         <input
                             type="text"

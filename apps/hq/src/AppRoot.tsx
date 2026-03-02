@@ -17,6 +17,7 @@ import RolesManager from "./features/staff/pages/RolesManager";
 // @ts-ignore
 import KioskAuth from "./features/staff/pages/KioskAuth";
 import DailyGoals from "./features/staff/pages/DailyGoals";
+import TableManager from "./features/dining/pages/TableManager";
 // @ts-ignore
 import AccountPage from "./features/account/pages/AccountPage";
 // @ts-ignore
@@ -74,6 +75,7 @@ function AppRoot() {
               <Route path="purchases/import-sales" element={<SalesImportPage />} />
               <Route path="purchases/waste" element={<WasteDashboardPage />} />
               <Route path="register" element={<RegisterAdminPage />} />
+              <Route path="dining/tables" element={<TableManager />} />
             </Route>
 
             {/* Standalone Apps (No Layout) */}

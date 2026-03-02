@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
-import { Home, ShoppingCart, Package, Building2, LogOut } from 'lucide-react';
+import { Home, ShoppingCart, Package, Building2, LogOut, LayoutGrid } from 'lucide-react';
 
 // Error Boundary to catch silent crashes
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -47,9 +47,11 @@ import RegisterOpenPage from './pages/RegisterOpenPage';
 import RegisterClosePage from './pages/RegisterClosePage';
 import CashMovementsPage from './pages/CashMovementsPage';
 import ManualSalePage from './pages/ManualSalePage';
+import TablesPage from './pages/TablesPage';
 
 const navItems = [
     { icon: Home, label: 'Inicio', path: '/' },
+    { icon: LayoutGrid, label: 'Mesas', path: '/tables' },
     { icon: Package, label: 'Inventario', path: '/inventory' },
     { icon: Building2, label: 'Proveedores', path: '/suppliers' },
     { icon: ShoppingCart, label: 'Compras', path: '/purchases' },
@@ -87,6 +89,7 @@ function ProtectedApp() {
                     <Route path="/close-register" element={<RegisterClosePage />} />
                     <Route path="/cash-movements" element={<CashMovementsPage />} />
                     <Route path="/manual-sale" element={<ManualSalePage />} />
+                    <Route path="/tables" element={<TablesPage />} />
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
             </main>
