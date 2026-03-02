@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, Zap, LogOut, ClipboardList, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { Search, X, Zap, LogOut, ClipboardList, MoreHorizontal, ChevronDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { useCartStore } from '../stores/cartStore';
@@ -37,8 +37,8 @@ export default function SaleScreen() {
     const { items, addItem, ticketName, setTicketName, total, itemCount, clearCart } = useCartStore();
 
     const [search, setSearch] = useState('');
-    const [showSearch, setShowSearch] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
+    const [showCatDropdown, setShowCatDropdown] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [editingName, setEditingName] = useState(false);
 
@@ -118,14 +118,6 @@ export default function SaleScreen() {
                     )}
                 </div>
 
-                {/* Search toggle */}
-                <button
-                    onClick={() => setShowSearch(!showSearch)}
-                    className="w-9 h-9 rounded-xl glass flex items-center justify-center press"
-                >
-                    <Search className="w-4 h-4 text-white/50" />
-                </button>
-
                 {/* Menu */}
                 <button
                     onClick={() => setShowMenu(true)}
@@ -135,58 +127,72 @@ export default function SaleScreen() {
                 </button>
             </header>
 
-            {/* ═══ Search Bar (expandable) ═══ */}
-            {showSearch && (
-                <div className="px-4 pb-2 animate-slide-up">
+            {/* ═══ Filter Bar — Category Dropdown + Search (Loyverse-style) ═══ */}
+            <div className="px-4 pb-2">
+                <div className="flex items-center gap-2">
+                    {/* Category dropdown */}
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                        <button
+                            onClick={() => setShowCatDropdown(!showCatDropdown)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl glass press text-sm"
+                        >
+                            {activeCategory && (
+                                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: getCatColor(activeCategory) }} />
+                            )}
+                            <span className="text-white/70 whitespace-nowrap">{activeCategory || 'All items'}</span>
+                            <ChevronDown className="w-3.5 h-3.5 text-white/30" />
+                        </button>
+
+                        {/* Dropdown */}
+                        {showCatDropdown && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setShowCatDropdown(false)} />
+                                <div className="absolute top-full left-0 mt-1.5 w-56 rounded-xl z-50 max-h-64 overflow-y-auto shadow-2xl border border-white/[0.08]"
+                                    style={{ background: '#1e1e2a' }}>
+                                    <button
+                                        onClick={() => { setActiveCategory(null); setShowCatDropdown(false); }}
+                                        className={`w-full text-left px-4 py-3 text-sm transition-colors flex items-center gap-2 ${!activeCategory ? 'text-purple-300 bg-purple-500/10' : 'text-white/60 hover:bg-white/5 active:bg-white/10'
+                                            }`}
+                                    >
+                                        All items
+                                    </button>
+                                    {categories.map(cat => (
+                                        <button
+                                            key={cat}
+                                            onClick={() => { setActiveCategory(cat); setShowCatDropdown(false); }}
+                                            className={`w-full text-left px-4 py-3 text-sm transition-colors flex items-center gap-2.5 ${activeCategory === cat ? 'text-purple-300 bg-purple-500/10' : 'text-white/60 hover:bg-white/5 active:bg-white/10'
+                                                }`}
+                                        >
+                                            <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: getCatColor(cat) }} />
+                                            {cat}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Search input — always visible */}
+                    <div className="flex-1 relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                         <input
                             type="text"
-                            placeholder="Buscar producto..."
+                            placeholder="Buscar..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            autoFocus
-                            className="w-full glass rounded-xl pl-9 pr-9 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-purple-500/30 transition-colors"
+                            className="w-full glass rounded-xl pl-9 pr-8 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-purple-500/30 transition-colors"
                         />
                         {search && (
-                            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-                                <X className="w-4 h-4 text-white/30" />
+                            <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                                <X className="w-3.5 h-3.5 text-white/30" />
                             </button>
                         )}
                     </div>
                 </div>
-            )}
-
-            {/* ═══ Category Chips (horizontal scroll) ═══ */}
-            <div className="px-4 pb-2">
-                <div className="flex gap-2 overflow-x-auto category-scroll py-1">
-                    <button
-                        onClick={() => setActiveCategory(null)}
-                        className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all press border ${!activeCategory
-                                ? 'cat-chip-active'
-                                : 'bg-white/[0.03] text-white/50 border-white/[0.06] hover:border-white/10'
-                            }`}
-                    >
-                        Todos
-                    </button>
-                    {categories.map(cat => (
-                        <button
-                            key={cat}
-                            onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
-                            className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all press border flex items-center gap-1.5 ${activeCategory === cat
-                                    ? 'cat-chip-active'
-                                    : 'bg-white/[0.03] text-white/50 border-white/[0.06] hover:border-white/10'
-                                }`}
-                        >
-                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getCatColor(cat) }} />
-                            {cat}
-                        </button>
-                    ))}
-                </div>
             </div>
 
-            {/* ═══ Product List ═══ */}
-            <main className="flex-1 overflow-y-auto px-4 pb-28">
+            {/* ═══ Product List — with clear row separation ═══ */}
+            <main className="flex-1 overflow-y-auto pb-28">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-40">
                         <div className="w-7 h-7 border-2 border-purple-500/20 border-t-purple-500 rounded-full animate-spin" />
@@ -197,7 +203,7 @@ export default function SaleScreen() {
                         <p className="text-sm">No se encontraron productos</p>
                     </div>
                 ) : (
-                    <div className="space-y-1">
+                    <div>
                         {filtered.map((product, idx) => {
                             const inCart = items.find(i => i.productId === product.id);
                             const cat = product.categoryId || product.category || 'General';
@@ -206,19 +212,21 @@ export default function SaleScreen() {
                                 <button
                                     key={product.id}
                                     onClick={() => addItem({ id: product.id, name: product.name, price: product.price, category: cat })}
-                                    className={`product-row w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all ${inCart ? 'glass-strong' : ''
+                                    className={`product-row w-full flex items-center gap-3.5 px-4 py-3.5 text-left transition-all border-b border-white/[0.04] ${inCart
+                                            ? 'bg-purple-500/[0.06]'
+                                            : 'hover:bg-white/[0.02]'
                                         }`}
                                     style={{ animationDelay: `${Math.min(idx * 0.02, 0.3)}s` }}
                                 >
-                                    {/* Category accent bar + dot */}
-                                    <div className="relative w-9 h-9 rounded-lg shrink-0 flex items-center justify-center"
-                                        style={{ backgroundColor: `${catColor}15` }}>
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: catColor }} />
-                                    </div>
+                                    {/* Category color square */}
+                                    <div
+                                        className="w-10 h-10 rounded-lg shrink-0"
+                                        style={{ backgroundColor: catColor }}
+                                    />
 
                                     {/* Name */}
                                     <div className="flex-1 min-w-0">
-                                        <span className="text-[14px] text-white/90 leading-tight block truncate">{product.name}</span>
+                                        <span className="text-[15px] text-white/90 leading-tight block truncate">{product.name}</span>
                                     </div>
 
                                     {/* Cart quantity badge */}
@@ -229,7 +237,7 @@ export default function SaleScreen() {
                                     )}
 
                                     {/* Price */}
-                                    <span className="text-[14px] text-white/50 shrink-0 font-mono tabular-nums">
+                                    <span className="text-[15px] text-white/50 shrink-0 font-mono tabular-nums">
                                         ${product.price.toFixed(2)}
                                     </span>
                                 </button>
