@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&display=swap"
         rel="stylesheet">
 
     <link rel="stylesheet" href="styles.css">
@@ -21,7 +21,7 @@
         /* Waitlist Specific Styles */
         .waitlist-page {
             /* Rich charcoal / polished concrete feel */
-            background-color: #1a1a1c;
+            background-color: var(--bg-primary);
             background-image:
                 radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.03) 0%, transparent 60%),
                 radial-gradient(circle at 100% 100%, rgba(0, 0, 0, 0.4) 0%, transparent 50%);
@@ -40,7 +40,7 @@
             transform: translate(-50%, -50%);
             width: 70vw;
             height: 70vw;
-            background: radial-gradient(circle, rgba(0, 208, 132, 0.04) 0%, rgba(26, 26, 28, 0) 70%);
+            background: radial-gradient(circle, rgba(147, 181, 157, 0.05) 0%, rgba(18, 20, 19, 0) 70%);
             z-index: 0;
             pointer-events: none;
         }
@@ -204,14 +204,14 @@
             width: 64px;
             height: 64px;
             border-radius: 50%;
-            background-color: rgba(0, 208, 132, 0.1);
+            background-color: var(--action-glow);
             color: var(--action-primary);
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 2rem;
             margin-bottom: 1.5rem;
-            border: 1px solid rgba(0, 208, 132, 0.3);
+            border: 1px solid rgba(147, 181, 157, 0.3);
         }
 
         .success-title {
