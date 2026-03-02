@@ -101,7 +101,7 @@ export default function KdsPage() {
     const [online, setOnline] = useState(true);
     const [lastRefresh, setLastRefresh] = useState(new Date());
     const [, forceRender] = useState(0); // for elapsed timer
-    const timerRef = useRef<ReturnType<typeof setInterval>>();
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // ── Fetch done order IDs from KitchenActivityLog ──
     const fetchDoneOrders = useCallback(async () => {

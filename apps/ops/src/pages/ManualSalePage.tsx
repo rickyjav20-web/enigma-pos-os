@@ -2,9 +2,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, Check, Search, Trash2, ShoppingCart, GripHorizontal, List, MapPin } from 'lucide-react';
+import {
+    ArrowLeft, Loader2, Check, Search, ShoppingCart,
+    GripHorizontal, List, MapPin, LayoutGrid, X, ChevronRight
+} from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
+const TENANT_HEADER = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
 
 interface Product {
     id: string;
@@ -18,6 +22,14 @@ interface CartItem {
     quantity: number;
 }
 
+interface Table {
+    id: string;
+    name: string;
+    zone?: string;
+    capacity?: number;
+    currentOrder?: { id: string; totalAmount: number } | null;
+}
+
 export default function ManualSalePage() {
     const { session, employee } = useAuth();
     const [searchParams] = useSearchParams();
@@ -25,11 +37,44 @@ export default function ManualSalePage() {
     const [isLoading, setIsLoading] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    // Table context from URL params (when navigating from TablesPage)
-    const tableId = searchParams.get('tableId') || undefined;
-    const tableName = searchParams.get('tableName') || undefined;
+    // ── Table state (mutable — can be assigned from within POS) ──────────
+    const [selectedTableId, setSelectedTableId] = useState<string | undefined>(
+        searchParams.get('tableId') || undefined
+    );
+    const [selectedTableName, setSelectedTableName] = useState<string | undefined>(
+        searchParams.get('tableName') || undefined
+    );
 
-    // POS State
+    // ── Table picker ──────────────────────────────────────────────────────
+    const [showTablePicker, setShowTablePicker] = useState(false);
+    const [tables, setTables] = useState<Table[]>([]);
+    const [tableZone, setTableZone] = useState<string>('Todas');
+    const [tablesLoading, setTablesLoading] = useState(false);
+
+    const openTablePicker = async () => {
+        setShowTablePicker(true);
+        setTablesLoading(true);
+        try {
+            const res = await fetch(`${API_URL}/tables`, { headers: TENANT_HEADER });
+            const data = await res.json();
+            setTables(Array.isArray(data) ? data.filter((t: Table) => t) : []);
+        } catch { /* show empty */ } finally {
+            setTablesLoading(false);
+        }
+    };
+
+    const selectTable = (table: Table) => {
+        setSelectedTableId(table.id);
+        setSelectedTableName(table.name);
+        setShowTablePicker(false);
+    };
+
+    const clearTable = () => {
+        setSelectedTableId(undefined);
+        setSelectedTableName(undefined);
+    };
+
+    // ── POS state ─────────────────────────────────────────────────────────
     const [products, setProducts] = useState<Product[]>([]);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -38,9 +83,7 @@ export default function ManualSalePage() {
     const [method, setMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
     const [notes, setNotes] = useState('');
 
-    useEffect(() => {
-        loadProducts();
-    }, []);
+    useEffect(() => { loadProducts(); }, []);
 
     const loadProducts = async () => {
         try {
@@ -48,260 +91,411 @@ export default function ManualSalePage() {
                 headers: { 'x-tenant-id': 'enigma_hq' }
             });
             const data = await res.json();
-            // Handle { success: true, data: [...] } format from API
-            const productList = Array.isArray(data) ? data : (data.data || data.products || []);
-            setProducts(Array.isArray(productList) ? productList : []);
-        } catch (e) {
-            console.error(e);
-        }
+            const list = Array.isArray(data) ? data : (data.data || data.products || []);
+            setProducts(Array.isArray(list) ? list : []);
+        } catch (e) { console.error(e); }
     };
 
     const addToCart = (product: Product) => {
         setCart(prev => {
-            const existing = prev.find(item => item.product.id === product.id);
-            if (existing) {
-                return prev.map(item =>
-                    item.product.id === product.id
-                        ? { ...item, quantity: item.quantity + 1 }
-                        : item
-                );
-            }
+            const existing = prev.find(i => i.product.id === product.id);
+            if (existing) return prev.map(i =>
+                i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
+            );
             return [...prev, { product, quantity: 1 }];
         });
     };
 
-    const removeFromCart = (productId: string) => {
-        setCart(prev => prev.filter(item => item.product.id !== productId));
-    };
+    const removeFromCart = (productId: string) =>
+        setCart(prev => prev.filter(i => i.product.id !== productId));
 
-    const updateQuantity = (productId: string, delta: number) => {
-        setCart(prev => prev.map(item => {
-            if (item.product.id === productId) {
-                const newQty = Math.max(1, item.quantity + delta);
-                return { ...item, quantity: newQty };
-            }
-            return item;
-        }));
-    };
+    const updateQuantity = (productId: string, delta: number) =>
+        setCart(prev => prev.map(i =>
+            i.product.id === productId
+                ? { ...i, quantity: Math.max(1, i.quantity + delta) }
+                : i
+        ));
 
-    const total = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+    const total = cart.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
 
     const handleCheckout = async () => {
         if (cart.length === 0) return;
         setIsLoading(true);
-
         try {
             const payload = {
                 sessionId: session?.id,
-                items: cart.map(item => ({
-                    productId: item.product.id,
-                    quantity: item.quantity,
-                    price: item.product.price
+                items: cart.map(i => ({
+                    productId: i.product.id,
+                    quantity: i.quantity,
+                    price: i.product.price,
                 })),
                 paymentMethod: method,
-                notes: notes,
+                notes,
                 employeeId: employee?.id,
-                tableId: tableId,
-                tableName: tableName,
+                tableId: selectedTableId,
+                tableName: selectedTableName,
             };
 
             const res = await fetch(`${API_URL}/sales`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-tenant-id': 'enigma_hq'
-                },
-                body: JSON.stringify(payload)
+                headers: TENANT_HEADER,
+                body: JSON.stringify(payload),
             });
 
             if (res.ok) {
                 setSuccess(true);
-                // Return to tables view if sale was from a table, else home
-                setTimeout(() => navigate(tableId ? '/tables' : '/'), 1500);
+                setTimeout(() => navigate('/tables'), 1800);
             } else {
-                alert("Error registering sale");
+                alert('Error al registrar la venta');
             }
-        } catch (e) {
-            console.error(e);
-            alert("Error connecting to server");
-        } finally {
-            setIsLoading(false);
-        }
+        } catch { alert('Error de conexión'); }
+        finally { setIsLoading(false); }
     };
 
     const filteredProducts = (products || []).filter(p =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Success View
+    // ── Zones for picker filter ───────────────────────────────────────────
+    const zones = ['Todas', ...Array.from(new Set(tables.map(t => t.zone || 'General'))).sort()];
+    const filteredTables = tableZone === 'Todas'
+        ? tables
+        : tables.filter(t => (t.zone || 'General') === tableZone);
+
+    // ── Success screen ────────────────────────────────────────────────────
     if (success) {
         return (
-            <div className="min-h-screen bg-enigma-black flex flex-col items-center justify-center p-4 text-white animate-fade-in">
-                <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4">
-                    <Check className="w-10 h-10 text-emerald-400" />
+            <div className="min-h-screen bg-[#121413] flex flex-col items-center justify-center p-4 text-white animate-fade-in">
+                <div className="w-24 h-24 rounded-full bg-[#1C402E]/50 border border-[#93B59D]/30 flex items-center justify-center mb-5">
+                    <Check className="w-12 h-12 text-[#93B59D]" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2">¡Venta Exitosa!</h2>
-                {tableName && (
-                    <p className="flex items-center gap-1.5 text-sm text-[#93B59D] mb-2">
-                        <MapPin className="w-3.5 h-3.5" />{tableName}
+                <h2 className="text-2xl font-bold mb-1">¡Venta Registrada!</h2>
+                {selectedTableName && (
+                    <p className="flex items-center gap-1.5 text-sm text-[#93B59D] mb-1">
+                        <MapPin className="w-3.5 h-3.5" />{selectedTableName}
                     </p>
                 )}
-                <p className="text-emerald-400 font-mono text-xl mb-4">${total.toFixed(2)}</p>
-                <p className="text-white/40 text-sm">Inventario actualizado.</p>
+                <p className="text-emerald-400 font-mono text-2xl font-bold mb-4">${total.toFixed(2)}</p>
+                <p className="text-white/30 text-sm">Volviendo al salón...</p>
             </div>
         );
     }
 
     return (
-        <div className="h-screen bg-enigma-black text-white flex overflow-hidden">
-            {/* LEFT: Product Catalog */}
-            <div className={`flex-1 flex flex-col ${showPayment ? 'opacity-50 pointer-events-none' : ''}`}>
-                {/* Header */}
-                <div className="p-4 border-b border-white/5 flex items-center gap-3">
-                    <Link to={tableId ? '/tables' : '/'} className="p-2 bg-white/5 rounded-lg hover:bg-white/10 flex-shrink-0">
-                        <ArrowLeft className="w-5 h-5" />
-                    </Link>
-                    {tableName && (
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#93B59D]/10 border border-[#93B59D]/30 rounded-xl flex-shrink-0">
-                            <MapPin className="w-3.5 h-3.5 text-[#93B59D]" />
-                            <span className="text-sm font-semibold text-[#93B59D]">{tableName}</span>
-                        </div>
-                    )}
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                        <input
-                            type="text"
-                            placeholder="Buscar productos..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            className="w-full bg-enigma-gray pl-10 pr-4 py-2 rounded-xl border border-white/10 text-sm focus:outline-none focus:border-enigma-purple text-white"
-                        />
-                    </div>
-                    <button
-                        onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                        className="p-2 bg-white/5 rounded-lg text-white/50 hover:text-white"
-                    >
-                        {viewMode === 'grid' ? <List className="w-5 h-5" /> : <GripHorizontal className="w-5 h-5" />}
-                    </button>
-                </div>
+        <div className="h-screen bg-[#121413] text-white flex flex-col overflow-hidden">
 
-                {/* Grid */}
-                <div className="flex-1 overflow-y-auto p-4">
-                    <div className={viewMode === 'grid' ? "grid grid-cols-3 gap-3" : "space-y-2"}>
+            {/* ── HEADER ─────────────────────────────────────────────── */}
+            <div className="flex items-center gap-2 px-3 py-3 border-b border-white/5 bg-[#121413] shrink-0">
+                <Link
+                    to={selectedTableId ? '/tables' : '/'}
+                    className="p-2 bg-white/5 rounded-xl hover:bg-white/10 shrink-0"
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                </Link>
+
+                {/* Table badge / assign button */}
+                {selectedTableName ? (
+                    <button
+                        onClick={openTablePicker}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1C402E]/60 border border-[#93B59D]/40
+                            rounded-xl shrink-0 hover:border-[#93B59D]/70 transition-all"
+                    >
+                        <MapPin className="w-3.5 h-3.5 text-[#93B59D]" />
+                        <span className="text-sm font-bold text-[#93B59D]">{selectedTableName}</span>
+                        <ChevronRight className="w-3 h-3 text-[#93B59D]/50" />
+                    </button>
+                ) : (
+                    <button
+                        onClick={openTablePicker}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10
+                            rounded-xl shrink-0 hover:bg-[#1C402E]/40 hover:border-[#93B59D]/30 transition-all"
+                    >
+                        <LayoutGrid className="w-3.5 h-3.5 text-white/40" />
+                        <span className="text-sm text-white/50">Asignar mesa</span>
+                    </button>
+                )}
+
+                <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                    <input
+                        type="text"
+                        placeholder="Buscar productos..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="w-full bg-white/5 pl-9 pr-4 py-2 rounded-xl border border-white/8 text-sm
+                            focus:outline-none focus:border-enigma-purple text-white"
+                    />
+                </div>
+                <button
+                    onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                    className="p-2 bg-white/5 rounded-xl text-white/40 hover:text-white shrink-0"
+                >
+                    {viewMode === 'grid' ? <List className="w-5 h-5" /> : <GripHorizontal className="w-5 h-5" />}
+                </button>
+            </div>
+
+            {/* ── BODY: Products + Cart (split or stacked) ────────────── */}
+            <div className="flex-1 flex overflow-hidden">
+
+                {/* Product grid */}
+                <div className={`flex-1 overflow-y-auto p-3 ${showPayment ? 'opacity-40 pointer-events-none' : ''}`}>
+                    <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-2 sm:grid-cols-3' : 'space-y-2'}>
                         {filteredProducts.map(product => (
                             <button
                                 key={product.id}
                                 onClick={() => addToCart(product)}
-                                className={`
-                                    bg-enigma-gray/50 border border-white/5 hover:border-enigma-purple/50 hover:bg-enigma-gray 
-                                    transition-all active:scale-[0.98] text-left w-full
-                                    ${viewMode === 'grid' ? 'p-4 rounded-xl flex flex-col justify-between h-32' : 'p-3 rounded-lg flex items-center justify-between'}
-                                `}
+                                className={`bg-[#222524]/80 border border-white/5 hover:border-enigma-purple/50
+                                    hover:bg-[#222524] transition-all active:scale-[0.96] text-left w-full
+                                    ${viewMode === 'grid'
+                                        ? 'p-3 rounded-xl flex flex-col justify-between h-28'
+                                        : 'p-3 rounded-xl flex items-center justify-between'
+                                    }`}
                             >
                                 <div>
-                                    <p className="font-bold text-sm leading-tight mb-1 truncate">{product.name}</p>
-                                    <p className="text-[10px] text-white/40 uppercase tracking-wider">{product.category || 'General'}</p>
+                                    <p className="font-semibold text-sm leading-tight mb-1 line-clamp-2">{product.name}</p>
+                                    <p className="text-[10px] text-white/30 uppercase tracking-wider">{product.category || 'General'}</p>
                                 </div>
-                                <p className="font-mono text-enigma-green text-sm">${product.price.toFixed(2)}</p>
+                                <p className="font-mono text-emerald-400 text-sm font-bold">${product.price.toFixed(2)}</p>
                             </button>
                         ))}
+                        {filteredProducts.length === 0 && (
+                            <div className="col-span-2 py-16 text-center text-white/20">
+                                <ShoppingCart className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                                <p className="text-sm">Sin productos</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Cart panel */}
+                <div className="w-[200px] sm:w-[260px] border-l border-white/5 bg-[#0e0e10] flex flex-col shrink-0">
+                    {/* Cart items */}
+                    <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+                        {cart.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-white/15 py-10">
+                                <ShoppingCart className="w-8 h-8 mb-2" />
+                                <p className="text-xs">Vacío</p>
+                            </div>
+                        ) : cart.map(item => (
+                            <div key={item.product.id} className="bg-white/3 rounded-xl p-2.5 space-y-1.5">
+                                <div className="flex items-start justify-between gap-1">
+                                    <p className="text-xs font-semibold text-white leading-tight line-clamp-2 flex-1">
+                                        {item.product.name}
+                                    </p>
+                                    <button onClick={() => removeFromCart(item.product.id)} className="text-white/20 hover:text-red-400 shrink-0 mt-0.5">
+                                        <X className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => updateQuantity(item.product.id, -1)}
+                                            className="w-6 h-6 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-xs font-bold">
+                                            −
+                                        </button>
+                                        <span className="text-xs font-mono w-3 text-center">{item.quantity}</span>
+                                        <button onClick={() => updateQuantity(item.product.id, 1)}
+                                            className="w-6 h-6 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-xs font-bold">
+                                            +
+                                        </button>
+                                    </div>
+                                    <p className="font-mono text-xs text-white/70">${(item.product.price * item.quantity).toFixed(2)}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="p-3 border-t border-white/5 space-y-3 bg-black/30">
+                        {/* Total */}
+                        <div className="flex justify-between items-baseline">
+                            <span className="text-[10px] text-white/40 uppercase tracking-widest">Total</span>
+                            <span className="text-xl font-bold font-mono text-emerald-400">${total.toFixed(2)}</span>
+                        </div>
+
+                        {showPayment ? (
+                            <div className="space-y-2 animate-fade-in">
+                                {/* Table assignment in checkout */}
+                                <button
+                                    onClick={openTablePicker}
+                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-left
+                                        ${selectedTableName
+                                            ? 'bg-[#1C402E]/40 border-[#93B59D]/30 text-[#93B59D]'
+                                            : 'bg-white/3 border-white/10 text-white/40 hover:border-[#93B59D]/30'
+                                        }`}
+                                >
+                                    <LayoutGrid className="w-3.5 h-3.5 shrink-0" />
+                                    <span className="text-xs font-semibold flex-1 truncate">
+                                        {selectedTableName || 'Asignar mesa...'}
+                                    </span>
+                                    {selectedTableName && (
+                                        <button
+                                            onClick={e => { e.stopPropagation(); clearTable(); }}
+                                            className="text-white/30 hover:text-red-400"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </button>
+
+                                {/* Payment method */}
+                                <div className="grid grid-cols-3 gap-1">
+                                    {(['cash', 'card', 'transfer'] as const).map(m => (
+                                        <button
+                                            key={m}
+                                            onClick={() => setMethod(m)}
+                                            className={`py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all
+                                                ${method === m ? 'bg-enigma-purple text-white' : 'bg-white/5 text-white/40'}`}
+                                        >
+                                            {m === 'cash' ? 'Efect.' : m === 'card' ? 'Tarjeta' : 'Trans.'}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <textarea
+                                    value={notes}
+                                    onChange={e => setNotes(e.target.value)}
+                                    placeholder="Notas..."
+                                    className="w-full bg-white/5 border border-white/8 rounded-lg p-2 text-[11px] text-white
+                                        focus:outline-none focus:border-enigma-purple resize-none h-12"
+                                />
+
+                                <button
+                                    onClick={handleCheckout}
+                                    disabled={isLoading}
+                                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-bold text-sm
+                                        text-white flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+                                >
+                                    {isLoading ? <Loader2 className="animate-spin w-4 h-4" /> : 'Confirmar Cobro'}
+                                </button>
+                                <button
+                                    onClick={() => setShowPayment(false)}
+                                    className="w-full text-[10px] text-white/30 hover:text-white py-1"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setShowPayment(true)}
+                                disabled={cart.length === 0}
+                                className="w-full py-3.5 bg-enigma-purple hover:bg-enigma-purple/80 rounded-xl font-bold text-sm
+                                    text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
+                            >
+                                Cobrar
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* RIGHT: Cart & Checkout */}
-            <div className="w-[400px] bg-enigma-gray border-l border-white/5 flex flex-col shadow-2xl z-50">
-                <div className="p-4 border-b border-white/5">
-                    <h2 className="font-bold flex items-center gap-2 text-white">
-                        <ShoppingCart className="w-5 h-5 text-enigma-purple" />
-                        Orden Actual
-                    </h2>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                    {cart.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-white/20">
-                            <ShoppingCart className="w-12 h-12 mb-2" />
-                            <p className="text-sm">Carrito vacío</p>
-                        </div>
-                    ) : (
-                        cart.map(item => (
-                            <div key={item.product.id} className="bg-black/20 p-3 rounded-xl flex items-center justify-between animate-fade-in">
-                                <div className="flex-1">
-                                    <p className="font-medium text-sm text-white">{item.product.name}</p>
-                                    <p className="text-xs text-white/50">${item.product.price.toFixed(2)} c/u</p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={() => updateQuantity(item.product.id, -1)}
-                                        className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center font-bold text-white"
-                                    >-</button>
-                                    <span className="font-mono w-4 text-center text-white">{item.quantity}</span>
-                                    <button
-                                        onClick={() => updateQuantity(item.product.id, 1)}
-                                        className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center font-bold text-white"
-                                    >+</button>
-                                </div>
-                                <div className="ml-4 text-right">
-                                    <p className="font-mono text-sm text-white">${(item.product.price * item.quantity).toFixed(2)}</p>
-                                    <button onClick={() => removeFromCart(item.product.id)} className="text-white/20 hover:text-red-400 mt-1">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
+            {/* ── TABLE PICKER MODAL ─────────────────────────────────── */}
+            {showTablePicker && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex flex-col justify-end"
+                    onClick={e => { if (e.target === e.currentTarget) setShowTablePicker(false); }}
+                >
+                    <div className="bg-[#121413] rounded-t-3xl border-t border-white/8 max-h-[75vh] flex flex-col">
+                        {/* Drag handle + header */}
+                        <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+                            <div>
+                                <h3 className="text-base font-bold text-white">Asignar Mesa</h3>
+                                <p className="text-xs text-white/30">Selecciona una mesa para esta venta</p>
                             </div>
-                        ))
-                    )}
-                </div>
+                            <button onClick={() => setShowTablePicker(false)} className="p-2 rounded-xl bg-white/5 text-white/50 hover:text-white">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
 
-                {/* Footer / Payment */}
-                <div className="p-4 bg-black/20 border-t border-white/5 space-y-4">
-                    <div className="flex justify-between items-end">
-                        <span className="text-white/50 text-sm">Total a Pagar</span>
-                        <span className="text-3xl font-bold font-mono text-enigma-green">${total.toFixed(2)}</span>
-                    </div>
-
-                    {showPayment ? (
-                        <div className="space-y-3 animate-slide-up">
-                            <div className="grid grid-cols-3 gap-2">
-                                {['cash', 'card', 'transfer'].map(m => (
+                        {/* Zone filter */}
+                        {zones.length > 2 && (
+                            <div className="flex gap-2 px-4 pb-3 overflow-x-auto shrink-0 scrollbar-none">
+                                {zones.map(z => (
                                     <button
-                                        key={m}
-                                        onClick={() => setMethod(m as any)}
-                                        className={`p-2 rounded-lg text-xs font-bold uppercase transition-all ${method === m ? 'bg-enigma-purple text-white' : 'bg-white/5 text-white/50'}`}
+                                        key={z}
+                                        onClick={() => setTableZone(z)}
+                                        className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shrink-0 transition-all
+                                            ${tableZone === z
+                                                ? 'bg-[#93B59D] text-[#121413]'
+                                                : 'bg-white/5 text-white/50 hover:bg-white/10'
+                                            }`}
                                     >
-                                        {m}
+                                        {z}
                                     </button>
                                 ))}
                             </div>
+                        )}
 
-                            {/* Notes Field to use setNotes */}
-                            <textarea
-                                value={notes}
-                                onChange={e => setNotes(e.target.value)}
-                                placeholder="Notas de venta (opcional)..."
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-enigma-purple resize-none h-16"
-                            />
+                        {/* Tables grid */}
+                        <div className="flex-1 overflow-y-auto px-4 pb-8">
+                            {tablesLoading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
+                                </div>
+                            ) : filteredTables.length === 0 ? (
+                                <div className="text-center py-12 text-white/20">
+                                    <LayoutGrid className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                    <p className="text-sm">Sin mesas configuradas</p>
+                                    <p className="text-xs mt-1">Configúralas en Enigma HQ</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-3 gap-2.5">
+                                    {filteredTables.map(table => {
+                                        const isOccupied = !!table.currentOrder;
+                                        const isSelected = table.id === selectedTableId;
+                                        return (
+                                            <button
+                                                key={table.id}
+                                                onClick={() => selectTable(table)}
+                                                className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all active:scale-[0.95]
+                                                    ${isSelected
+                                                        ? 'bg-[#1C402E]/60 border-[#93B59D]/60 shadow-[0_0_12px_rgba(147,181,157,0.2)]'
+                                                        : isOccupied
+                                                            ? 'bg-amber-500/5 border-amber-500/20 hover:border-amber-400/40'
+                                                            : 'bg-white/3 border-white/8 hover:border-white/20'
+                                                    }`}
+                                            >
+                                                {/* Status dot */}
+                                                <div className={`w-2 h-2 rounded-full ${
+                                                    isSelected
+                                                        ? 'bg-[#93B59D] shadow-[0_0_6px_rgba(147,181,157,0.7)]'
+                                                        : isOccupied
+                                                            ? 'bg-amber-400 animate-pulse shadow-[0_0_6px_rgba(251,191,36,0.5)]'
+                                                            : 'bg-white/20'
+                                                }`} />
+                                                <span className={`text-sm font-bold leading-none ${
+                                                    isSelected ? 'text-[#93B59D]' : isOccupied ? 'text-amber-300' : 'text-white/80'
+                                                }`}>
+                                                    {table.name}
+                                                </span>
+                                                {table.zone && (
+                                                    <span className="text-[9px] text-white/20 uppercase tracking-wider">
+                                                        {table.zone}
+                                                    </span>
+                                                )}
+                                                {isOccupied && (
+                                                    <span className="text-[9px] text-amber-400 font-semibold">
+                                                        ${table.currentOrder!.totalAmount.toFixed(0)}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
 
-                            <button
-                                onClick={handleCheckout}
-                                disabled={isLoading}
-                                className="w-full py-4 bg-enigma-green rounded-xl font-bold text-lg text-white hover:bg-enigma-green/80 flex items-center justify-center gap-2 transition-all"
-                            >
-                                {isLoading ? <Loader2 className="animate-spin" /> : 'Confirmar Cobro'}
-                            </button>
-                            <button onClick={() => setShowPayment(false)} className="w-full text-xs text-white/40 hover:text-white py-2">Cancelar</button>
+                            {/* Option: no table */}
+                            {selectedTableId && (
+                                <button
+                                    onClick={clearTable}
+                                    className="mt-4 w-full py-3 rounded-xl border border-white/8 text-xs text-white/30 hover:text-red-400 hover:border-red-500/20 transition-all"
+                                >
+                                    Quitar asignación de mesa
+                                </button>
+                            )}
                         </div>
-                    ) : (
-                        <button
-                            onClick={() => setShowPayment(true)}
-                            disabled={cart.length === 0}
-                            className="w-full py-4 bg-enigma-purple rounded-xl font-bold text-lg text-white hover:bg-enigma-purple/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                            Pagar
-                        </button>
-                    )}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
