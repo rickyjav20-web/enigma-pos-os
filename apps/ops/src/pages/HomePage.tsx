@@ -1,4 +1,4 @@
-import { Package, ArrowRight, ShoppingCart, TrendingUp, Building2, Sparkles, ArrowLeftRight, DollarSign, ChevronDown, ChevronUp, Wallet, BookOpen, Smartphone } from 'lucide-react';
+import { Package, ArrowRight, ShoppingCart, TrendingUp, Building2, Sparkles, ArrowLeftRight, DollarSign, ChevronDown, ChevronUp, Wallet, BookOpen, Smartphone, LayoutGrid, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,13 @@ interface RecentPurchase {
     supplier?: { name: string };
     totalAmount: number;
     createdAt: string;
+}
+
+interface TableSummary {
+    total: number;
+    occupied: number;
+    free: number;
+    occupiedNames: string[];
 }
 
 interface AuditData {
@@ -36,6 +43,7 @@ export default function HomePage() {
     const [auditData, setAuditData] = useState<AuditData | null>(null);
     const [electronicAuditData, setElectronicAuditData] = useState<AuditData | null>(null);
     const [showGuide, setShowGuide] = useState(false);
+    const [tableSummary, setTableSummary] = useState<TableSummary | null>(null);
 
     const TENANT_HEADER = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
 
@@ -73,6 +81,29 @@ export default function HomePage() {
         }
     }, [electronicSession]);
 
+    // Live table status — refresh every 30s
+    useEffect(() => {
+        const fetchTables = () => {
+            fetch(`${API_URL}/tables`, { headers: TENANT_HEADER })
+                .then(r => r.json())
+                .then((tables: any[]) => {
+                    if (!Array.isArray(tables)) return;
+                    const active = tables.filter(t => t.isActive !== false);
+                    const occupied = active.filter(t => t.currentOrder);
+                    setTableSummary({
+                        total: active.length,
+                        occupied: occupied.length,
+                        free: active.length - occupied.length,
+                        occupiedNames: occupied.slice(0, 4).map(t => t.name),
+                    });
+                })
+                .catch(() => {});
+        };
+        fetchTables();
+        const id = setInterval(fetchTables, 30_000);
+        return () => clearInterval(id);
+    }, []);
+
     return (
         <div className="p-4 space-y-6 animate-fade-in">
             {/* Header */}
@@ -87,6 +118,69 @@ export default function HomePage() {
                     <span className="text-sm font-mono text-enigma-green">✓</span>
                 </div>
             </header>
+
+            {/* ═══════════════════════════════════════════════════════════ */}
+            {/* SALÓN STATUS — Mesas en vivo */}
+            {/* ═══════════════════════════════════════════════════════════ */}
+            <Link
+                to="/tables"
+                className="block rounded-2xl overflow-hidden border border-[#93B59D]/25 bg-gradient-to-br from-[#1C402E]/40 to-[#121413] hover:border-[#93B59D]/50 transition-all active:scale-[0.98]"
+            >
+                <div className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <LayoutGrid className="w-4 h-4 text-[#93B59D]" />
+                            <span className="text-xs font-bold uppercase tracking-widest text-[#93B59D]/70">Salón</span>
+                        </div>
+                        <span className="text-xs text-white/30">En vivo →</span>
+                    </div>
+
+                    {tableSummary ? (
+                        <div className="flex items-end gap-4">
+                            <div className="flex-1">
+                                <div className="flex items-baseline gap-1.5">
+                                    <span className="text-4xl font-bold text-white font-mono">{tableSummary.occupied}</span>
+                                    <span className="text-lg text-white/40 font-mono">/{tableSummary.total}</span>
+                                </div>
+                                <p className="text-xs text-white/50 mt-0.5">mesas ocupadas</p>
+                            </div>
+                            <div className="text-right space-y-1">
+                                <div className="flex items-center justify-end gap-1.5">
+                                    <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                    <span className="text-sm font-semibold text-amber-400">{tableSummary.occupied} ocupadas</span>
+                                </div>
+                                <div className="flex items-center justify-end gap-1.5">
+                                    <div className="w-2 h-2 rounded-full bg-[#93B59D]" />
+                                    <span className="text-sm font-semibold text-[#93B59D]">{tableSummary.free} libres</span>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            <Users className="w-8 h-8 text-[#93B59D]/40" />
+                            <div>
+                                <p className="text-sm font-semibold text-white/60">Ver mesas del salón</p>
+                                <p className="text-xs text-white/30">Toca para abrir</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {tableSummary && tableSummary.occupiedNames.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-white/5 flex flex-wrap gap-1.5">
+                            {tableSummary.occupiedNames.map(name => (
+                                <span key={name} className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/20 text-[10px] font-bold text-amber-400">
+                                    {name}
+                                </span>
+                            ))}
+                            {tableSummary.occupied > 4 && (
+                                <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] text-white/40">
+                                    +{tableSummary.occupied - 4} más
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </Link>
 
             {/* ═══════════════════════════════════════════════════════════ */}
             {/* DUAL REGISTER BALANCE CARDS */}
@@ -249,9 +343,29 @@ export default function HomePage() {
             <div className="space-y-3">
                 <h2 className="text-sm font-medium text-white/50">Acciones Rápidas</h2>
 
+                {/* Mesas — Primary POS Action */}
+                <Link
+                    to="/tables"
+                    className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-[#1C402E]/60 to-[#1C402E]/10
+                        border border-[#93B59D]/30 hover:border-[#93B59D]/60 transition-all group active:scale-[0.98]"
+                >
+                    <div className="w-14 h-14 rounded-2xl bg-[#93B59D]/15 flex items-center justify-center">
+                        <LayoutGrid className="w-7 h-7 text-[#93B59D]" />
+                    </div>
+                    <div className="flex-1">
+                        <p className="font-bold text-lg text-[#F4F0EA]">Mesas / Salón</p>
+                        <p className="text-sm text-white/40">
+                            {tableSummary
+                                ? `${tableSummary.occupied} ocupadas · ${tableSummary.free} libres`
+                                : 'Gestionar mesas del restaurante'}
+                        </p>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-white/30 group-hover:text-[#93B59D] group-hover:translate-x-1 transition-all" />
+                </Link>
+
                 <Link
                     to="/manual-sale"
-                    className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-green-500/5 
+                    className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-green-500/5
                         border border-emerald-500/30 hover:border-emerald-500/50 transition-all group"
                 >
                     <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
