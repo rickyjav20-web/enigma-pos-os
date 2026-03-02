@@ -1,38 +1,23 @@
 :root {
-  /* Brand Colors - Dark Organic Tech */
-  --bg-primary: #121413;
-  /* Onyx Black */
-  --bg-secondary: #222524;
-  /* Charcoal Grey */
-  --bg-card: #181b1a;
-  /* Slight contrast from bg-secondary for cards */
+  /* Brand Colors */
+  --bg-primary: #050505;
+  --bg-secondary: #121212;
+  --bg-card: #1A1A1A;
 
-  --text-primary: #F4F0EA;
-  /* Oat Cream */
-  --text-secondary: rgba(244, 240, 234, 0.6);
-  /* Oat Cream muted */
+  --text-primary: #F5F5F5;
+  --text-secondary: #A0A0A0;
 
-  /* Brand Greens */
-  --brand-dark: #1C402E;
-  /* Forest Cognition */
-
-  /* Action Color */
-  --action-primary: #93B59D;
-  /* Sage Highlight */
-  --action-hover: #7b9b84;
-  /* Darker sage for hover */
-  --action-glow: rgba(147, 181, 157, 0.15);
-
-  /* Organic Accent */
-  --accent-wood: #5C4033;
-  /* Espresso Wood */
+  /* Action Color (Softer Mint/Teal) */
+  --action-primary: #00D084;
+  --action-hover: #00B873;
+  --action-glow: rgba(0, 208, 132, 0.15);
 
   /* Borders & UI */
-  --border-color: #2a2e2d;
+  --border-color: #2A2A2A;
   --border-radius: 12px;
 
   /* Typography */
-  --font-serif: 'Playfair Display', 'Instrument Serif', serif;
+  --font-serif: 'Instrument Serif', serif;
   --font-sans: 'Inter', sans-serif;
 }
 
@@ -145,7 +130,7 @@ a {
 .btn-primary {
   display: inline-block;
   background-color: var(--action-primary);
-  color: var(--bg-primary);
+  color: #000;
   font-family: var(--font-sans);
   font-weight: 600;
   padding: 0.8rem 1.8rem;
@@ -178,14 +163,15 @@ a {
   background: rgba(255, 255, 255, 0.05);
 }
 
-.btn-secondary {
-  background-color: var(--brand-dark);
-  color: var(--text-primary);
+.btn-blue {
+  background-color: #2F80ED;
+  /* Softer, slightly muted blue */
+  color: #fff;
 }
 
-.btn-secondary:hover {
-  background-color: #173526;
-  box-shadow: 0 0 15px rgba(28, 64, 46, 0.4);
+.btn-blue:hover {
+  background-color: #2668C2;
+  box-shadow: 0 0 15px rgba(47, 128, 237, 0.3);
 }
 
 .btn-large {
@@ -460,7 +446,8 @@ a {
 /* AI Intro Section (Part 1) */
 .ai-intro-section {
   padding: 12rem 0;
-  background-color: var(--bg-primary);
+  background-color: #000;
+  /* Pure black for maximum contrast like Square */
 }
 
 .ai-intro-container {
@@ -642,114 +629,70 @@ a {
   color: var(--action-primary);
 }
 
-/* Social Proof */
-.logo-cloud {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 4rem;
-  flex-wrap: wrap;
-  opacity: 0.6;
-}
-
-.logo-placeholder {
-  font-family: var(--font-serif);
-  font-size: 1.5rem;
-  font-style: italic;
-  color: var(--text-secondary);
-  transition: all 0.3s ease;
-}
-
-.logo-placeholder:hover {
-  color: var(--text-primary);
-  opacity: 1;
-}
-
-/* Industry Solutions Tabs */
-.industry-tabs {
-  margin-top: 4rem;
-  background: var(--bg-card);
-  border-radius: 24px;
-  border: 1px solid var(--border-color);
+/* Flavor Scatter Layout (Ride the wave) */
+.overflow-hidden {
   overflow: hidden;
 }
 
-.tabs-header {
+.py-10 {
+  padding: 12rem 0;
+  /* Extra padding for floating images */
+}
+
+.flavor-scatter-container {
+  width: 100vw;
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  height: 800px;
+  /* Fixed height to allow absolute positioning of children */
   display: flex;
-  border-bottom: 1px solid var(--border-color);
+  align-items: center;
+  justify-content: center;
 }
 
-.tab-btn {
-  flex: 1;
-  background: transparent;
-  border: none;
-  padding: 1.5rem;
-  font-family: var(--font-sans);
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-bottom: 2px solid transparent;
-}
-
-.tab-btn:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.tab-btn.active {
-  color: var(--action-primary);
-  border-bottom-color: var(--action-primary);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.tabs-content {
-  padding: 0;
-}
-
-.tab-pane {
-  display: none;
+.flavor-center {
+  text-align: center;
+  z-index: 10;
+  max-width: 800px;
+  background: radial-gradient(circle, rgba(5, 5, 5, 0.8) 0%, rgba(5, 5, 5, 0) 70%);
+  /* Subtle dark glow behind text for readability */
   padding: 4rem;
-  opacity: 0;
-  transition: opacity 0.4s ease;
 }
 
-.tab-pane.active {
-  display: flex;
-  opacity: 1;
-  gap: 4rem;
-  align-items: center;
+.flavor-title {
+  font-family: var(--font-serif);
+  font-size: 4.5rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
-.tab-info {
-  flex: 1;
+.scatter-item {
+  position: absolute;
+  z-index: 5;
 }
 
-.tab-features {
-  list-style: none;
-  padding: 0;
-  margin-top: 2rem;
-}
-
-.tab-features li {
-  margin-bottom: 1rem;
-  color: var(--text-primary);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.tab-visual {
-  flex: 1.2;
-}
-
-.tab-img {
-  width: 100%;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+.scatter-img {
+  width: 260px;
+  height: 260px;
+  object-fit: cover;
+  border-radius: 24px;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.6s ease;
+  filter: grayscale(20%) brightness(0.8);
+  /* Slightly muted to make text pop */
+}
+
+.scatter-item:hover {
+  z-index: 20;
+}
+
+.scatter-item:hover .scatter-img {
+  transform: scale(1.1) translateY(-10px);
+  box-shadow: 0 20px 60px var(--action-glow);
+  border-color: var(--action-primary);
+  filter: grayscale(0%) brightness(1.1);
 }
 
 /* Interactive Features Section */

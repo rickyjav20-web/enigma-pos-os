@@ -13,7 +13,7 @@
 
   <!-- Serif for Headers, Inter for Body -->
   <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap"
     rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css" />
@@ -44,8 +44,9 @@
   <!-- HERO -->
   <section class="hero-fullscreen" id="hero">
     <div class="hero-bg-wrapper">
-      <img src="assets/wave_hero.png" alt="Un joven barista interactuando fluidamente con un terminal POS"
-        class="hero-fullscreen-img" />
+      <img
+        src="assets/wave_hero.png"
+        alt="Un joven barista interactuando fluidamente con un terminal POS" class="hero-fullscreen-img" />
       <div class="hero-overlay"></div>
     </div>
     <div class="hero-content">
@@ -55,101 +56,58 @@
       </p>
       <div class="hero-cta">
         <a href="waitlist.html" class="btn-primary btn-large">Comenzar ahora</a>
-        <a href="waitlist.html" class="btn-primary btn-secondary ml-4">Contactar ventas</a>
+        <a href="waitlist.html" class="btn-primary btn-blue ml-4">Contactar ventas</a>
       </div>
     </div>
   </section>
 
-  <!-- SOCIAL PROOF -->
-  <section class="social-proof base-bg fade-up-element py-10"
-    style="padding: 4rem 0; border-bottom: 1px solid var(--border-color);">
-    <div class="container center-text">
-      <p class="section-badge"
-        style="font-family: var(--font-sans); margin-bottom: 2rem; border: none; letter-spacing: 0.2em; font-size: 0.65rem;">
-        CONFIADO POR LOS MEJORES CONCEPTOS LOCALES</p>
-      <div class="logo-cloud">
-        <span class="logo-placeholder">El Café de la Esquina</span>
-        <span class="logo-placeholder">Bistro 77</span>
-        <span class="logo-placeholder">Panadería Central</span>
-        <span class="logo-placeholder">Boutique Minimal</span>
-        <span class="logo-placeholder">Bar Los Amigos</span>
-      </div>
-    </div>
-  </section>
+  <!-- RIDE THE WAVE (MIMICKING SQUARE'S FLOATING GRID) -->
+  <section class="section base-bg overflow-hidden py-10" id="flavor">
+    <div class="flavor-scatter-container">
 
-  <!-- INDUSTRY SOLUTIONS -->
-  <section class="section base-bg" id="audiences">
-    <div class="container">
-      <div class="center-text fade-up-element">
-        <div class="section-badge highlight"
-          style="font-family: var(--font-sans); font-weight: 600; padding-left: 0; border: none;">CASOS DE USO</div>
-        <h2 class="section-title">Construye y crece bajo tus propias reglas.</h2>
-        <p class="section-sub">Diseñado meticulosamente para la naturaleza exacta de tu operación.</p>
+      <!-- Text firmly in the absolute center -->
+      <div class="flavor-center fade-up-element">
+        <h2 class="flavor-title">Sea cual sea la esencia de tu negocio,<br>construye y crece bajo tus propias reglas.
+        </h2>
       </div>
 
-      <div class="industry-tabs fade-up-element">
-        <div class="tabs-header">
-          <button class="tab-btn active" data-tab="tab-coffee">Obradores & Café</button>
-          <button class="tab-btn" data-tab="tab-restaurant">Gastronomía</button>
-          <button class="tab-btn" data-tab="tab-retail">Retail Especializado</button>
-        </div>
-
-        <div class="tabs-content">
-          <!-- Coffee -->
-          <div class="tab-pane active" id="tab-coffee">
-            <div class="tab-info">
-              <h3 class="mono-header" style="font-size: 2.5rem; margin-bottom: 1rem;">Para el artista del espresso.</h3>
-              <p style="color: var(--text-secondary); margin-bottom: 2rem;">Maneja picos de clientes con un POS que
-                vuela. Opciones de leche, modificadores complejos y gestión de tuestes al gramo directamente en la caja.
-              </p>
-              <ul class="tab-features">
-                <li>✓ Interfaz para modificadores de 1 clic</li>
-                <li>✓ KDS Frontal para baristas súper rápidos</li>
-                <li>✓ Fidelidad (tarjetas de sellos digitales) integradas</li>
-              </ul>
-            </div>
-            <div class="tab-visual">
-              <img src="assets/wave_niche_bakery.png" alt="Cafetería" class="tab-img" />
-            </div>
-          </div>
-
-          <!-- Restaurant -->
-          <div class="tab-pane" id="tab-restaurant">
-            <div class="tab-info">
-              <h3 class="mono-header" style="font-size: 2.5rem; margin-bottom: 1rem;">La cocina bajo control absoluto.
-              </h3>
-              <p style="color: var(--text-secondary); margin-bottom: 2rem;">El inventario vivo dicta qué se puede
-                vender. Enrrutamiento de comandas a estaciones y control total de mermas.</p>
-              <ul class="tab-features">
-                <li>✓ Recetas y sub-recetas anidadas</li>
-                <li>✓ Pantallas KDS Multi-estación</li>
-                <li>✓ Semáforo de tiempos de preparación y entrega</li>
-              </ul>
-            </div>
-            <div class="tab-visual">
-              <img src="assets/wave_niche_kitchen.png" alt="Restaurante" class="tab-img" />
-            </div>
-          </div>
-
-          <!-- Retail -->
-          <div class="tab-pane" id="tab-retail">
-            <div class="tab-info">
-              <h3 class="mono-header" style="font-size: 2.5rem; margin-bottom: 1rem;">Stock perfecto. Clientes leales.
-              </h3>
-              <p style="color: var(--text-secondary); margin-bottom: 2rem;">Códigos de barras, escáneres inalámabricos y
-                control exhaustivo de variantes (tallas, colores). Siempre sabrás qué vender.</p>
-              <ul class="tab-features">
-                <li>✓ Matriz de Variantes (SKUs jerárquicos)</li>
-                <li>✓ Alertas de reabastecimiento Automáticas</li>
-                <li>✓ Historial de compras omnicanal por cliente</li>
-              </ul>
-            </div>
-            <div class="tab-visual">
-              <img src="assets/wave_niche_retail.png" alt="Retail" class="tab-img" />
-            </div>
-          </div>
-        </div>
+      <!-- Floating Images -->
+      <!-- Top Left -->
+      <div class="scatter-item fade-up-element" style="top: 5%; left: 10%; transition-delay: 0.1s;">
+        <img
+          src="assets/wave_niche_bakery.png"
+          alt="Bakery" class="scatter-img" />
       </div>
+
+      <!-- Top Right -->
+      <div class="scatter-item fade-up-element" style="top: 15%; right: 15%; transition-delay: 0.2s;">
+        <img
+          src="assets/wave_niche_kitchen.png"
+          alt="Kitchen" class="scatter-img" />
+      </div>
+
+      <!-- Center Left -->
+      <div class="scatter-item fade-up-element" style="top: 45%; left: 5%; transition-delay: 0.3s;">
+        <img
+          src="assets/wave_niche_retail.png"
+          alt="Retail" class="scatter-img" />
+      </div>
+
+      <!-- Center Right -->
+      <div class="scatter-item fade-up-element" style="top: 55%; right: 5%; transition-delay: 0.4s;">
+        <img
+          src="assets/wave_niche_bar.png"
+          alt="Bar" class="scatter-img" />
+      </div>
+
+      <!-- Bottom Center -->
+      <div class="scatter-item fade-up-element"
+        style="bottom: 10%; left: 50%; transform: translateX(-50%); transition-delay: 0.5s;">
+        <img
+          src="assets/wave_niche_barber.png"
+          alt="Barber" class="scatter-img" />
+      </div>
+
     </div>
   </section>
 
@@ -231,19 +189,29 @@
       <div class="features-right fade-up-element" style="transition-delay: 0.2s;">
         <!-- Placeholder Images (To be replaced with real product photos later) -->
         <div class="feature-showcase active" id="feature-1">
-          <img src="assets/wave_pos_ui_mockup.png" alt="POS UI" class="feature-showcase-img" />
+          <img
+            src="assets/wave_pos_ui_mockup.png"
+            alt="POS UI" class="feature-showcase-img" />
         </div>
         <div class="feature-showcase" id="feature-2">
-          <img src="assets/wave_staff_ui_mockup.png" alt="Staff Management" class="feature-showcase-img" />
+          <img
+            src="assets/wave_staff_ui_mockup.png"
+            alt="Staff Management" class="feature-showcase-img" />
         </div>
         <div class="feature-showcase" id="feature-3">
-          <img src="assets/wave_loyalty_ui_mockup.png" alt="Loyalty Management" class="feature-showcase-img" />
+          <img
+            src="assets/wave_loyalty_ui_mockup.png"
+            alt="Loyalty Management" class="feature-showcase-img" />
         </div>
         <div class="feature-showcase" id="feature-4">
-          <img src="assets/wave_inventory_ui_mockup.png" alt="Inventory Systems" class="feature-showcase-img" />
+          <img
+            src="assets/wave_inventory_ui_mockup.png"
+            alt="Inventory Systems" class="feature-showcase-img" />
         </div>
         <div class="feature-showcase" id="feature-5">
-          <img src="assets/wave_finance_ui_mockup.png" alt="Financial Flow" class="feature-showcase-img" />
+          <img
+            src="assets/wave_finance_ui_mockup.png"
+            alt="Financial Flow" class="feature-showcase-img" />
         </div>
       </div>
 
@@ -268,7 +236,9 @@
   <!-- Part 2: The Warm Product Showcase -->
   <section class="ai-showcase-section">
     <div class="ai-showcase-bg">
-      <img src="assets/wave_intelligence_mobile_ui.png" alt="Wave AI Mobile Interface" class="ai-showcase-img" />
+      <img
+        src="assets/wave_intelligence_mobile_ui.png"
+        alt="Wave AI Mobile Interface" class="ai-showcase-img" />
     </div>
     <div class="container ai-showcase-content">
       <div class="ai-text-block fade-up-element">
@@ -400,24 +370,6 @@
         const targetId = item.getAttribute('data-target');
         const targetShowcase = document.getElementById(targetId);
         if (targetShowcase) targetShowcase.classList.add('active');
-      });
-    });
-
-    // Sub-Tabs Logic for Industry Solutions
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabPanes = document.querySelectorAll('.tab-pane');
-
-    tabBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        // Remove active class from buttons
-        tabBtns.forEach(b => b.classList.remove('active'));
-        // Hide all panes
-        tabPanes.forEach(p => p.classList.remove('active'));
-
-        // Activate button & pane
-        btn.classList.add('active');
-        const paneId = btn.getAttribute('data-tab');
-        document.getElementById(paneId).classList.add('active');
       });
     });
   </script>
