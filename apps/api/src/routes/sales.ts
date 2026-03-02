@@ -17,13 +17,14 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         tableId: z.string().optional(),
         tableName: z.string().optional(),
         ticketName: z.string().optional(),
+        employeeId: z.string().optional(),
         notes: z.string().optional()
     });
 
     // POST /sales — create order or open ticket
     fastify.post('/sales', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
-        const { sessionId, items, paymentMethod, status, tableId, tableName, ticketName, notes } = salesSchema.parse(request.body);
+        const { sessionId, items, paymentMethod, status, tableId, tableName, ticketName, employeeId, notes } = salesSchema.parse(request.body);
 
         // 1. Verify Session
         const session = await prisma.registerSession.findUnique({
@@ -37,7 +38,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         // 2. Calculate Total
         const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-        // 3. Create Sales Order (open or completed)
+        // 3. Create Sales Order
         const order = await prisma.salesOrder.create({
             data: {
                 tenantId,
@@ -48,6 +49,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
                 tableId,
                 tableName,
                 ticketName,
+                employeeId,
                 notes,
                 items: {
                     create: await Promise.all(items.map(async (item) => {
@@ -65,8 +67,9 @@ export default async function salesRoutes(fastify: FastifyInstance) {
             include: { items: true }
         });
 
-        // 4. Cash Transaction + Inventory only for completed sales
+        // 4. Only for COMPLETED sales: cash transaction + inventory + goals
         if (status === 'completed') {
+            // Cash transaction
             if (paymentMethod === 'cash') {
                 await prisma.cashTransaction.create({
                     data: {
@@ -79,7 +82,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
                 });
             }
 
-            // 5. Inventory deduction
+            // Inventory deduction
             for (const item of items) {
                 const product = await prisma.product.findUnique({
                     where: { id: item.productId },
@@ -111,6 +114,57 @@ export default async function salesRoutes(fastify: FastifyInstance) {
                     }
                 }
             }
+
+            // 🎯 GOAL AUTO-DETECTION
+            if (employeeId) {
+                const today = new Date().toISOString().split('T')[0];
+                const activeGoals = await prisma.dailyGoal.findMany({
+                    where: {
+                        tenantId,
+                        employeeId,
+                        date: today,
+                        status: 'ACTIVE',
+                    },
+                });
+
+                for (const goal of activeGoals) {
+                    let increment = 0;
+
+                    if (goal.type === 'PRODUCT') {
+                        // Count sold quantity of the specific product
+                        const matchingItems = items.filter(i => i.productId === goal.targetId);
+                        increment = matchingItems.reduce((sum, i) => sum + i.quantity, 0);
+                    } else if (goal.type === 'CATEGORY') {
+                        // Count sold quantity of any product in the target category
+                        for (const item of items) {
+                            const product = await prisma.product.findUnique({
+                                where: { id: item.productId },
+                                select: { categoryId: true },
+                            });
+                            if (product && product.categoryId === goal.targetId) {
+                                increment += item.quantity;
+                            }
+                        }
+                    } else if (goal.type === 'REVENUE') {
+                        // Add total sale amount
+                        increment = totalAmount;
+                    }
+
+                    if (increment > 0) {
+                        const newQty = goal.currentQty + increment;
+                        const isCompleted = newQty >= goal.targetQty;
+                        await prisma.dailyGoal.update({
+                            where: { id: goal.id },
+                            data: {
+                                currentQty: newQty,
+                                isCompleted,
+                                completedAt: isCompleted && !goal.isCompleted ? new Date() : goal.completedAt,
+                                status: isCompleted ? 'COMPLETED' : 'ACTIVE',
+                            },
+                        });
+                    }
+                }
+            }
         }
 
         return order;
@@ -137,7 +191,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         return reply.send({ success: true, data: sales });
     });
 
-    // PUT /sales/:id — update open ticket (add items, change table, close)
+    // PUT /sales/:id — update open ticket
     fastify.put('/sales/:id', async (request, reply) => {
         const { id } = request.params as { id: string };
         const body = request.body as any;
@@ -151,7 +205,6 @@ export default async function salesRoutes(fastify: FastifyInstance) {
             return reply.status(404).send({ error: 'Ticket not found' });
         }
 
-        // Update fields
         const updateData: any = {};
         if (body.status) updateData.status = body.status;
         if (body.tableId !== undefined) updateData.tableId = body.tableId;
@@ -159,6 +212,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         if (body.ticketName !== undefined) updateData.ticketName = body.ticketName;
         if (body.notes !== undefined) updateData.notes = body.notes;
         if (body.totalAmount !== undefined) updateData.totalAmount = body.totalAmount;
+        if (body.employeeId !== undefined) updateData.employeeId = body.employeeId;
 
         const updated = await prisma.salesOrder.update({
             where: { id },

@@ -2,8 +2,8 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Search, X, Menu, ChevronDown, MoreVertical,
-    ClipboardList, LogOut, Plus, Trash2, Edit3,
-    MapPin, ArrowRightLeft, RefreshCw, Users
+    ClipboardList, LogOut, Trash2, Edit3,
+    MapPin, ArrowRightLeft, RefreshCw, Users, Target
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
@@ -26,6 +26,17 @@ interface DiningTable {
     capacity: number | null;
     isOccupied: boolean;
     currentTicket: { id: string; ticketName: string; totalAmount: number } | null;
+}
+
+interface DailyGoal {
+    id: string;
+    type: string;
+    targetName: string;
+    targetQty: number;
+    currentQty: number;
+    isCompleted: boolean;
+    rewardNote?: string;
+    status: string;
 }
 
 // Category colors
@@ -83,8 +94,24 @@ export default function SaleScreen() {
         staleTime: 30_000,
     });
 
+    // Goals for this employee
+    const today = new Date().toISOString().split('T')[0];
+    const { data: goalsData } = useQuery({
+        queryKey: ['pos-goals', employee?.id, today],
+        queryFn: async () => {
+            if (!employee?.id) return [] as DailyGoal[];
+            try {
+                const { data } = await api.get(`/goals?employeeId=${employee.id}&date=${today}`);
+                return (data?.data || []) as DailyGoal[];
+            } catch { return [] as DailyGoal[]; }
+        },
+        refetchInterval: 15_000, // Refresh every 15s to catch updates
+        enabled: !!employee?.id,
+    });
+
     const products = productsData || [];
     const tables = tablesData || [];
+    const goals = (goalsData || []).filter(g => g.status === 'ACTIVE' || g.status === 'COMPLETED');
 
     const categories = useMemo(() => {
         const cats = new Set<string>();
@@ -118,6 +145,9 @@ export default function SaleScreen() {
     const cartTotal = total();
     const cartCount = itemCount();
     const hasItems = cartCount > 0;
+    const activeGoals = goals.filter(g => !g.isCompleted);
+    const completedGoals = goals.filter(g => g.isCompleted);
+    const hasGoals = goals.length > 0;
 
     return (
         <div className="min-h-dvh flex flex-col safe-top safe-bottom" style={{ background: '#121413' }}>
@@ -209,6 +239,51 @@ export default function SaleScreen() {
                         })}
                     </div>
                 </>
+            )}
+
+            {/* ═══ Goals Progress Widget ═══ */}
+            {hasGoals && (
+                <div className="px-4 pb-2 animate-slide-up">
+                    <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(28,64,46,0.12)', border: '1px solid rgba(147,181,157,0.1)' }}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <Target className="w-3.5 h-3.5" style={{ color: '#93B59D' }} />
+                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#93B59D' }}>Daily Goals</span>
+                            </div>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ color: completedGoals.length === goals.length ? '#93B59D' : 'rgba(244,240,234,0.3)', background: completedGoals.length === goals.length ? 'rgba(147,181,157,0.15)' : 'transparent' }}>
+                                {completedGoals.length}/{goals.length}
+                            </span>
+                        </div>
+                        {activeGoals.slice(0, 2).map(g => {
+                            const pct = Math.min((g.currentQty / g.targetQty) * 100, 100);
+                            return (
+                                <div key={g.id}>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-[12px] truncate" style={{ color: 'rgba(244,240,234,0.6)' }}>
+                                            {g.type === 'PRODUCT' ? '📦' : g.type === 'CATEGORY' ? '🏷️' : '💰'} {g.targetName}
+                                        </span>
+                                        <span className="text-[11px] font-mono tabular-nums shrink-0 ml-2" style={{ color: 'rgba(244,240,234,0.3)' }}>
+                                            {g.type === 'REVENUE' ? `$${g.currentQty.toFixed(0)}/$${g.targetQty.toFixed(0)}` : `${g.currentQty}/${g.targetQty}`}
+                                        </span>
+                                    </div>
+                                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(244,240,234,0.05)' }}>
+                                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: pct >= 100 ? '#93B59D' : 'linear-gradient(90deg, rgba(147,181,157,0.4), #93B59D)' }} />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {completedGoals.length > 0 && activeGoals.length > 0 && (
+                            <p className="text-[10px] text-center" style={{ color: 'rgba(147,181,157,0.5)' }}>
+                                ✅ {completedGoals.length} completed · {activeGoals.length} remaining
+                            </p>
+                        )}
+                        {activeGoals.length === 0 && completedGoals.length > 0 && (
+                            <p className="text-[12px] text-center animate-badge-pop" style={{ color: '#93B59D' }}>
+                                🏆 All goals completed!
+                            </p>
+                        )}
+                    </div>
+                </div>
             )}
 
             {/* ═══ Filter Bar — Category + Search ═══ */}

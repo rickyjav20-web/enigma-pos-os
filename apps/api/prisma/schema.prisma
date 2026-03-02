@@ -36,6 +36,7 @@ model Tenant {
   inventoryCounts InventoryCount[]
   shiftTasks      ShiftTask[]
   diningTables    DiningTable[]
+  dailyGoals      DailyGoal[]
 }
 
 // --- MODULE: ACCESS CONTROL ---
@@ -473,6 +474,7 @@ model SalesOrder {
   id              String   @id @default(uuid())
   tenantId        String
   sessionId       String   // Linked to Register Session
+  employeeId      String?  // Who made the sale (for goals tracking)
   
   totalAmount     Float
   paymentMethod   String   // 'cash', 'card', 'transfer'
@@ -680,4 +682,39 @@ model DiningTable {
   salesOrders SalesOrder[]
   
   @@unique([tenantId, name])
+}
+
+// --- MODULE: EMPLOYEE REWARDS ---
+
+model DailyGoal {
+  id          String    @id @default(uuid())
+  tenantId    String
+  employeeId  String     // Assigned to
+  date        String     // "2026-03-02" ISO date
+  
+  // Goal definition
+  type        String     // "PRODUCT" | "CATEGORY" | "REVENUE"
+  targetId    String?    // productId (PRODUCT) or category name (CATEGORY)
+  targetName  String     // "Combo Tequeños" or "Postres" or "Revenue"
+  targetQty   Float      // 5 units, or $50 revenue
+  
+  // Progress
+  currentQty  Float      @default(0)
+  isCompleted Boolean    @default(false)
+  completedAt DateTime?
+  
+  // Reward
+  rewardType  String?    // "POINTS" | "BONUS" | "BADGE"
+  rewardValue Float?     // 10 points, $2 bonus
+  rewardNote  String?    // "🏆 Estrella del día"
+  
+  // Meta
+  createdBy   String?    // Manager who set goal
+  status      String     @default("ACTIVE") // "ACTIVE" | "COMPLETED" | "EXPIRED"
+  createdAt   DateTime   @default(now())
+  
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  
+  @@index([tenantId, date])
+  @@index([employeeId, date])
 }

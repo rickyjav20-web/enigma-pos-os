@@ -36,6 +36,7 @@ export default function PaymentPage() {
             const payload = {
                 items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price })),
                 paymentMethod: apiMethod,
+                employeeId: employee?.id || undefined,
                 notes: `POS | ${method} | ${orderType} | ${ticketName}${tableName ? ` | ${tableName}` : ''} | ${employee?.fullName || ''}`,
                 sessionId: localStorage.getItem('wave_pos_session') || 'pos-mobile',
             };
