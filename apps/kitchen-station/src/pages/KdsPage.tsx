@@ -166,7 +166,7 @@ export default function KdsPage() {
             }));
             forceRender(n => n + 1);
         }, 60000);
-        return () => clearInterval(timerRef.current);
+        return () => { if (timerRef.current !== null) clearInterval(timerRef.current); };
     }, []);
 
     // ── Mark order done ──
