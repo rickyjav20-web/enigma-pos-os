@@ -474,7 +474,7 @@ export default function ManualSalePage() {
                                                 )}
                                                 {isOccupied && (
                                                     <span className="text-[9px] text-amber-400 font-semibold">
-                                                        ${table.currentOrder!.totalAmount.toFixed(0)}
+                                                        ${(table.currentOrder?.totalAmount ?? 0).toFixed(0)}
                                                     </span>
                                                 )}
                                             </button>

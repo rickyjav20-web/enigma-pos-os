@@ -126,8 +126,9 @@ export default function TablesPage() {
             const res = await fetch(`${API_URL}/tables`, {
                 headers: { 'x-tenant-id': TENANT_ID }
             });
+            if (!res.ok) throw new Error(`API ${res.status}`);
             const data = await res.json();
-            setTables(data.data || []);
+            setTables(Array.isArray(data) ? data : (data.data || []));
             setLastRefresh(new Date());
         } catch (e) {
             console.error('Tables fetch failed', e);

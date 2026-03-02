@@ -107,7 +107,9 @@ export default function KdsPage() {
     const fetchDoneOrders = useCallback(async () => {
         try {
             const today = new Date().toISOString().split('T')[0];
-            const res = await api.get(`/kitchen/activity?action=ORDER_DONE&from=${today}T00:00:00.000Z`);
+            const res = await api.get('/kitchen/activity', {
+                params: { action: 'ORDER_DONE', from: `${today}T00:00:00.000Z` }
+            });
             const logs = res.data?.data || [];
             const ids = new Set<string>(logs.map((l: any) => l.entityId).filter(Boolean));
             setDoneIds(ids);
@@ -145,7 +147,7 @@ export default function KdsPage() {
 
     // ── Initial load ──
     useEffect(() => {
-        Promise.all([fetchOrders(), fetchDoneOrders()]);
+        void Promise.all([fetchOrders(), fetchDoneOrders()]);
     }, [fetchOrders, fetchDoneOrders]);
 
     // ── Auto-refresh every 10s ──
@@ -200,7 +202,7 @@ export default function KdsPage() {
     // ── Loading screen ──
     if (loading) {
         return (
-            <div className="h-full flex flex-col items-center justify-center gap-3 text-zinc-500">
+            <div className="h-full flex flex-col items-center justify-center gap-3 text-[#93B59D]/40">
                 <Loader2 size={28} className="animate-spin text-[#93B59D]" />
                 <span className="text-sm">Cargando pedidos...</span>
             </div>
@@ -208,7 +210,7 @@ export default function KdsPage() {
     }
 
     return (
-        <div className="h-full flex flex-col bg-zinc-950 overflow-hidden">
+        <div className="h-full flex flex-col bg-[#121413] overflow-hidden">
 
             {/* ── Header ── */}
             <div className="px-5 pt-4 pb-3 border-b border-white/[0.05] flex items-center justify-between shrink-0">
@@ -225,7 +227,7 @@ export default function KdsPage() {
                         <h1 className="text-[15px] font-bold text-white leading-none">
                             Pantalla de Pedidos
                         </h1>
-                        <p className="text-[11px] text-zinc-500 mt-0.5">
+                        <p className="text-[11px] text-[#F4F0EA]/40 mt-0.5">
                             {activeOrders.length === 0
                                 ? '✓ Todo al día'
                                 : urgentCount > 0
@@ -238,7 +240,7 @@ export default function KdsPage() {
 
                 <div className="flex items-center gap-2">
                     {/* Connection status */}
-                    <div className={`flex items-center gap-1 ${online ? 'text-zinc-600' : 'text-red-400'}`}>
+                    <div className={`flex items-center gap-1 ${online ? 'text-[#F4F0EA]/25' : 'text-red-400'}`}>
                         {online ? <Wifi size={12} /> : <WifiOff size={12} />}
                         <span className="text-[10px] tabular-nums hidden sm:block">
                             {lastRefresh.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
@@ -246,7 +248,7 @@ export default function KdsPage() {
                     </div>
                     <button
                         onClick={() => { fetchOrders(true); fetchDoneOrders(); }}
-                        className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-zinc-500 hover:text-white transition-colors"
+                        className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-[#F4F0EA]/40 hover:text-white transition-colors"
                     >
                         <RefreshCw size={14} />
                     </button>
@@ -263,7 +265,7 @@ export default function KdsPage() {
                             <CheckCircle2 size={24} className="text-[#93B59D]" />
                         </div>
                         <p className="text-base font-semibold text-white">Cocina al día</p>
-                        <p className="text-sm text-zinc-500 text-center max-w-[200px]">
+                        <p className="text-sm text-[#F4F0EA]/40 text-center max-w-[200px]">
                             No hay pedidos pendientes de preparar.
                         </p>
                     </div>
@@ -284,7 +286,7 @@ export default function KdsPage() {
                     <div className="pt-2">
                         <div className="flex items-center gap-2 mb-2">
                             <div className="flex-1 h-px bg-white/[0.04]" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 px-2">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-[#F4F0EA]/25 px-2">
                                 Completados hoy ({doneOrders.length})
                             </span>
                             <div className="flex-1 h-px bg-white/[0.04]" />
@@ -326,19 +328,19 @@ function OrderCard({
                     <div>
                         {order.tableName ? (
                             <div className="flex items-center gap-1.5">
-                                <MapPin size={12} className="text-zinc-400" />
+                                <MapPin size={12} className="text-[#F4F0EA]/55" />
                                 <span className="text-sm font-bold text-white">{order.tableName}</span>
                             </div>
                         ) : (
                             <div className="flex items-center gap-1.5">
-                                <ShoppingBag size={12} className="text-zinc-400" />
-                                <span className="text-sm font-bold text-zinc-300">
+                                <ShoppingBag size={12} className="text-[#F4F0EA]/55" />
+                                <span className="text-sm font-bold text-[#F4F0EA]/75">
                                     {order.ticketName || 'Para llevar'}
                                 </span>
                             </div>
                         )}
                         <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] text-zinc-500">{formatTime(order.createdAt)}</span>
+                            <span className="text-[10px] text-[#F4F0EA]/40">{formatTime(order.createdAt)}</span>
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${style.badge}`}>
                                 {formatElapsed(elapsed)}
                             </span>
@@ -350,7 +352,7 @@ function OrderCard({
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                     {urgency === 'urgent' && <Flame size={13} className="text-red-400" />}
                     {urgency === 'late' && <AlertTriangle size={13} className="text-amber-400" />}
-                    <span className="text-xs font-bold font-mono text-zinc-300">
+                    <span className="text-xs font-bold font-mono text-[#F4F0EA]/75">
                         ${order.totalAmount.toFixed(2)}
                     </span>
                 </div>
@@ -367,7 +369,7 @@ function OrderCard({
                         ">
                             {item.quantity}
                         </span>
-                        <span className="text-sm text-zinc-200 font-medium leading-tight">
+                        <span className="text-sm text-[#F4F0EA]/85 font-medium leading-tight">
                             {item.productNameSnapshot}
                         </span>
                     </div>
@@ -403,16 +405,16 @@ function DoneOrderRow({ order }: { order: Order }) {
         <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.04] opacity-50">
             <CheckCircle2 size={14} className="text-[#93B59D] flex-shrink-0" />
             <div className="flex-1 min-w-0">
-                <span className="text-xs text-zinc-400 font-medium truncate">
+                <span className="text-xs text-[#F4F0EA]/55 font-medium truncate">
                     {order.tableName || order.ticketName || 'Para llevar'}
                 </span>
-                <span className="text-xs text-zinc-600 ml-2">
+                <span className="text-xs text-[#F4F0EA]/25 ml-2">
                     {order.items.map(i => `${i.quantity}× ${i.productNameSnapshot}`).join(', ')}
                 </span>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
-                <Clock size={10} className="text-zinc-700" />
-                <span className="text-[10px] text-zinc-600">{formatTime(order.createdAt)}</span>
+                <Clock size={10} className="text-[#F4F0EA]/15" />
+                <span className="text-[10px] text-[#F4F0EA]/25">{formatTime(order.createdAt)}</span>
             </div>
         </div>
     );

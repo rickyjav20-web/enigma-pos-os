@@ -1,4 +1,4 @@
-import { Package, ArrowRight, ShoppingCart, TrendingUp, Building2, Sparkles, ArrowLeftRight, DollarSign, ChevronDown, ChevronUp, Wallet, BookOpen, Smartphone, LayoutGrid, Users } from 'lucide-react';
+import { Package, ArrowRight, ShoppingCart, TrendingUp, Building2, Sparkles, ArrowLeftRight, DollarSign, ChevronDown, ChevronUp, Wallet, BookOpen, Smartphone, LayoutGrid, Users, Monitor } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -114,8 +114,22 @@ export default function HomePage() {
                         {employee?.name ? `Hola, ${employee.name}` : 'Centro de Operaciones'}
                     </p>
                 </div>
-                <div className="w-12 h-12 rounded-full bg-enigma-green/20 border border-enigma-green flex items-center justify-center">
-                    <span className="text-sm font-mono text-enigma-green">✓</span>
+                <div className="flex items-center gap-2">
+                    {/* POS Tablet mode toggle */}
+                    <Link
+                        to="/pos"
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl
+                            bg-[#1C402E]/40 border border-[#93B59D]/25
+                            hover:bg-[#1C402E]/60 hover:border-[#93B59D]/50
+                            transition-all active:scale-95"
+                        title="Modo POS Tablet"
+                    >
+                        <Monitor className="w-4 h-4 text-[#93B59D]" />
+                        <span className="text-xs font-bold text-[#93B59D]">POS</span>
+                    </Link>
+                    <div className="w-10 h-10 rounded-full bg-enigma-green/20 border border-enigma-green flex items-center justify-center">
+                        <span className="text-xs font-mono text-enigma-green">✓</span>
+                    </div>
                 </div>
             </header>
 

@@ -48,6 +48,7 @@ import RegisterClosePage from './pages/RegisterClosePage';
 import CashMovementsPage from './pages/CashMovementsPage';
 import ManualSalePage from './pages/ManualSalePage';
 import TablesPage from './pages/TablesPage';
+import TabletPOSPage from './pages/TabletPOSPage';
 
 const navItems = [
     { icon: Home, label: 'Inicio', path: '/' },
@@ -90,6 +91,7 @@ function ProtectedApp() {
                     <Route path="/cash-movements" element={<CashMovementsPage />} />
                     <Route path="/manual-sale" element={<ManualSalePage />} />
                     <Route path="/tables" element={<TablesPage />} />
+                    <Route path="/pos" element={<TabletPOSPage />} />
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
             </main>
