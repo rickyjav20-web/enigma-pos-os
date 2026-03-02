@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
@@ -11,32 +11,32 @@ datasource db {
 // --- CORE ---
 
 model Tenant {
-  id        String     @id @default(uuid())
-  name      String
-  slug      String     @unique
+  id   String @id @default(uuid())
+  name String
+  slug String @unique
 
   // Relations
-  employees Employee[]
-  shifts     Shift[]
-  schedules  Schedule[]
-  recurring  RecurringSchedule[]
-  documents  Document[]
-  payments   Payment[]
-  products        Product[]
-  suppliers       Supplier[]
-  supplyItems     SupplyItem[]
-  purchaseOrders  PurchaseOrder[]
+  employees        Employee[]
+  shifts           Shift[]
+  schedules        Schedule[]
+  recurring        RecurringSchedule[]
+  documents        Document[]
+  payments         Payment[]
+  products         Product[]
+  suppliers        Supplier[]
+  supplyItems      SupplyItem[]
+  purchaseOrders   PurchaseOrder[]
   registerSessions RegisterSession[]
-  inventoryLogs   InventoryLog[]
-  salesOrders     SalesOrder[]
-  systemRoles     SystemRole[]
-  saleBatches     SaleBatch[]
-  saleEvents      SaleEvent[]
-  currencies      Currency[]
-  inventoryCounts InventoryCount[]
-  shiftTasks      ShiftTask[]
-  diningTables    DiningTable[]
-  dailyGoals      DailyGoal[]
+  inventoryLogs    InventoryLog[]
+  salesOrders      SalesOrder[]
+  systemRoles      SystemRole[]
+  saleBatches      SaleBatch[]
+  saleEvents       SaleEvent[]
+  currencies       Currency[]
+  inventoryCounts  InventoryCount[]
+  shiftTasks       ShiftTask[]
+  diningTables     DiningTable[]
+  dailyGoals       DailyGoal[]
 }
 
 // --- MODULE: ACCESS CONTROL ---
@@ -49,63 +49,64 @@ model SystemRole {
   color       String  @default("#8b5cf6")
 
   // System access permissions
-  canAccessOps      Boolean @default(false)   // Cash register (OPS)
-  canAccessHq       Boolean @default(false)   // Back office (HQ)
-  canAccessKiosk    Boolean @default(true)    // Clock-in kiosk
-  canAccessKitchen  Boolean @default(false)   // Kitchen station
-  canAccessPos      Boolean @default(true)    // POS Mobile (WAVE)
+  canAccessOps     Boolean @default(false) // Cash register (OPS)
+  canAccessHq      Boolean @default(false) // Back office (HQ)
+  canAccessKiosk   Boolean @default(true) // Clock-in kiosk
+  canAccessKitchen Boolean @default(false) // Kitchen station
+  canAccessPos     Boolean @default(true) // POS Mobile (WAVE)
 
-  isSystem    Boolean  @default(false)      // Prevents deletion
-  createdAt   DateTime @default(now())
+  isSystem  Boolean  @default(false) // Prevents deletion
+  createdAt DateTime @default(now())
 
-  tenant      Tenant @relation(fields: [tenantId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
   @@unique([tenantId, name])
 }
 
 // --- MODULE: STAFF ---
 
 model Employee {
-  id               String    @id @default(uuid())
-  tenantId         String
-  fullName         String
-  role             String
-  pinCode          String
-  status           String    @default("active")
-  
+  id       String @id @default(uuid())
+  tenantId String
+  fullName String
+  role     String
+  pinCode  String
+  status   String @default("active")
+
   // Contact
   email            String?
   phone            String?
   address          String?
   emergencyContact String?
   emergencyPhone   String?
-  
+
   // Dates
-  birthDate        DateTime?
-  startDate        DateTime?
-  notes            String?
-  
+  birthDate DateTime?
+  startDate DateTime?
+  notes     String?
+
   // -- FINANCE & HR --
-  govId            String?   // CI / DNI
-  nationality      String?
-  paymentMethod    String?   // 'transfer', 'cash', 'mobile', 'zelle'
-  bankName         String?
-  accountNumber    String?
-  accountHolder    String?
-  salaryType       String?   // 'fixed', 'hourly'
-  salaryAmount     Float?    // Base amount in currency
-  currency         String    @default("USD")
-  
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  
-  tenant           Tenant    @relation(fields: [tenantId], references: [id])
-  shifts           Shift[]
-  registerSessions RegisterSession[]
-  schedules        Schedule[]
-  recurring        RecurringSchedule[]
-  documents        Document[]
-  payments         Payment[]
-  registeredPurchases PurchaseOrder[] @relation("RegisteredPurchases")
+  govId         String? // CI / DNI
+  nationality   String?
+  paymentMethod String? // 'transfer', 'cash', 'mobile', 'zelle'
+  bankName      String?
+  accountNumber String?
+  accountHolder String?
+  salaryType    String? // 'fixed', 'hourly'
+  salaryAmount  Float? // Base amount in currency
+  currency      String  @default("USD")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant              Tenant              @relation(fields: [tenantId], references: [id])
+  shifts              Shift[]
+  registerSessions    RegisterSession[]
+  schedules           Schedule[]
+  recurring           RecurringSchedule[]
+  documents           Document[]
+  payments            Payment[]
+  registeredPurchases PurchaseOrder[]     @relation("RegisteredPurchases")
 }
 
 model Payment {
@@ -113,44 +114,44 @@ model Payment {
   tenantId     String
   employeeId   String
   amount       Float
-  currency     String   // 'USD', 'VES'
-  exchangeRate Float?   // Rate at time of payment
+  currency     String // 'USD', 'VES'
+  exchangeRate Float? // Rate at time of payment
   date         DateTime @default(now())
-  status       String   // 'pending', 'paid'
-  method       String?  // 'cash', 'zelle', 'mobile', 'transfer'
-  reference    String?  // Transaction ID
-  concept      String?  // 'Payroll Jan 15', 'Bonus'
+  status       String // 'pending', 'paid'
+  method       String? // 'cash', 'zelle', 'mobile', 'transfer'
+  reference    String? // Transaction ID
+  concept      String? // 'Payroll Jan 15', 'Bonus'
   notes        String?
-  
-  employee     Employee @relation(fields: [employeeId], references: [id])
-  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
 }
 
 model Document {
   id         String   @id @default(uuid())
   tenantId   String
   employeeId String
-  title      String   // 'Contract 2024', 'ID Copy'
-  type       String   // 'ID', 'CONTRACT', 'OTHER'
-  url        String   // S3 URL or Base64 (for MVP)
+  title      String // 'Contract 2024', 'ID Copy'
+  type       String // 'ID', 'CONTRACT', 'OTHER'
+  url        String // S3 URL or Base64 (for MVP)
   uploadedAt DateTime @default(now())
-  
-  employee   Employee @relation(fields: [employeeId], references: [id])
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
 }
 
 model Shift {
-  id          String    @id @default(uuid())
-  tenantId    String?   // Optional in schema but should be linked for multi-tenancy logic
-  employeeId  String
-  clockIn     DateTime
-  clockOut    DateTime?
-  mood        String?    // Entry Mood
-  exitMood    String?    // Exit Mood
-  comments    String?    // Exit Comments
-  photoUrl    String?    @db.Text
-  employee    Employee  @relation(fields: [employeeId], references: [id])
-  tenant      Tenant?   @relation(fields: [tenantId], references: [id])
+  id         String    @id @default(uuid())
+  tenantId   String? // Optional in schema but should be linked for multi-tenancy logic
+  employeeId String
+  clockIn    DateTime
+  clockOut   DateTime?
+  mood       String? // Entry Mood
+  exitMood   String? // Exit Mood
+  comments   String? // Exit Comments
+  photoUrl   String?   @db.Text
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+  tenant     Tenant?   @relation(fields: [tenantId], references: [id])
 }
 
 model Schedule {
@@ -168,94 +169,94 @@ model RecurringSchedule {
   id         String   @id @default(uuid())
   tenantId   String
   employeeId String
-  dayOfWeek  Int      // 0 = Sunday, 1 = Monday...
-  startTime  String   // "09:00"
-  endTime    String   // "17:00"
+  dayOfWeek  Int // 0 = Sunday, 1 = Monday...
+  startTime  String // "09:00"
+  endTime    String // "17:00"
   isActive   Boolean  @default(true)
   employee   Employee @relation(fields: [employeeId], references: [id])
   tenant     Tenant   @relation(fields: [tenantId], references: [id])
-  
+
   @@unique([employeeId, dayOfWeek])
 }
 
 model RegisterSession {
-  id              String    @id @default(uuid())
-  tenantId        String
-  employeeId      String
+  id         String @id @default(uuid())
+  tenantId   String
+  employeeId String
 
   // Timing
-  startedAt       DateTime  @default(now())
-  endedAt         DateTime?
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
 
   // Opening
-  startingCash    Float     // The "Float" or "Base" in USD
+  startingCash Float // The "Float" or "Base" in USD
 
   // Multi-currency / Dual Register
-  registerType      String    @default("PHYSICAL")  // 'PHYSICAL' | 'ELECTRONIC'
-  linkedSessionId   String?                          // ID of the paired session
-  startingBreakdown Json?     // { USD:20, COP:150000, rates:{COP:4200} } or { VES:2750, rates:{VES:55} }
+  registerType      String  @default("PHYSICAL") // 'PHYSICAL' | 'ELECTRONIC'
+  linkedSessionId   String? // ID of the paired session
+  startingBreakdown Json? // { USD:20, COP:150000, rates:{COP:4200} } or { VES:2750, rates:{VES:55} }
 
   // Closing (Manual Entry for now)
-  declaredCash    Float?    // What they counted physically (USD total)
-  declaredCard    Float?    // Sum of card voucher slips
-  declaredTransfer Float?   // Sum of transfers
-  declaredBreakdown Json?   // { USD:{amount,rate,usdEquiv}, VES:{...}, COP:{...} }
+  declaredCash      Float? // What they counted physically (USD total)
+  declaredCard      Float? // Sum of card voucher slips
+  declaredTransfer  Float? // Sum of transfers
+  declaredBreakdown Json? // { USD:{amount,rate,usdEquiv}, VES:{...}, COP:{...} }
 
   // Calculated (Future usage with automated sales)
-  expectedCash    Float?    // System calculated cash (not used yet basically)
+  expectedCash Float? // System calculated cash (not used yet basically)
 
   // Audit
-  notes           String?
-  status          String    @default("open") // 'open', 'closed'
+  notes  String?
+  status String  @default("open") // 'open', 'closed'
 
-  employee        Employee  @relation(fields: [employeeId], references: [id])
-  tenant          Tenant    @relation(fields: [tenantId], references: [id])
-  transactions    CashTransaction[]
-  salesOrders     SalesOrder[]
+  employee     Employee          @relation(fields: [employeeId], references: [id])
+  tenant       Tenant            @relation(fields: [tenantId], references: [id])
+  transactions CashTransaction[]
+  salesOrders  SalesOrder[]
 }
 
 model CashTransaction {
   id          String   @id @default(uuid())
   sessionId   String
-  amount      Float    // Positive = In, Negative = Out (always in USD)
-  type        String   // 'OPENING', 'SALE', 'PURCHASE', 'EXPENSE', 'WITHDRAWAL', 'DEPOSIT'
+  amount      Float // Positive = In, Negative = Out (always in USD)
+  type        String // 'OPENING', 'SALE', 'PURCHASE', 'EXPENSE', 'WITHDRAWAL', 'DEPOSIT'
   description String?
-  referenceId String?  // ID of PurchaseOrder or other entity
+  referenceId String? // ID of PurchaseOrder or other entity
   timestamp   DateTime @default(now())
 
   // Multi-currency fields
-  currency     String?  @default("USD")  // 'USD', 'VES', 'COP'
-  amountLocal  Float?   // Original amount in local currency
-  exchangeRate Float?   // Rate used at time of transaction
+  currency     String? @default("USD") // 'USD', 'VES', 'COP'
+  amountLocal  Float? // Original amount in local currency
+  exchangeRate Float? // Rate used at time of transaction
 
-  session     RegisterSession @relation(fields: [sessionId], references: [id])
+  session RegisterSession @relation(fields: [sessionId], references: [id])
 
   // --- Inventory Linkage ---
-  supplyItemId  String?
-  quantity      Float?   // Amount bought
-  unitCost      Float?   // Cost per unit in USD (optional override)
+  supplyItemId String?
+  quantity     Float? // Amount bought
+  unitCost     Float? // Cost per unit in USD (optional override)
 
-  supplyItem    SupplyItem? @relation(fields: [supplyItemId], references: [id])
+  supplyItem SupplyItem? @relation(fields: [supplyItemId], references: [id])
 }
 
 // --- MODULE: PRODUCTS (Ingest) ---
 
 model Product {
-  id          String   @id @default(uuid())
-  tenantId    String
-  name        String
-  categoryId  String?
-  price       Float
-  cost        Float?
-  sku         String?
-  loyverseId  String?  // Handle from CSV
-  isActive    Boolean  @default(true)
-  
+  id         String  @id @default(uuid())
+  tenantId   String
+  name       String
+  categoryId String?
+  price      Float
+  cost       Float?
+  sku        String?
+  loyverseId String? // Handle from CSV
+  isActive   Boolean @default(true)
+
   variants    Variant[]
   recipes     ProductRecipe[]
   salesItems  SalesItem[]
   costHistory ProductCostHistory[]
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, loyverseId])
 }
@@ -267,63 +268,63 @@ model Variant {
   price     Float
   cost      Float
   sku       String?
-  
-  product   Product @relation(fields: [productId], references: [id])
+
+  product Product @relation(fields: [productId], references: [id])
 }
 
 // --- MODULE: PURCHASES (Optimized) ---
 
 model Supplier {
-  id              String   @id @default(uuid())
-  tenantId        String
-  name            String
-  normalizedName  String?  // For duplicate detection (e.g. "sysco_foods")
-  category        String?
-  email           String?
-  phone           String?
-  address         String?
-  notes           String?
-  
-  tenant          Tenant          @relation(fields: [tenantId], references: [id])
-  supplyItems     SupplyItem[]
-  purchaseOrders  PurchaseOrder[]
-  priceCatalog    SupplierPrice[]
+  id             String  @id @default(uuid())
+  tenantId       String
+  name           String
+  normalizedName String? // For duplicate detection (e.g. "sysco_foods")
+  category       String?
+  email          String?
+  phone          String?
+  address        String?
+  notes          String?
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  supplyItems    SupplyItem[]
+  purchaseOrders PurchaseOrder[]
+  priceCatalog   SupplierPrice[]
 }
 
 model SupplyItem {
-  id              String   @id @default(uuid())
-  tenantId        String
-  name            String
-  sku             String?
-  category        String?  // 'Lacteos', 'Vegetales'
-  defaultUnit     String   // 'kg', 'lt', 'und'
-  currentCost     Float    @default(0)
-  averageCost     Float    @default(0) // Weighted Average Cost
+  id               String    @id @default(uuid())
+  tenantId         String
+  name             String
+  sku              String?
+  category         String? // 'Lacteos', 'Vegetales'
+  defaultUnit      String // 'kg', 'lt', 'und'
+  currentCost      Float     @default(0)
+  averageCost      Float     @default(0) // Weighted Average Cost
   lastPurchaseDate DateTime?
-  stockQuantity   Float    @default(0) // Current stock for WAC
-  isByWeight      Boolean  @default(false)
-  isActive        Boolean  @default(true)
-  
+  stockQuantity    Float     @default(0) // Current stock for WAC
+  isByWeight       Boolean   @default(false)
+  isActive         Boolean   @default(true)
+
   // Smart Yield & Conversion Protocol
-  yieldPercentage Float    @default(1.0) // 1.0 = 100% (No loss). 0.4 = 40% yield.
-  recipeUnit      String?  // Unit used in recipes (e.g. 'g', 'ml')
-  stockCorrectionFactor Float @default(1) // Multiplier from Default Unit to Recipe Unit (e.g. 1kg -> 1000g, factor=1000)
-  
+  yieldPercentage       Float   @default(1.0) // 1.0 = 100% (No loss). 0.4 = 40% yield.
+  recipeUnit            String? // Unit used in recipes (e.g. 'g', 'ml')
+  stockCorrectionFactor Float   @default(1) // Multiplier from Default Unit to Recipe Unit (e.g. 1kg -> 1000g, factor=1000)
+
   // Relations
   preferredSupplierId String?
   loyverseId          String? // Link to Sales Product if 1:1 match
-  
-  // --- Smart Inventory & Par Levels ---
-  parLevel          Float?    // Target stock level (trigger production if below)
-  minStock          Float?    // Absolute minimum - red alert
-  maxStock          Float?    // Upper limit to avoid overstock
-  countFrequency    String?   @default("SMART") // "DAILY" | "WEEKLY" | "SMART"
-  lastCountedAt     DateTime? // When last physically counted
-  lastCountedQty    Float?    // What the last count found
-  countZone         Int?      @default(2) // 1=barra, 2=cocina, 3=almacen
 
-  tenant            Tenant          @relation(fields: [tenantId], references: [id])
-  preferredSupplier Supplier?       @relation(fields: [preferredSupplierId], references: [id])
+  // --- Smart Inventory & Par Levels ---
+  parLevel       Float? // Target stock level (trigger production if below)
+  minStock       Float? // Absolute minimum - red alert
+  maxStock       Float? // Upper limit to avoid overstock
+  countFrequency String?   @default("SMART") // "DAILY" | "WEEKLY" | "SMART"
+  lastCountedAt  DateTime? // When last physically counted
+  lastCountedQty Float? // What the last count found
+  countZone      Int?      @default(2) // 1=barra, 2=cocina, 3=almacen
+
+  tenant            Tenant            @relation(fields: [tenantId], references: [id])
+  preferredSupplier Supplier?         @relation(fields: [preferredSupplierId], references: [id])
   purchaseLines     PurchaseLine[]
   priceHistory      PriceHistory[]
   inventoryLogs     InventoryLog[]
@@ -334,45 +335,45 @@ model SupplyItem {
   shiftTasks        ShiftTask[]
 
   // --- Kitchen Hierarchy (Batches) ---
-  isProduction    Boolean            @default(false) // If true, this item is made in-house (e.g. "Pizza Dough")
-  yieldQuantity   Float?             // How much does one batch produce?
-  yieldUnit       String?            // Unit of the batch output (e.g. 'kg', 'lt')
+  isProduction  Boolean @default(false) // If true, this item is made in-house (e.g. "Pizza Dough")
+  yieldQuantity Float? // How much does one batch produce?
+  yieldUnit     String? // Unit of the batch output (e.g. 'kg', 'lt')
 
-  ingredients     ProductionRecipe[] @relation("ParentItem")    // Ingredients used TO MAKE this item
-  usedIn          ProductionRecipe[] @relation("ComponentItem") // Recipes WHERE this item is used
+  ingredients ProductionRecipe[] @relation("ParentItem") // Ingredients used TO MAKE this item
+  usedIn      ProductionRecipe[] @relation("ComponentItem") // Recipes WHERE this item is used
 
   @@unique([tenantId, sku])
 }
 
 model SupplierPrice {
-  id            String     @id @default(uuid())
-  supplierId    String
-  supplyItemId  String
-  unitCost      Float
-  unit          String?    // Optional override unit (kg, lt, und)
-  notes         String?    // E.g. "Min 5kg order"
-  isActive      Boolean    @default(true)
-  updatedAt     DateTime   @updatedAt
-  createdAt     DateTime   @default(now())
+  id           String   @id @default(uuid())
+  supplierId   String
+  supplyItemId String
+  unitCost     Float
+  unit         String? // Optional override unit (kg, lt, und)
+  notes        String? // E.g. "Min 5kg order"
+  isActive     Boolean  @default(true)
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
 
-  supplier      Supplier   @relation(fields: [supplierId], references: [id])
-  supplyItem    SupplyItem @relation(fields: [supplyItemId], references: [id])
+  supplier   Supplier   @relation(fields: [supplierId], references: [id])
+  supplyItem SupplyItem @relation(fields: [supplyItemId], references: [id])
 
   @@unique([supplierId, supplyItemId])
   @@index([supplyItemId])
 }
 
 model ProductionRecipe {
-  id            String     @id @default(uuid())
-  parentItemId  String     // The "Batch" (e.g. Pizza Dough)
-  supplyItemId  String     // The "Ingredient" (e.g. Flour)
-  
-  quantity      Float      // Amount of ingredient used
-  unit          String     // Unit of ingredient
-  
-  parent        SupplyItem @relation("ParentItem", fields: [parentItemId], references: [id])
-  component     SupplyItem @relation("ComponentItem", fields: [supplyItemId], references: [id])
-  
+  id           String @id @default(uuid())
+  parentItemId String // The "Batch" (e.g. Pizza Dough)
+  supplyItemId String // The "Ingredient" (e.g. Flour)
+
+  quantity Float // Amount of ingredient used
+  unit     String // Unit of ingredient
+
+  parent    SupplyItem @relation("ParentItem", fields: [parentItemId], references: [id])
+  component SupplyItem @relation("ComponentItem", fields: [supplyItemId], references: [id])
+
   @@index([parentItemId])
   @@index([supplyItemId])
 }
@@ -386,84 +387,84 @@ model PurchaseOrder {
   invoiceNumber String?
   status        String   @default("draft") // 'draft', 'confirmed', 'cancelled'
   notes         String?
-  
+
   // Payment & Audit
-  paymentMethod String   @default("cash") // 'cash', 'transfer', 'credit'
+  paymentMethod  String  @default("cash") // 'cash', 'transfer', 'credit'
   registeredById String? // Employee who registered this purchase
 
   // Multi-currency fields
-  currency           String?  @default("USD")  // 'USD', 'VES', 'COP'
-  totalAmountLocal   Float?   // Amount in local currency
-  exchangeRate       Float?   // Rate used at time of purchase
+  currency         String? @default("USD") // 'USD', 'VES', 'COP'
+  totalAmountLocal Float? // Amount in local currency
+  exchangeRate     Float? // Rate used at time of purchase
 
-  supplier      Supplier       @relation(fields: [supplierId], references: [id])
-  tenant        Tenant         @relation(fields: [tenantId], references: [id])
-  registeredBy  Employee?      @relation("RegisteredPurchases", fields: [registeredById], references: [id])
-  lines         PurchaseLine[]
+  supplier     Supplier       @relation(fields: [supplierId], references: [id])
+  tenant       Tenant         @relation(fields: [tenantId], references: [id])
+  registeredBy Employee?      @relation("RegisteredPurchases", fields: [registeredById], references: [id])
+  lines        PurchaseLine[]
 }
 
 model PurchaseLine {
-  id              String   @id @default(uuid())
+  id              String @id @default(uuid())
   purchaseOrderId String
   supplyItemId    String
-  
-  quantity        Float
-  unitCost        Float
-  totalCost       Float
-  
+
+  quantity  Float
+  unitCost  Float
+  totalCost Float
+
   // Snapshots (in case Item name changes)
   itemNameSnapshot String?
-  
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  supplyItem      SupplyItem    @relation(fields: [supplyItemId], references: [id])
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  supplyItem    SupplyItem    @relation(fields: [supplyItemId], references: [id])
 }
 
 model PriceHistory {
-  id              String   @id @default(uuid())
-  supplyItemId    String
-  supplierId      String?
-  purchaseLineId  String?
-  
-  oldCost         Float
-  newCost         Float
-  changeDate      DateTime @default(now())
-  
-  supplyItem      SupplyItem @relation(fields: [supplyItemId], references: [id])
+  id             String  @id @default(uuid())
+  supplyItemId   String
+  supplierId     String?
+  purchaseLineId String?
+
+  oldCost    Float
+  newCost    Float
+  changeDate DateTime @default(now())
+
+  supplyItem SupplyItem @relation(fields: [supplyItemId], references: [id])
 }
 
 model ProductRecipe {
-  id            String      @id @default(uuid())
-  productId     String
-  supplyItemId  String
+  id           String @id @default(uuid())
+  productId    String
+  supplyItemId String
 
-  quantity      Float       // e.g. 0.2
-  unit          String      // e.g. 'kg'
-  
-  costAtCreation Float?     // Historical snapshot
+  quantity Float // e.g. 0.2
+  unit     String // e.g. 'kg'
 
-  product       Product     @relation(fields: [productId], references: [id])
-  supplyItem    SupplyItem  @relation(fields: [supplyItemId], references: [id])
+  costAtCreation Float? // Historical snapshot
+
+  product    Product    @relation(fields: [productId], references: [id])
+  supplyItem SupplyItem @relation(fields: [supplyItemId], references: [id])
 
   @@index([productId])
   @@index([supplyItemId])
 }
 
 model InventoryLog {
-  id            String   @id @default(uuid())
-  tenantId      String
-  supplyItemId  String
-  
+  id           String @id @default(uuid())
+  tenantId     String
+  supplyItemId String
+
   previousStock Float
   newStock      Float
-  changeAmount  Float    // new - old
-  
-  reason        String   // 'purchase', 'production', 'audit', 'waste'
-  notes         String?
-  
-  createdAt     DateTime @default(now())
-  
-  supplyItem    SupplyItem @relation(fields: [supplyItemId], references: [id])
-  tenant        Tenant     @relation(fields: [tenantId], references: [id])
+  changeAmount  Float // new - old
+
+  reason String // 'purchase', 'production', 'audit', 'waste'
+  notes  String?
+
+  createdAt DateTime @default(now())
+
+  supplyItem SupplyItem @relation(fields: [supplyItemId], references: [id])
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
 
   @@index([supplyItemId])
 }
@@ -471,107 +472,106 @@ model InventoryLog {
 // --- MODULE: SALES (POS) ---
 
 model SalesOrder {
-  id              String   @id @default(uuid())
-  tenantId        String
-  sessionId       String   // Linked to Register Session
-  employeeId      String?  // Who made the sale (for goals tracking)
-  
-  totalAmount     Float
-  paymentMethod   String   // 'cash', 'card', 'transfer'
-  status          String   @default("completed") // 'open', 'completed', 'cancelled'
-  
+  id         String  @id @default(uuid())
+  tenantId   String
+  sessionId  String // Linked to Register Session
+  employeeId String? // Who made the sale (for goals tracking)
+
+  totalAmount   Float
+  paymentMethod String // 'cash', 'card', 'transfer'
+  status        String @default("completed") // 'open', 'completed', 'cancelled'
+
   // Table & Ticket
-  tableId         String?  // Linked to DiningTable
-  tableName       String?  // Snapshot of table name
-  ticketName      String?  // Customer/ticket label
-  notes           String?  // POS notes
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt @default(now())
-  
+  tableId    String? // Linked to DiningTable
+  tableName  String? // Snapshot of table name
+  ticketName String? // Customer/ticket label
+  notes      String? // POS notes
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
   // Relations
-  tenant          Tenant          @relation(fields: [tenantId], references: [id])
-  session         RegisterSession @relation(fields: [sessionId], references: [id])
-  table           DiningTable?    @relation(fields: [tableId], references: [id])
-  items           SalesItem[]
+  tenant  Tenant          @relation(fields: [tenantId], references: [id])
+  session RegisterSession @relation(fields: [sessionId], references: [id])
+  table   DiningTable?    @relation(fields: [tableId], references: [id])
+  items   SalesItem[]
 }
 
 model SalesItem {
-  id            String   @id @default(uuid())
-  salesOrderId  String
-  productId     String
-  
-  quantity      Int
-  unitPrice     Float
-  totalPrice    Float
-  
+  id           String @id @default(uuid())
+  salesOrderId String
+  productId    String
+
+  quantity   Int
+  unitPrice  Float
+  totalPrice Float
+
   // Snapshots
   productNameSnapshot String
-  
+
   // Relations
-  salesOrder    SalesOrder @relation(fields: [salesOrderId], references: [id])
-  product       Product    @relation(fields: [productId], references: [id])
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id])
+  product    Product    @relation(fields: [productId], references: [id])
 }
 
 // --- MODULE: SALES IMPORT V2 ---
 
 model SaleBatch {
-  id          String   @id @default(uuid())
-  tenantId    String
-  
-  status      String   @default("PENDING") // PENDING, PROCESSED, FAILED
-  fileName    String?
-  source      String?  // 'Loyverse', 'Generic CSV'
-  
-  totalSales  Float    @default(0)
-  totalItems  Float    @default(0)
-  
-  importedAt  DateTime @default(now())
+  id       String @id @default(uuid())
+  tenantId String
+
+  status   String  @default("PENDING") // PENDING, PROCESSED, FAILED
+  fileName String?
+  source   String? // 'Loyverse', 'Generic CSV'
+
+  totalSales Float @default(0)
+  totalItems Float @default(0)
+
+  importedAt  DateTime  @default(now())
   processedAt DateTime?
-  
-  events      SaleEvent[]
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  events SaleEvent[]
+  tenant Tenant      @relation(fields: [tenantId], references: [id])
 }
 
 model SaleEvent {
-  id              String   @id @default(uuid())
-  tenantId        String
-  batchId         String   // Link to Batch
-  
+  id       String @id @default(uuid())
+  tenantId String
+  batchId  String // Link to Batch
+
   // Core Data (Mapped from CSV)
-  externalId      String?  // Receipt ID / Transaction ID
-  timestamp       DateTime // Date of sale
-  sku             String?  // The key identifier
-  productName     String   // Snapshot/Fallback
-  
-  quantity        Float
-  unitPrice       Float    @default(0)
-  totalPrice      Float    @default(0)
+  externalId  String? // Receipt ID / Transaction ID
+  timestamp   DateTime // Date of sale
+  sku         String? // The key identifier
+  productName String // Snapshot/Fallback
+
+  quantity   Float
+  unitPrice  Float  @default(0)
+  totalPrice Float  @default(0)
   // Processing Status
-  status          String   @default("PENDING") // PENDING, CONSUMED, ERROR
-  
-  saleBatch       SaleBatch @relation(fields: [batchId], references: [id])
-  tenant          Tenant    @relation(fields: [tenantId], references: [id])
-  
+  status     String @default("PENDING") // PENDING, CONSUMED, ERROR
+
+  saleBatch SaleBatch @relation(fields: [batchId], references: [id])
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+
   @@index([batchId])
   @@index([sku])
   @@index([timestamp])
 }
 
-
 model ProductCostHistory {
-  id          String   @id @default(uuid())
-  productId   String
-  
-  oldCost     Float    // Snapshot of cost before update
-  newCost     Float    // New calculated cost
-  changeDate  DateTime @default(now())
-  
+  id        String @id @default(uuid())
+  productId String
+
+  oldCost    Float // Snapshot of cost before update
+  newCost    Float // New calculated cost
+  changeDate DateTime @default(now())
+
   // Context
-  reason      String?  // 'Ingredient Price Change', 'Recipe Change', 'Manual Update'
-  
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
+  reason String? // 'Ingredient Price Change', 'Recipe Change', 'Manual Update'
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
   @@index([productId])
   @@index([changeDate])
 }
@@ -581,16 +581,16 @@ model ProductCostHistory {
 model Currency {
   id           String   @id @default(uuid())
   tenantId     String
-  code         String   // 'USD', 'VES', 'COP'
-  name         String   // 'Dolar', 'Bolivar', 'Peso Colombiano'
-  symbol       String   // '$', 'Bs.', '$'
-  exchangeRate Float    @default(1)   // Units of THIS currency per 1 USD
+  code         String // 'USD', 'VES', 'COP'
+  name         String // 'Dolar', 'Bolivar', 'Peso Colombiano'
+  symbol       String // '$', 'Bs.', '$'
+  exchangeRate Float    @default(1) // Units of THIS currency per 1 USD
   isBase       Boolean  @default(false) // USD = true, non-editable
   isActive     Boolean  @default(true)
   updatedAt    DateTime @updatedAt
   createdAt    DateTime @default(now())
 
-  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, code])
 }
@@ -601,14 +601,14 @@ model KitchenActivityLog {
   id           String   @id @default(uuid())
   tenantId     String
   employeeId   String
-  employeeName String   // Snapshot for fast queries
-  action       String   // 'LOGIN' | 'LOGOUT' | 'PRODUCTION' | 'WASTE' | 'INVENTORY_COUNT'
-  entityType   String?  // 'supply_item', 'product'
+  employeeName String // Snapshot for fast queries
+  action       String // 'LOGIN' | 'LOGOUT' | 'PRODUCTION' | 'WASTE' | 'INVENTORY_COUNT'
+  entityType   String? // 'supply_item', 'product'
   entityId     String?
-  entityName   String?  // Snapshot
+  entityName   String? // Snapshot
   quantity     Float?
   unit         String?
-  metadata     Json?    // Flexible: wasteType, reason, variance, taskId, etc.
+  metadata     Json? // Flexible: wasteType, reason, variance, taskId, etc.
   createdAt    DateTime @default(now())
 
   @@index([tenantId])
@@ -620,22 +620,22 @@ model KitchenActivityLog {
 // --- MODULE: SMART INVENTORY ---
 
 model InventoryCount {
-  id             String     @id @default(uuid())
+  id             String   @id @default(uuid())
   tenantId       String
   supplyItemId   String
-  countedBy      String     // employeeId
-  countedByName  String     // snapshot
-  shift          String     // "MORNING" | "EVENING"
-  date           DateTime   @default(now())
-  countedQty     Float      // physical count
-  systemQty      Float      // system stock at time of count
-  variance       Float      // countedQty - systemQty
-  unitCostAtTime Float?     // item cost at count time (for $ variance calc)
+  countedBy      String // employeeId
+  countedByName  String // snapshot
+  shift          String // "MORNING" | "EVENING"
+  date           DateTime @default(now())
+  countedQty     Float // physical count
+  systemQty      Float // system stock at time of count
+  variance       Float // countedQty - systemQty
+  unitCostAtTime Float? // item cost at count time (for $ variance calc)
   notes          String?
-  createdAt      DateTime   @default(now())
+  createdAt      DateTime @default(now())
 
-  tenant      Tenant     @relation(fields: [tenantId], references: [id])
-  supplyItem  SupplyItem @relation(fields: [supplyItemId], references: [id])
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  supplyItem SupplyItem @relation(fields: [supplyItemId], references: [id])
 
   @@index([tenantId, date])
   @@index([supplyItemId])
@@ -644,23 +644,23 @@ model InventoryCount {
 model ShiftTask {
   id           String    @id @default(uuid())
   tenantId     String
-  date         String    // "2026-02-22" - ISO date string for easy querying
-  shift        String    // "MORNING" | "EVENING"
-  type         String    // "INVENTORY" | "PRODUCTION"
+  date         String // "2026-02-22" - ISO date string for easy querying
+  shift        String // "MORNING" | "EVENING"
+  type         String // "INVENTORY" | "PRODUCTION"
   supplyItemId String
-  targetQty    Float?    // for PRODUCTION tasks: how much to make
+  targetQty    Float? // for PRODUCTION tasks: how much to make
   completedQty Float?
   status       String    @default("PENDING") // "PENDING" | "DONE" | "SKIPPED"
-  generatedBy  String    @default("AUTO")    // "AUTO" | "MANUAL"
-  completedBy  String?   // employeeId
+  generatedBy  String    @default("AUTO") // "AUTO" | "MANUAL"
+  completedBy  String? // employeeId
   completedAt  DateTime?
   notes        String?
-  priority     Int       @default(1)  // 1=normal, 2=high, 3=urgent
-  reason       String?   // human-readable: "Stock 2 < Par 10"
+  priority     Int       @default(1) // 1=normal, 2=high, 3=urgent
+  reason       String? // human-readable: "Stock 2 < Par 10"
   createdAt    DateTime  @default(now())
 
-  tenant      Tenant     @relation(fields: [tenantId], references: [id])
-  supplyItem  SupplyItem @relation(fields: [supplyItemId], references: [id])
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  supplyItem SupplyItem @relation(fields: [supplyItemId], references: [id])
 
   @@index([tenantId, date, shift])
   @@index([supplyItemId])
@@ -669,52 +669,52 @@ model ShiftTask {
 // --- MODULE: DINING TABLES ---
 
 model DiningTable {
-  id        String  @id @default(uuid())
+  id        String   @id @default(uuid())
   tenantId  String
-  name      String        // "Mesa 1", "Bar 2"
-  zone      String?       // "Terraza", "Interior", "Bar"
-  capacity  Int?          // 2, 4, 6 seats
-  isActive  Boolean @default(true)
-  sortOrder Int     @default(0)
+  name      String // "Mesa 1", "Bar 2"
+  zone      String? // "Terraza", "Interior", "Bar"
+  capacity  Int? // 2, 4, 6 seats
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
-  
+
   tenant      Tenant       @relation(fields: [tenantId], references: [id])
   salesOrders SalesOrder[]
-  
+
   @@unique([tenantId, name])
 }
 
 // --- MODULE: EMPLOYEE REWARDS ---
 
 model DailyGoal {
-  id          String    @id @default(uuid())
-  tenantId    String
-  employeeId  String     // Assigned to
-  date        String     // "2026-03-02" ISO date
-  
+  id         String @id @default(uuid())
+  tenantId   String
+  employeeId String // Assigned to
+  date       String // "2026-03-02" ISO date
+
   // Goal definition
-  type        String     // "PRODUCT" | "CATEGORY" | "REVENUE"
-  targetId    String?    // productId (PRODUCT) or category name (CATEGORY)
-  targetName  String     // "Combo Tequeños" or "Postres" or "Revenue"
-  targetQty   Float      // 5 units, or $50 revenue
-  
+  type       String // "PRODUCT" | "CATEGORY" | "REVENUE"
+  targetId   String? // productId (PRODUCT) or category name (CATEGORY)
+  targetName String // "Combo Tequenos" or "Postres" or "Revenue"
+  targetQty  Float // 5 units, or $50 revenue
+
   // Progress
-  currentQty  Float      @default(0)
-  isCompleted Boolean    @default(false)
+  currentQty  Float     @default(0)
+  isCompleted Boolean   @default(false)
   completedAt DateTime?
-  
+
   // Reward
-  rewardType  String?    // "POINTS" | "BONUS" | "BADGE"
-  rewardValue Float?     // 10 points, $2 bonus
-  rewardNote  String?    // "🏆 Estrella del día"
-  
+  rewardType  String? // "POINTS" | "BONUS" | "BADGE"
+  rewardValue Float? // 10 points, $2 bonus
+  rewardNote  String? // "Estrella del dia"
+
   // Meta
-  createdBy   String?    // Manager who set goal
-  status      String     @default("ACTIVE") // "ACTIVE" | "COMPLETED" | "EXPIRED"
-  createdAt   DateTime   @default(now())
-  
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  
+  createdBy String? // Manager who set goal
+  status    String   @default("ACTIVE") // "ACTIVE" | "COMPLETED" | "EXPIRED"
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
   @@index([tenantId, date])
   @@index([employeeId, date])
 }
