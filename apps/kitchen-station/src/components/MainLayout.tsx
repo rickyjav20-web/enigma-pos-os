@@ -1,29 +1,36 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { ChefHat, Trash2, LogOut, ClipboardList } from 'lucide-react';
+import { Bell, ChefHat, Trash2, LogOut, ClipboardList } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import { useEffect } from 'react';
 
+// KDS is PRIMARY — first thing kitchen staff sees
 const NAV_ITEMS = [
-    { to: '/production', icon: ChefHat,     label: 'Producción', color: 'violet' },
-    { to: '/inventory',  icon: ClipboardList, label: 'Inventario', color: 'blue' },
-    { to: '/waste',      icon: Trash2,       label: 'Merma',      color: 'red' },
+    { to: '/kds',        icon: Bell,           label: 'Pedidos',    color: 'sage' },
+    { to: '/production', icon: ChefHat,         label: 'Producción', color: 'violet' },
+    { to: '/inventory',  icon: ClipboardList,   label: 'Inventario', color: 'blue' },
+    { to: '/waste',      icon: Trash2,          label: 'Merma',      color: 'red' },
 ];
 
 const activeGlow: Record<string, string> = {
+    sage:   'bg-[#1C402E]/60 text-[#93B59D] shadow-[0_0_20px_rgba(147,181,157,0.2)]',
     violet: 'bg-violet-500/20 text-violet-300 shadow-[0_0_20px_rgba(139,92,246,0.25)]',
     blue:   'bg-blue-500/20   text-blue-300   shadow-[0_0_20px_rgba(59,130,246,0.25)]',
     red:    'bg-red-500/20    text-red-300    shadow-[0_0_20px_rgba(239,68,68,0.25)]',
 };
 const activeDot: Record<string, string> = {
+    sage:   'bg-[#93B59D] shadow-[0_0_8px_rgba(147,181,157,0.6)]',
     violet: 'bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.6)]',
     blue:   'bg-blue-500   shadow-[0_0_8px_rgba(59,130,246,0.6)]',
     red:    'bg-red-500    shadow-[0_0_8px_rgba(239,68,68,0.6)]',
 };
 const activeIcon: Record<string, string> = {
+    sage:   'text-[#93B59D]',
     violet: 'text-violet-400',
     blue:   'text-blue-400',
     red:    'text-red-400',
 };
 const activeText: Record<string, string> = {
+    sage:   'text-[#93B59D]',
     violet: 'text-violet-400',
     blue:   'text-blue-400',
     red:    'text-red-400',
@@ -37,6 +44,21 @@ export default function MainLayout() {
         logout();
         navigate('/login');
     };
+
+    // ── Screen Wake Lock — prevents screen sleep on kitchen display ──
+    useEffect(() => {
+        let wakeLock: WakeLockSentinel | null = null;
+        const acquire = async () => {
+            if ('wakeLock' in navigator) {
+                try { wakeLock = await (navigator as any).wakeLock.request('screen'); }
+                catch { /* unsupported or denied — silent */ }
+            }
+        };
+        acquire();
+        const onVisible = () => { if (document.visibilityState === 'visible') acquire(); };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => { wakeLock?.release(); document.removeEventListener('visibilitychange', onVisible); };
+    }, []);
 
     return (
         /*
@@ -56,9 +78,9 @@ export default function MainLayout() {
             ">
                 {/* Brand mark */}
                 <div className="relative w-10 h-10 flex items-center justify-center mb-3 shrink-0">
-                    <div className="absolute inset-0 bg-violet-500/25 rounded-xl blur-md" />
-                    <div className="relative bg-gradient-to-br from-white/10 to-transparent border border-white/10 rounded-xl w-full h-full flex items-center justify-center">
-                        <span className="text-sm font-extrabold bg-clip-text text-transparent bg-gradient-to-br from-violet-300 to-white">K</span>
+                    <div className="absolute inset-0 bg-[#93B59D]/20 rounded-xl blur-md" />
+                    <div className="relative bg-gradient-to-br from-white/10 to-transparent border border-[#93B59D]/20 rounded-xl w-full h-full flex items-center justify-center">
+                        <span className="text-sm font-extrabold bg-clip-text text-transparent bg-gradient-to-br from-[#93B59D] to-white">K</span>
                     </div>
                 </div>
 

@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import ProductionPage from './pages/ProductionPage';
 import WastePage from './pages/WastePage';
 import InventoryPage from './pages/InventoryPage';
+import KdsPage from './pages/KdsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { isAuthenticated } = useAuth();
@@ -20,7 +21,9 @@ export default function App() {
                     <Route path="/login" element={<LoginPage />} />
 
                     <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-                        <Route index element={<Navigate to="/production" replace />} />
+                        {/* KDS is the default landing screen for kitchen staff */}
+                        <Route index element={<Navigate to="/kds" replace />} />
+                        <Route path="kds" element={<KdsPage />} />
                         <Route path="production" element={<ProductionPage />} />
                         <Route path="inventory" element={<InventoryPage />} />
                         <Route path="waste" element={<WastePage />} />
