@@ -82,7 +82,7 @@ export default function PaymentPage() {
     return (
         <div className="min-h-dvh flex flex-col safe-top safe-bottom" style={{ background: '#121413' }}>
             <header className="px-4 pt-3 pb-2 flex items-center gap-3">
-                <button onClick={() => navigate('/sale')}
+                <button onClick={() => navigate('/')}
                     className="w-9 h-9 rounded-lg flex items-center justify-center press"
                     style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)' }}>
                     <ArrowLeft className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />

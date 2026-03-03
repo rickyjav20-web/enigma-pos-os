@@ -82,7 +82,7 @@ export default function OpenTicketsPage() {
                 quantity: i.quantity,
             })) || [],
         });
-        navigate('/sale');
+        navigate('/');
     };
 
     return (

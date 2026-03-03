@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     Search, X, Menu, ChevronDown, MoreVertical,
     ClipboardList, LogOut, Trash2, Edit3,
-    MapPin, ArrowRightLeft, RefreshCw, Users, Target, ArrowLeft
+    MapPin, ArrowRightLeft, RefreshCw, Users, Target
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
@@ -70,6 +70,7 @@ export default function SaleScreen() {
     const [showSideMenu, setShowSideMenu] = useState(false);
     const [showTicketMenu, setShowTicketMenu] = useState(false);
     const [showTableSelector, setShowTableSelector] = useState(false);
+    const [tableSearch, setTableSearch] = useState('');
     const [editingName, setEditingName] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -132,17 +133,6 @@ export default function SaleScreen() {
         return list.sort((a, b) => a.name.localeCompare(b.name));
     }, [products, search, activeCategory]);
 
-    // Group tables by zone
-    const tablesByZone = useMemo(() => {
-        const zones: Record<string, DiningTable[]> = {};
-        tables.forEach(t => {
-            const z = t.zone || 'General';
-            if (!zones[z]) zones[z] = [];
-            zones[z].push(t);
-        });
-        return zones;
-    }, [tables]);
-
     const cartTotal = total();
     const cartCount = itemCount();
     const hasItems = cartCount > 0;
@@ -150,8 +140,7 @@ export default function SaleScreen() {
     const completedGoals = goals.filter(g => g.isCompleted);
     const hasGoals = goals.length > 0;
 
-    const handleSave = async () => {
-        if (!hasItems) { navigate('/tickets'); return; }
+    const handleSave = async (saveTableId?: string, saveTableName?: string) => {
         setSaving(true);
         try {
             const sessionId = localStorage.getItem('wave_pos_session') || 'pos-mobile';
@@ -159,8 +148,8 @@ export default function SaleScreen() {
             if (ticketId) {
                 await api.put(`/sales/${ticketId}`, {
                     status: 'open',
-                    tableId: tableId || undefined,
-                    tableName: tableName || undefined,
+                    tableId: saveTableId || undefined,
+                    tableName: saveTableName || undefined,
                     totalAmount: cartTotal,
                     items: itemsPayload,
                 });
@@ -171,13 +160,14 @@ export default function SaleScreen() {
                     paymentMethod: 'cash',
                     status: 'open',
                     employeeId: employee?.id || undefined,
-                    tableId: tableId || undefined,
-                    tableName: tableName || undefined,
+                    tableId: saveTableId || undefined,
+                    tableName: saveTableName || undefined,
                     ticketName: ticketName !== 'Ticket' ? ticketName : undefined,
                 });
             }
+            setShowTableSelector(false);
+            setTableSearch('');
             clearCart();
-            navigate('/');
         } catch (e) {
             console.error('Save error:', e);
             alert('Error guardando el ticket');
@@ -191,14 +181,6 @@ export default function SaleScreen() {
 
             {/* ═══ Header ═══ */}
             <header className="px-4 pt-3 pb-2 flex items-center gap-3">
-                {/* Back to floor */}
-                <button
-                    onClick={() => navigate('/')}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center press"
-                    style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)' }}
-                >
-                    <ArrowLeft className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />
-                </button>
                 {/* Hamburger */}
                 <button
                     onClick={() => setShowSideMenu(true)}
@@ -455,21 +437,12 @@ export default function SaleScreen() {
                     }}>
                     <div className="flex gap-0">
                         <button
-                            onClick={hasItems ? handleSave : () => navigate('/tickets')}
-                            disabled={saving}
-                            className="flex-1 py-4 px-3 btn-save text-center press transition-all disabled:opacity-50"
+                            onClick={hasItems ? () => { setTableSearch(''); setShowTableSelector(true); } : () => navigate('/tickets')}
+                            className="flex-1 py-4 px-3 btn-save text-center press transition-all"
                         >
-                            <div className="flex items-center justify-center gap-2">
-                                {saving ? (
-                                    <div className="w-4 h-4 border-2 rounded-full animate-spin"
-                                        style={{ borderColor: 'rgba(147,181,157,0.2)', borderTopColor: '#93B59D' }} />
-                                ) : (
-                                    <ClipboardList className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.35)' }} />
-                                )}
-                                <span className="text-[13px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(244,240,234,0.5)' }}>
-                                    {hasItems ? 'Save' : 'Tickets'}
-                                </span>
-                            </div>
+                            <span className="text-[13px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(244,240,234,0.5)' }}>
+                                {hasItems ? 'Save' : 'Open Tickets'}
+                            </span>
                         </button>
                         <div style={{ width: '1px', background: 'rgba(244,240,234,0.06)' }} />
                         <button
@@ -548,87 +521,90 @@ export default function SaleScreen() {
                 </>
             )}
 
-            {/* ═══ Table Selector Modal ═══ */}
+            {/* ═══ Save Ticket — Table Picker (Loyverse style) ═══ */}
             {showTableSelector && (
-                <>
-                    <div className="fixed inset-0 bg-black/70 z-50 animate-fade-in" onClick={() => setShowTableSelector(false)} />
-                    <div className="fixed inset-x-0 bottom-0 z-50 max-h-[75vh] flex flex-col animate-slide-up rounded-t-2xl"
-                        style={{ background: '#1a1d1b', border: '1px solid rgba(244,240,234,0.06)' }}>
-                        {/* Header */}
-                        <div className="px-5 pt-4 pb-3 flex items-center justify-between shrink-0" style={{ borderBottom: '1px solid rgba(244,240,234,0.06)' }}>
-                            <h2 className="font-semibold text-[15px]" style={{ color: '#F4F0EA' }}>Assign Table</h2>
-                            <button onClick={() => setShowTableSelector(false)} className="press">
-                                <X className="w-5 h-5" style={{ color: 'rgba(244,240,234,0.4)' }} />
-                            </button>
-                        </div>
+                <div className="fixed inset-0 z-50 flex flex-col safe-top safe-bottom animate-fade-in" style={{ background: '#121413' }}>
+                    {/* Header */}
+                    <header className="px-4 pt-3 pb-3 flex items-center gap-3 shrink-0"
+                        style={{ borderBottom: '1px solid rgba(244,240,234,0.06)' }}>
+                        <button
+                            onClick={() => { setShowTableSelector(false); setTableSearch(''); }}
+                            className="w-9 h-9 rounded-lg flex items-center justify-center press"
+                            style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)' }}
+                        >
+                            <X className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />
+                        </button>
+                        <h1 className="text-[15px] font-semibold" style={{ color: '#F4F0EA' }}>Save ticket</h1>
+                    </header>
 
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            {/* No table option */}
-                            <button
-                                onClick={() => { setTable(null, null); setShowTableSelector(false); }}
-                                className="w-full p-3 rounded-xl text-left text-sm press"
-                                style={{
-                                    background: !tableId ? 'rgba(147,181,157,0.08)' : 'rgba(244,240,234,0.03)',
-                                    border: `1px solid ${!tableId ? 'rgba(147,181,157,0.2)' : 'rgba(244,240,234,0.06)'}`,
-                                    color: !tableId ? '#93B59D' : 'rgba(244,240,234,0.5)',
-                                }}
-                            >
-                                Sin mesa (Para llevar)
-                            </button>
-
-                            {/* Tables by zone */}
-                            {Object.entries(tablesByZone).map(([zone, zoneTables]) => (
-                                <div key={zone}>
-                                    <p className="text-[10px] font-semibold uppercase tracking-widest mb-2 px-1"
-                                        style={{ color: 'rgba(244,240,234,0.25)' }}>{zone}</p>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {zoneTables.map(t => {
-                                            const selected = tableId === t.id;
-                                            const occupied = t.isOccupied && !selected;
-                                            return (
-                                                <button
-                                                    key={t.id}
-                                                    onClick={() => {
-                                                        setTable(t.id, t.name);
-                                                        if (!editingName && ticketName === 'Ticket') setTicketName(t.name);
-                                                        setShowTableSelector(false);
-                                                    }}
-                                                    className={`table-card p-3 rounded-xl text-center press ${occupied ? 'table-card-occupied' : 'table-card-free'}`}
-                                                    style={{
-                                                        background: selected ? 'rgba(147,181,157,0.12)' : occupied ? 'rgba(245,158,11,0.05)' : 'rgba(244,240,234,0.03)',
-                                                        border: `1px solid ${selected ? 'rgba(147,181,157,0.3)' : occupied ? 'rgba(245,158,11,0.2)' : 'rgba(244,240,234,0.06)'}`,
-                                                    }}
-                                                >
-                                                    <p className="text-[13px] font-semibold" style={{ color: selected ? '#93B59D' : occupied ? '#f59e0b' : '#F4F0EA' }}>
-                                                        {t.name}
-                                                    </p>
-                                                    {t.capacity && (
-                                                        <p className="text-[10px] mt-0.5" style={{ color: 'rgba(244,240,234,0.25)' }}>
-                                                            {t.capacity} seats
-                                                        </p>
-                                                    )}
-                                                    {occupied && t.currentTicket && (
-                                                        <p className="text-[10px] mt-1" style={{ color: 'rgba(245,158,11,0.6)' }}>
-                                                            ${t.currentTicket.totalAmount.toFixed(2)}
-                                                        </p>
-                                                    )}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            ))}
-
-                            {tables.length === 0 && (
-                                <div className="text-center py-8" style={{ color: 'rgba(244,240,234,0.25)' }}>
-                                    <MapPin className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                                    <p className="text-sm">No tables configured</p>
-                                    <p className="text-xs mt-1" style={{ color: 'rgba(244,240,234,0.15)' }}>Create tables in HQ Back Office</p>
-                                </div>
-                            )}
+                    {/* Search */}
+                    <div className="px-4 py-3 shrink-0" style={{ borderBottom: '1px solid rgba(244,240,234,0.04)' }}>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+                                style={{ color: 'rgba(244,240,234,0.15)' }} />
+                            <input
+                                type="text"
+                                placeholder="Search..."
+                                value={tableSearch}
+                                onChange={e => setTableSearch(e.target.value)}
+                                autoFocus
+                                className="w-full rounded-xl pl-9 py-2.5 text-sm focus:outline-none"
+                                style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)', color: '#F4F0EA' }}
+                            />
                         </div>
                     </div>
-                </>
+
+                    {/* List */}
+                    <div className="flex-1 overflow-y-auto">
+                        {/* Custom ticket — top option */}
+                        {!tableSearch && (
+                            <button
+                                onClick={() => handleSave(undefined, undefined)}
+                                disabled={saving}
+                                className="w-full px-5 py-4 text-left font-semibold text-sm tracking-wide press"
+                                style={{ borderBottom: '1px solid rgba(244,240,234,0.04)', color: '#93B59D' }}
+                            >
+                                {saving ? 'Guardando...' : 'CUSTOM TICKET'}
+                            </button>
+                        )}
+
+                        {/* Flat table list */}
+                        {tables
+                            .filter(t => !tableSearch || t.name.toLowerCase().includes(tableSearch.toLowerCase()))
+                            .map(t => (
+                                <button
+                                    key={t.id}
+                                    onClick={() => handleSave(t.id, t.name)}
+                                    disabled={saving}
+                                    className="w-full px-5 py-4 text-left text-[15px] press flex items-center justify-between"
+                                    style={{ borderBottom: '1px solid rgba(244,240,234,0.04)', color: saving ? 'rgba(244,240,234,0.3)' : '#F4F0EA' }}
+                                >
+                                    <span>{t.name}</span>
+                                    {saving && (
+                                        <div className="w-4 h-4 border-2 rounded-full animate-spin shrink-0"
+                                            style={{ borderColor: 'rgba(147,181,157,0.2)', borderTopColor: '#93B59D' }} />
+                                    )}
+                                </button>
+                            ))
+                        }
+
+                        {tables.length === 0 && !tableSearch && (
+                            <div className="flex flex-col items-center justify-center py-20 gap-3"
+                                style={{ color: 'rgba(244,240,234,0.25)' }}>
+                                <MapPin className="w-10 h-10 opacity-20" />
+                                <p className="text-sm font-medium">No hay mesas configuradas</p>
+                                <p className="text-xs" style={{ color: 'rgba(244,240,234,0.15)' }}>Crea mesas desde el HQ</p>
+                            </div>
+                        )}
+
+                        {tableSearch && tables.filter(t => t.name.toLowerCase().includes(tableSearch.toLowerCase())).length === 0 && (
+                            <div className="flex flex-col items-center justify-center py-12 gap-2"
+                                style={{ color: 'rgba(244,240,234,0.25)' }}>
+                                <p className="text-sm">No se encontró "{tableSearch}"</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
             )}
         </div>
     );
