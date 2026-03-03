@@ -1,7 +1,7 @@
-import { X, Search, SlidersHorizontal } from 'lucide-react';
+import { X, Search, SlidersHorizontal, Trash2, Check } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import { useCartStore } from '../stores/cartStore';
 import { useAuth } from '../context/AuthContext';
@@ -27,11 +27,14 @@ export default function OpenTicketsPage() {
     const navigate = useNavigate();
     const { loadTicket } = useCartStore();
     const { employee } = useAuth();
+    const queryClient = useQueryClient();
 
     const [search, setSearch] = useState('');
     const [showSearch, setShowSearch] = useState(false);
     const [sortMode, setSortMode] = useState<SortMode>('time');
     const [showSortSheet, setShowSortSheet] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [voiding, setVoiding] = useState(false);
 
     const { data: ticketsData, isLoading } = useQuery({
         queryKey: ['open-tickets'],
@@ -97,39 +100,81 @@ export default function OpenTicketsPage() {
         navigate('/');
     };
 
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+
+    const handleBatchVoid = async () => {
+        if (!window.confirm(`¿Anular ${selectedIds.size} ticket${selectedIds.size !== 1 ? 's' : ''}? Esta acción no se puede deshacer.`)) return;
+        setVoiding(true);
+        try {
+            for (const id of selectedIds) {
+                await api.delete(`/sales/${id}`);
+            }
+            setSelectedIds(new Set());
+            queryClient.invalidateQueries({ queryKey: ['open-tickets'] });
+        } catch (e) {
+            console.error('Batch void error:', e);
+            alert('Error anulando algunos tickets. Intenta de nuevo.');
+        } finally {
+            setVoiding(false);
+        }
+    };
+
     const sortLabels: Record<SortMode, string> = {
         time: 'By Time',
         alpha: 'Alphabetical (A–Z)',
         amount: 'By Amount ($)',
     };
 
-    const TicketRow = ({ ticket }: { ticket: Ticket }) => (
-        <button
-            onClick={() => handleSelectTicket(ticket)}
-            className="w-full flex items-center gap-3 px-4 py-3 text-left active:opacity-60 transition-opacity"
-            style={{ borderBottom: '1px solid rgba(244,240,234,0.06)' }}
-        >
-            {/* Checkbox */}
-            <div className="w-5 h-5 rounded shrink-0 flex items-center justify-center"
-                style={{ border: '1.5px solid rgba(244,240,234,0.25)', background: 'transparent' }} />
+    const TicketRow = ({ ticket }: { ticket: Ticket }) => {
+        const isSelected = selectedIds.has(ticket.id);
+        const hasSelection = selectedIds.size > 0;
+        return (
+            <div
+                className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                style={{
+                    borderBottom: '1px solid rgba(244,240,234,0.06)',
+                    background: isSelected ? 'rgba(147,181,157,0.06)' : 'transparent',
+                }}
+            >
+                {/* Checkbox — tapping it always toggles selection */}
+                <button
+                    onClick={() => toggleSelect(ticket.id)}
+                    className="w-5 h-5 rounded shrink-0 flex items-center justify-center transition-all"
+                    style={{
+                        border: `1.5px solid ${isSelected ? '#93B59D' : 'rgba(244,240,234,0.25)'}`,
+                        background: isSelected ? '#93B59D' : 'transparent',
+                    }}
+                >
+                    {isSelected && <Check className="w-3 h-3" style={{ color: '#121413' }} strokeWidth={3} />}
+                </button>
 
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-semibold truncate" style={{ color: '#F4F0EA' }}>
-                    {getTicketLabel(ticket)}
-                </p>
-                <p className="text-[12px] mt-0.5 truncate" style={{ color: 'rgba(244,240,234,0.35)' }}>
-                    {getElapsed(ticket.createdAt)}
-                    {ticket.tableName ? `, ${ticket.tableName}` : ', Enigma'}
-                </p>
+                {/* Info + amount — opens ticket or toggles selection */}
+                <button
+                    onClick={() => hasSelection ? toggleSelect(ticket.id) : handleSelectTicket(ticket)}
+                    className="flex-1 flex items-center gap-3 text-left active:opacity-60 transition-opacity"
+                >
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[14px] font-semibold truncate" style={{ color: '#F4F0EA' }}>
+                            {getTicketLabel(ticket)}
+                        </p>
+                        <p className="text-[12px] mt-0.5 truncate" style={{ color: 'rgba(244,240,234,0.35)' }}>
+                            {getElapsed(ticket.createdAt)}
+                            {ticket.tableName ? `, ${ticket.tableName}` : ', Enigma'}
+                        </p>
+                    </div>
+                    <span className="font-semibold text-[15px] font-mono tabular-nums shrink-0" style={{ color: '#F4F0EA' }}>
+                        ${(ticket.totalAmount ?? 0).toFixed(2)}
+                    </span>
+                </button>
             </div>
-
-            {/* Amount */}
-            <span className="font-semibold text-[15px] font-mono tabular-nums shrink-0" style={{ color: '#F4F0EA' }}>
-                ${(ticket.totalAmount ?? 0).toFixed(2)}
-            </span>
-        </button>
-    );
+        );
+    };
 
     return (
         <div className="min-h-dvh flex flex-col safe-top safe-bottom" style={{ background: '#121413' }}>
@@ -238,6 +283,34 @@ export default function OpenTicketsPage() {
                     </>
                 )}
             </main>
+
+            {/* Batch void bar */}
+            {selectedIds.size > 0 && (
+                <div className="fixed bottom-0 left-0 right-0 z-30 px-4 pb-safe pt-3 pb-4 animate-slide-up"
+                    style={{ background: 'rgba(18,20,19,0.97)', borderTop: '1px solid rgba(244,240,234,0.08)', backdropFilter: 'blur(20px)' }}>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setSelectedIds(new Set())}
+                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                            style={{ background: 'rgba(244,240,234,0.06)' }}
+                        >
+                            <X className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.4)' }} />
+                        </button>
+                        <span className="flex-1 text-sm font-semibold" style={{ color: '#F4F0EA' }}>
+                            {selectedIds.size} ticket{selectedIds.size !== 1 ? 's' : ''} selected
+                        </span>
+                        <button
+                            onClick={handleBatchVoid}
+                            disabled={voiding}
+                            className="px-5 py-2.5 rounded-xl text-sm font-bold disabled:opacity-40 flex items-center gap-2"
+                            style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            {voiding ? 'Anulando...' : `Void ${selectedIds.size}`}
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Sort sheet */}
             {showSortSheet && (

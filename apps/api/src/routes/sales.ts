@@ -224,6 +224,23 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         return reply.send({ success: true, data: sales });
     });
 
+    // ── DELETE /sales/:id — void an open ticket ───────────────────────────────
+    fastify.delete('/sales/:id', async (request, reply) => {
+        const { id } = request.params as { id: string };
+
+        const existing = await prisma.salesOrder.findUnique({ where: { id } });
+        if (!existing) return reply.status(404).send({ error: 'Ticket not found' });
+        if (existing.status !== 'open') {
+            return reply.status(400).send({ error: 'Only open tickets can be voided' });
+        }
+
+        // Delete items first (FK constraint), then the order
+        await prisma.salesItem.deleteMany({ where: { salesOrderId: id } });
+        await prisma.salesOrder.delete({ where: { id } });
+
+        return reply.send({ success: true });
+    });
+
     // ── PUT /sales/:id — update or complete open ticket ───────────────────────
     fastify.put('/sales/:id', async (request, reply) => {
         const { id } = request.params as { id: string };

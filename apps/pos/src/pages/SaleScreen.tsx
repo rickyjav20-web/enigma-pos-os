@@ -62,7 +62,7 @@ export default function SaleScreen() {
         items, addItem, removeItem, updateQuantity,
         ticketName, setTicketName,
         total, itemCount, clearCart,
-        tableId, tableName, setTable, ticketId,
+        tableId, tableName, setTable, ticketId, loadTicket,
     } = useCartStore();
 
     const [search, setSearch] = useState('');
@@ -203,6 +203,46 @@ export default function SaleScreen() {
         }
     };
 
+    const handleVoid = async () => {
+        if (!window.confirm('¿Anular este ticket? Esta acción no se puede deshacer.')) return;
+        if (ticketId) {
+            try {
+                await api.delete(`/sales/${ticketId}`);
+            } catch (e) {
+                console.error('Void error:', e);
+                alert('Error anulando el ticket');
+                return;
+            }
+        }
+        clearCart();
+        setShowTicketDetail(false);
+        setShowTicketMenu(false);
+    };
+
+    const handleSync = async () => {
+        if (!ticketId) { setShowTicketMenu(false); return; }
+        try {
+            const { data } = await api.get(`/sales/${ticketId}`);
+            const order = data?.data || data;
+            loadTicket({
+                id: order.id,
+                name: order.ticketName || order.tableName || `Ticket #${order.id.slice(-4)}`,
+                tableId: order.tableId,
+                tableName: order.tableName,
+                items: (order.items || []).map((i: any) => ({
+                    productId: i.productId,
+                    name: i.productNameSnapshot,
+                    price: i.unitPrice,
+                    quantity: i.quantity,
+                })),
+            });
+        } catch (e) {
+            console.error('Sync error:', e);
+            alert('Error sincronizando el ticket');
+        }
+        setShowTicketMenu(false);
+    };
+
     return (
         <div className="min-h-dvh flex flex-col safe-top safe-bottom" style={{ background: '#121413' }}>
 
@@ -265,7 +305,7 @@ export default function SaleScreen() {
                             { label: 'View ticket', icon: Edit3, color: '#F4F0EA', action: () => { setDraftName(ticketName); setShowTicketDetail(true); setShowTicketMenu(false); } },
                             { label: 'Assign table', icon: MapPin, color: '#93B59D', action: () => { setTableSearch(''); setShowTableSelector(true); setShowTicketMenu(false); } },
                             { label: 'Move ticket', icon: ArrowRightLeft, color: '#F4F0EA', action: () => { setTableSearch(''); setShowTableSelector(true); setShowTicketMenu(false); } },
-                            { label: 'Sync', icon: RefreshCw, color: '#F4F0EA', action: () => setShowTicketMenu(false) },
+                            { label: 'Sync', icon: RefreshCw, color: '#F4F0EA', action: handleSync },
                         ].map((item, i) => {
                             const Icon = item.icon;
                             return (
@@ -282,7 +322,7 @@ export default function SaleScreen() {
                         })}
                         <div style={{ borderTop: '1px solid rgba(244,240,234,0.06)' }}>
                             <button
-                                onClick={() => { clearCart(); setShowTicketMenu(false); }}
+                                onClick={handleVoid}
                                 className="w-full flex items-center gap-3 px-4 py-3 text-sm"
                                 style={{ color: '#ef4444' }}
                             >
@@ -681,7 +721,7 @@ export default function SaleScreen() {
                     {/* Actions */}
                     <div className="px-4 pb-4 pt-2 flex gap-2 safe-bottom">
                         <button
-                            onClick={() => { clearCart(); setShowTicketDetail(false); }}
+                            onClick={handleVoid}
                             className="flex-1 py-3.5 rounded-xl text-sm font-semibold press"
                             style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', color: '#ef4444' }}
                         >
@@ -750,10 +790,31 @@ export default function SaleScreen() {
                             </button>
                         )}
 
-                        {/* Flat table list — clicking a table saves directly */}
-                        {tables
-                            .filter(t => !tableSearch || t.name.toLowerCase().includes(tableSearch.toLowerCase()))
-                            .map(t => (
+                        {/* Flat table list — only show available tables (not occupied by another ticket) */}
+                        {(() => {
+                            const availableTables = tables.filter(t =>
+                                (!t.isOccupied || t.currentTicket?.id === ticketId) &&
+                                (!tableSearch || t.name.toLowerCase().includes(tableSearch.toLowerCase()))
+                            );
+                            if (tables.length === 0 && !tableSearch) {
+                                return (
+                                    <div className="flex flex-col items-center justify-center py-20 gap-3"
+                                        style={{ color: 'rgba(244,240,234,0.25)' }}>
+                                        <MapPin className="w-10 h-10 opacity-20" />
+                                        <p className="text-sm font-medium">No hay mesas configuradas</p>
+                                        <p className="text-xs" style={{ color: 'rgba(244,240,234,0.15)' }}>Crea mesas desde el HQ</p>
+                                    </div>
+                                );
+                            }
+                            if (availableTables.length === 0) {
+                                return (
+                                    <div className="flex flex-col items-center justify-center py-12 gap-2"
+                                        style={{ color: 'rgba(244,240,234,0.25)' }}>
+                                        <p className="text-sm">{tableSearch ? `No se encontró "${tableSearch}"` : 'No hay mesas disponibles'}</p>
+                                    </div>
+                                );
+                            }
+                            return availableTables.map(t => (
                                 <button
                                     key={t.id}
                                     onClick={() => handleSave(t.id, t.name)}
@@ -767,24 +828,8 @@ export default function SaleScreen() {
                                             style={{ borderColor: 'rgba(147,181,157,0.2)', borderTopColor: '#93B59D' }} />
                                     )}
                                 </button>
-                            ))
-                        }
-
-                        {tables.length === 0 && !tableSearch && (
-                            <div className="flex flex-col items-center justify-center py-20 gap-3"
-                                style={{ color: 'rgba(244,240,234,0.25)' }}>
-                                <MapPin className="w-10 h-10 opacity-20" />
-                                <p className="text-sm font-medium">No hay mesas configuradas</p>
-                                <p className="text-xs" style={{ color: 'rgba(244,240,234,0.15)' }}>Crea mesas desde el HQ</p>
-                            </div>
-                        )}
-
-                        {tableSearch && tables.filter(t => t.name.toLowerCase().includes(tableSearch.toLowerCase())).length === 0 && (
-                            <div className="flex flex-col items-center justify-center py-12 gap-2"
-                                style={{ color: 'rgba(244,240,234,0.25)' }}>
-                                <p className="text-sm">No se encontró "{tableSearch}"</p>
-                            </div>
-                        )}
+                            ));
+                        })()}
                     </div>
 
                     {/* ── Custom Ticket Form (slides over table list) ── */}
