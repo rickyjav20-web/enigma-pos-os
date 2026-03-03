@@ -30,7 +30,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const { data } = await api.post('/auth/employee-login', { pin });
 
             if (data?.employee) {
-                // Check if they have POS access (role check can be expanded)
                 const emp: Employee = {
                     id: data.employee.id,
                     fullName: data.employee.name,
@@ -39,6 +38,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 };
                 setEmployee(emp);
                 localStorage.setItem('wave_pos_employee', JSON.stringify(emp));
+
+                // Fetch the employee's open register session and store it
+                // so sales can be tied to the correct register
+                try {
+                    const { data: regData } = await api.get(`/register/status/${data.employee.id}`);
+                    const session = regData?.physical || regData?.electronic || null;
+                    if (session?.id) {
+                        localStorage.setItem('wave_pos_session', session.id);
+                    } else {
+                        localStorage.removeItem('wave_pos_session');
+                    }
+                } catch {
+                    localStorage.removeItem('wave_pos_session');
+                }
+
                 return true;
             }
             return false;

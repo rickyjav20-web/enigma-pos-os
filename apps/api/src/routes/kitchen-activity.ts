@@ -13,6 +13,29 @@ export default async function kitchenActivityRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'employeeId and action are required' });
             }
 
+            // For ORDER_DONE: enrich metadata with prep time calculation
+            let enrichedMetadata = metadata || null;
+            if (action === 'ORDER_DONE' && entityId && entityType === 'SalesOrder') {
+                try {
+                    const order = await prisma.salesOrder.findUnique({
+                        where: { id: entityId },
+                        select: { createdAt: true, tableName: true, ticketName: true, items: { select: { productNameSnapshot: true, quantity: true } } },
+                    });
+                    if (order) {
+                        const prepMs = Date.now() - new Date(order.createdAt).getTime();
+                        const prepMins = Math.round(prepMs / 60000);
+                        enrichedMetadata = {
+                            ...(metadata || {}),
+                            orderCreatedAt: order.createdAt.toISOString(),
+                            prepTimeMs: prepMs,
+                            prepTimeMins: prepMins,
+                            itemCount: order.items.reduce((s: number, i: any) => s + i.quantity, 0),
+                            itemNames: order.items.map((i: any) => i.productNameSnapshot),
+                        };
+                    }
+                } catch { /* non-critical */ }
+            }
+
             const log = await prisma.kitchenActivityLog.create({
                 data: {
                     tenantId,
@@ -24,7 +47,7 @@ export default async function kitchenActivityRoutes(fastify: FastifyInstance) {
                     entityName: entityName || null,
                     quantity: quantity ? Number(quantity) : null,
                     unit: unit || null,
-                    metadata: metadata || null
+                    metadata: enrichedMetadata,
                 }
             });
 
@@ -179,6 +202,86 @@ export default async function kitchenActivityRoutes(fastify: FastifyInstance) {
                 })),
                 employeeScoreboard: scoreboard
             };
+        } catch (error: any) {
+            fastify.log.error(error);
+            return reply.status(500).send({ error: error.message });
+        }
+    });
+
+    // GET /kitchen/prep-times — avg prep time per item and per order
+    fastify.get<{ Querystring: { from?: string; to?: string; days?: string } }>('/kitchen/prep-times', async (request, reply) => {
+        try {
+            const tenantId = request.tenantId || 'enigma_hq';
+            const days = parseInt(request.query.days || '7');
+            const from = request.query.from
+                ? new Date(request.query.from)
+                : new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+            // Fetch all ORDER_DONE logs with prepTime in metadata
+            const logs = await prisma.kitchenActivityLog.findMany({
+                where: {
+                    tenantId,
+                    action: 'ORDER_DONE',
+                    createdAt: { gte: from },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 500,
+            });
+
+            const withPrepTime = logs.filter((l: any) => l.metadata && (l.metadata as any).prepTimeMins !== undefined);
+
+            if (withPrepTime.length === 0) {
+                return reply.send({ success: true, data: { avgPrepMins: null, totalOrders: 0, byItem: [], byHour: [] } });
+            }
+
+            const prepTimes = withPrepTime.map((l: any) => (l.metadata as any).prepTimeMins as number);
+            const avgPrepMins = Math.round(prepTimes.reduce((a, b) => a + b, 0) / prepTimes.length);
+            const minPrepMins = Math.min(...prepTimes);
+            const maxPrepMins = Math.max(...prepTimes);
+
+            // Breakdown by item name (from itemNames array in metadata)
+            const itemTimes: Record<string, number[]> = {};
+            for (const log of withPrepTime) {
+                const meta = log.metadata as any;
+                const mins = meta.prepTimeMins as number;
+                const names: string[] = meta.itemNames || [];
+                for (const name of names) {
+                    if (!itemTimes[name]) itemTimes[name] = [];
+                    itemTimes[name].push(mins);
+                }
+            }
+            const byItem = Object.entries(itemTimes)
+                .map(([name, times]) => ({
+                    name,
+                    avgPrepMins: Math.round(times.reduce((a, b) => a + b, 0) / times.length),
+                    orderCount: times.length,
+                }))
+                .sort((a, b) => b.avgPrepMins - a.avgPrepMins);
+
+            // Breakdown by hour of day (when order was done)
+            const byHour: Record<number, number[]> = {};
+            for (const log of withPrepTime) {
+                const h = new Date(log.createdAt).getHours();
+                if (!byHour[h]) byHour[h] = [];
+                byHour[h].push((log.metadata as any).prepTimeMins as number);
+            }
+            const byHourArr = Object.entries(byHour).map(([h, times]) => ({
+                hour: parseInt(h),
+                avgPrepMins: Math.round(times.reduce((a, b) => a + b, 0) / times.length),
+                count: times.length,
+            })).sort((a, b) => a.hour - b.hour);
+
+            return reply.send({
+                success: true,
+                data: {
+                    avgPrepMins,
+                    minPrepMins,
+                    maxPrepMins,
+                    totalOrders: withPrepTime.length,
+                    byItem,
+                    byHour: byHourArr,
+                },
+            });
         } catch (error: any) {
             fastify.log.error(error);
             return reply.status(500).send({ error: error.message });
