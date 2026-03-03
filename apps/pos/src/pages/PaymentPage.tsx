@@ -110,7 +110,12 @@ export default function PaymentPage() {
                         ${cartTotal.toFixed(2)}
                     </p>
                     <p className="text-xs mt-2" style={{ color: 'rgba(244,240,234,0.2)' }}>
-                        {items.reduce((s, i) => s + i.quantity, 0)} items · {orderType === 'dine_in' ? 'Comer Aquí' : 'Para Llevar'}
+                        {items.reduce((s, i) => s + i.quantity, 0)} items · {
+                            orderType === 'takeaway' ? 'Para Llevar' :
+                            orderType === 'delivery' ? 'Delivery' :
+                            orderType === 'bar' ? 'Bar Tab' :
+                            'Comer Aquí'
+                        }
                     </p>
                 </div>
 
