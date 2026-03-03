@@ -15,7 +15,8 @@ interface Ticket {
     notes?: string;
     ticketName?: string;
     tableName?: string;
-    items: { productNameSnapshot: string; quantity: number; unitPrice: number }[];
+    tableId?: string;
+    items: { productId: string; productNameSnapshot: string; quantity: number; unitPrice: number }[];
 }
 
 export default function OpenTicketsPage() {
@@ -72,14 +73,16 @@ export default function OpenTicketsPage() {
         loadTicket({
             id: ticket.id,
             name: getTicketName(ticket),
+            tableId: ticket.tableId,
+            tableName: ticket.tableName,
             items: ticket.items?.map(i => ({
-                productId: i.productNameSnapshot,
+                productId: i.productId,
                 name: i.productNameSnapshot,
                 price: i.unitPrice,
                 quantity: i.quantity,
             })) || [],
         });
-        navigate('/');
+        navigate('/sale');
     };
 
     return (

@@ -18,7 +18,7 @@ const METHODS: { id: PayMethod; label: string; icon: typeof DollarSign }[] = [
 
 export default function PaymentPage() {
     const navigate = useNavigate();
-    const { items, total, clearCart, orderType, ticketName, tableName } = useCartStore();
+    const { items, total, clearCart, orderType, ticketName, tableName, tableId, ticketId } = useCartStore();
     const { employee } = useAuth();
     const [method, setMethod] = useState<PayMethod>('cash');
     const [loading, setLoading] = useState(false);
@@ -33,15 +33,28 @@ export default function PaymentPage() {
             const apiMethod = method === 'bolivares' || method === 'zelle' || method === 'binance' || method === 'bancolombia'
                 ? 'transfer' : method === 'card' ? 'card' : 'cash';
 
-            const payload = {
-                items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price })),
-                paymentMethod: apiMethod,
-                employeeId: employee?.id || undefined,
-                notes: `POS | ${method} | ${orderType} | ${ticketName}${tableName ? ` | ${tableName}` : ''} | ${employee?.fullName || ''}`,
-                sessionId: localStorage.getItem('wave_pos_session') || 'pos-mobile',
-            };
-
-            await api.post('/sales', payload);
+            if (ticketId) {
+                // Complete an existing open ticket via PUT
+                await api.put(`/sales/${ticketId}`, {
+                    status: 'completed',
+                    paymentMethod: apiMethod,
+                    totalAmount: cartTotal,
+                    tableId: tableId || undefined,
+                    items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price })),
+                });
+            } else {
+                // New sale via POST
+                const payload = {
+                    items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price })),
+                    paymentMethod: apiMethod,
+                    employeeId: employee?.id || undefined,
+                    tableId: tableId || undefined,
+                    tableName: tableName || undefined,
+                    notes: `POS | ${method} | ${orderType} | ${ticketName}${tableName ? ` | ${tableName}` : ''} | ${employee?.fullName || ''}`,
+                    sessionId: localStorage.getItem('wave_pos_session') || 'pos-mobile',
+                };
+                await api.post('/sales', payload);
+            }
             setSuccess(true);
             setTimeout(() => { clearCart(); navigate('/'); }, 1500);
         } catch (err) {
@@ -69,7 +82,7 @@ export default function PaymentPage() {
     return (
         <div className="min-h-dvh flex flex-col safe-top safe-bottom" style={{ background: '#121413' }}>
             <header className="px-4 pt-3 pb-2 flex items-center gap-3">
-                <button onClick={() => navigate('/')}
+                <button onClick={() => navigate('/sale')}
                     className="w-9 h-9 rounded-lg flex items-center justify-center press"
                     style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)' }}>
                     <ArrowLeft className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />

@@ -69,9 +69,9 @@ export default async function productRoutes(fastify: FastifyInstance) {
         try {
             const { id } = request.params;
             const body = request.body as any;
-            const { name, price, cost, categoryId, recipes } = body;
+            const { name, price, cost, categoryId, kdsStation, recipes } = body;
 
-            console.log(`[API] PUT /products/${id} payload:`, { name, recipesCount: recipes?.length });
+            console.log(`[API] PUT /products/${id} payload:`, { name, kdsStation, recipesCount: recipes?.length });
 
             const product = await prisma.product.update({
                 where: { id },
@@ -79,7 +79,8 @@ export default async function productRoutes(fastify: FastifyInstance) {
                     name,
                     price: price !== undefined ? Number(price) : undefined,
                     cost: cost !== undefined ? Number(cost) : undefined,
-                    categoryId
+                    categoryId,
+                    kdsStation: kdsStation !== undefined ? (kdsStation || null) : undefined,
                 }
             });
 

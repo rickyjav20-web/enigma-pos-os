@@ -59,7 +59,8 @@ export default async function salesRoutes(fastify: FastifyInstance) {
                             quantity: item.quantity,
                             unitPrice: item.price,
                             totalPrice: item.price * item.quantity,
-                            productNameSnapshot: product?.name || 'Unknown Product'
+                            productNameSnapshot: product?.name || 'Unknown Product',
+                            kdsStation: product?.kdsStation || null,
                         }
                     }))
                 }
@@ -244,6 +245,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
                     unitPrice: item.price,
                     totalPrice: item.price * item.quantity,
                     productNameSnapshot: product?.name || 'Unknown Product',
+                    kdsStation: product?.kdsStation || null,
                 };
             }));
             await prisma.salesItem.deleteMany({ where: { salesOrderId: id } });

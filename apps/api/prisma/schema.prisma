@@ -251,6 +251,7 @@ model Product {
   sku        String?
   loyverseId String? // Handle from CSV
   isActive   Boolean @default(true)
+  kdsStation String? // e.g. "Cocina", "Bar", "Postres" - routes item to correct KDS
 
   variants    Variant[]
   recipes     ProductRecipe[]
@@ -508,6 +509,7 @@ model SalesItem {
 
   // Snapshots
   productNameSnapshot String
+  kdsStation          String? // Snapshot from product at order creation time
 
   // Relations
   salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id])

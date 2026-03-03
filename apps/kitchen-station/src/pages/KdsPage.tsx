@@ -25,6 +25,7 @@ interface OrderItem {
     productNameSnapshot: string;
     quantity: number;
     unitPrice: number;
+    kdsStation?: string | null;
 }
 
 interface Order {
@@ -106,6 +107,9 @@ export default function KdsPage() {
     const [lastRefresh, setLastRefresh] = useState(new Date());
     const [, forceRender] = useState(0);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const [stationFilter, setStationFilter] = useState<string>(
+        () => localStorage.getItem('kds_station_filter') || ''
+    );
 
     // ── Fetch done state (ORDER_DONE + ITEM_DONE logs from today) ─────────────
     const fetchDoneState = useCallback(async () => {
@@ -279,8 +283,24 @@ export default function KdsPage() {
     }, [user, doneItemIds, doneOrderIds]);
 
     // ── Derived state ─────────────────────────────────────────────────────────
-    const activeOrders = orders.filter(o => !doneOrderIds.has(o.id));
+    const allActiveOrders = orders.filter(o => !doneOrderIds.has(o.id));
     const doneOrders = orders.filter(o => doneOrderIds.has(o.id));
+
+    // Station filter: if set, show only items matching this station (or unassigned items)
+    const activeOrders = stationFilter
+        ? allActiveOrders
+            .map(o => ({
+                ...o,
+                items: o.items.filter(i => !i.kdsStation || i.kdsStation === stationFilter),
+            }))
+            .filter(o => o.items.length > 0)
+        : allActiveOrders;
+
+    // Collect unique station names from all current items for filter pills
+    const availableStations = Array.from(new Set(
+        orders.flatMap(o => o.items.map(i => i.kdsStation).filter(Boolean) as string[])
+    )).sort();
+
     const urgentCount = activeOrders.filter(o => o._urgency === 'urgent' || o._urgency === 'late').length;
     const openCount = activeOrders.filter(o => o.status === 'open').length;
 
@@ -338,6 +358,42 @@ export default function KdsPage() {
                     </button>
                 </div>
             </div>
+
+            {/* ── Station Filter Pills ── */}
+            {availableStations.length > 0 && (
+                <div className="flex gap-2 px-4 py-2 border-b border-white/[0.04] overflow-x-auto scrollbar-none shrink-0">
+                    <button
+                        onClick={() => {
+                            setStationFilter('');
+                            localStorage.setItem('kds_station_filter', '');
+                        }}
+                        className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                            !stationFilter
+                                ? 'bg-[#93B59D] text-[#121413]'
+                                : 'bg-white/[0.04] text-[#F4F0EA]/40 border border-white/[0.06]'
+                        }`}
+                    >
+                        Todos
+                    </button>
+                    {availableStations.map(station => (
+                        <button
+                            key={station}
+                            onClick={() => {
+                                const next = stationFilter === station ? '' : station;
+                                setStationFilter(next);
+                                localStorage.setItem('kds_station_filter', next);
+                            }}
+                            className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                                stationFilter === station
+                                    ? 'bg-[#93B59D] text-[#121413]'
+                                    : 'bg-white/[0.04] text-[#F4F0EA]/40 border border-white/[0.06]'
+                            }`}
+                        >
+                            {station}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* ── Content ── */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 portrait:px-3">

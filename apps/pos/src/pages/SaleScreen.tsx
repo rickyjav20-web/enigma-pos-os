@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     Search, X, Menu, ChevronDown, MoreVertical,
     ClipboardList, LogOut, Trash2, Edit3,
-    MapPin, ArrowRightLeft, RefreshCw, Users, Target
+    MapPin, ArrowRightLeft, RefreshCw, Users, Target, ArrowLeft
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
@@ -61,7 +61,7 @@ export default function SaleScreen() {
     const {
         items, addItem, ticketName, setTicketName,
         total, itemCount, clearCart,
-        tableId, tableName, setTable,
+        tableId, tableName, setTable, ticketId,
     } = useCartStore();
 
     const [search, setSearch] = useState('');
@@ -71,6 +71,7 @@ export default function SaleScreen() {
     const [showTicketMenu, setShowTicketMenu] = useState(false);
     const [showTableSelector, setShowTableSelector] = useState(false);
     const [editingName, setEditingName] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     // Products
     const { data: productsData, isLoading } = useQuery({
@@ -149,11 +150,55 @@ export default function SaleScreen() {
     const completedGoals = goals.filter(g => g.isCompleted);
     const hasGoals = goals.length > 0;
 
+    const handleSave = async () => {
+        if (!hasItems) { navigate('/tickets'); return; }
+        setSaving(true);
+        try {
+            const sessionId = localStorage.getItem('wave_pos_session') || 'pos-mobile';
+            const itemsPayload = items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price }));
+            if (ticketId) {
+                await api.put(`/sales/${ticketId}`, {
+                    status: 'open',
+                    tableId: tableId || undefined,
+                    tableName: tableName || undefined,
+                    totalAmount: cartTotal,
+                    items: itemsPayload,
+                });
+            } else {
+                await api.post('/sales', {
+                    sessionId,
+                    items: itemsPayload,
+                    paymentMethod: 'cash',
+                    status: 'open',
+                    employeeId: employee?.id || undefined,
+                    tableId: tableId || undefined,
+                    tableName: tableName || undefined,
+                    ticketName: ticketName !== 'Ticket' ? ticketName : undefined,
+                });
+            }
+            clearCart();
+            navigate('/');
+        } catch (e) {
+            console.error('Save error:', e);
+            alert('Error guardando el ticket');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
         <div className="min-h-dvh flex flex-col safe-top safe-bottom" style={{ background: '#121413' }}>
 
             {/* ═══ Header ═══ */}
             <header className="px-4 pt-3 pb-2 flex items-center gap-3">
+                {/* Back to floor */}
+                <button
+                    onClick={() => navigate('/')}
+                    className="w-9 h-9 rounded-lg flex items-center justify-center press"
+                    style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)' }}
+                >
+                    <ArrowLeft className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />
+                </button>
                 {/* Hamburger */}
                 <button
                     onClick={() => setShowSideMenu(true)}
@@ -410,11 +455,17 @@ export default function SaleScreen() {
                     }}>
                     <div className="flex gap-0">
                         <button
-                            onClick={() => navigate('/tickets')}
-                            className="flex-1 py-4 px-3 btn-save text-center press transition-all"
+                            onClick={hasItems ? handleSave : () => navigate('/tickets')}
+                            disabled={saving}
+                            className="flex-1 py-4 px-3 btn-save text-center press transition-all disabled:opacity-50"
                         >
                             <div className="flex items-center justify-center gap-2">
-                                <ClipboardList className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.35)' }} />
+                                {saving ? (
+                                    <div className="w-4 h-4 border-2 rounded-full animate-spin"
+                                        style={{ borderColor: 'rgba(147,181,157,0.2)', borderTopColor: '#93B59D' }} />
+                                ) : (
+                                    <ClipboardList className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.35)' }} />
+                                )}
                                 <span className="text-[13px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(244,240,234,0.5)' }}>
                                     {hasItems ? 'Save' : 'Tickets'}
                                 </span>
