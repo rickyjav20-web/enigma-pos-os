@@ -9,22 +9,24 @@ export default async function salesRoutes(fastify: FastifyInstance) {
 
     /** Find the best open RegisterSession for a tenant+payment combination.
      *  Cash → PHYSICAL register  |  card/transfer → ELECTRONIC register
+     *  The preferredId is only used if it matches the expected register type.
      *  Falls back to any open session if type-specific one isn't found. */
     async function resolveSession(
         tenantId: string,
         preferredId: string | undefined,
         paymentMethod: string
     ): Promise<string | null> {
-        // 1. Try the explicitly provided sessionId
+        const expectedType = paymentMethod === 'cash' ? 'PHYSICAL' : 'ELECTRONIC';
+
+        // 1. Try the explicitly provided sessionId ONLY if it matches the expected type
         if (preferredId) {
             const s = await prisma.registerSession.findUnique({ where: { id: preferredId } });
-            if (s && s.status === 'open') return s.id;
+            if (s && s.status === 'open' && s.registerType === expectedType) return s.id;
         }
 
-        // 2. Find by payment type
-        const registerType = paymentMethod === 'cash' ? 'PHYSICAL' : 'ELECTRONIC';
+        // 2. Find open session by payment type
         const byType = await prisma.registerSession.findFirst({
-            where: { tenantId, status: 'open', registerType },
+            where: { tenantId, status: 'open', registerType: expectedType },
             orderBy: { startedAt: 'desc' },
         });
         if (byType) return byType.id;
