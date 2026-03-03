@@ -197,10 +197,11 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         return reply.send({ success: true, data: sales });
     });
 
-    // PUT /sales/:id — update open ticket
+    // PUT /sales/:id — update open ticket or complete it
     fastify.put('/sales/:id', async (request, reply) => {
         const { id } = request.params as { id: string };
         const body = request.body as any;
+        const tenantId = request.tenantId || 'enigma_hq';
 
         const existing = await prisma.salesOrder.findUnique({
             where: { id },
@@ -213,6 +214,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
 
         const updateData: any = {};
         if (body.status) updateData.status = body.status;
+        if (body.paymentMethod) updateData.paymentMethod = body.paymentMethod;
         if (body.tableId !== undefined) updateData.tableId = body.tableId;
         if (body.tableName !== undefined) updateData.tableName = body.tableName;
         if (body.ticketName !== undefined) updateData.ticketName = body.ticketName;
@@ -220,11 +222,117 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         if (body.totalAmount !== undefined) updateData.totalAmount = body.totalAmount;
         if (body.employeeId !== undefined) updateData.employeeId = body.employeeId;
 
+        // Replace items if provided
+        if (body.items && Array.isArray(body.items) && body.items.length > 0) {
+            const itemsWithNames = await Promise.all(body.items.map(async (item: any) => {
+                const product = await prisma.product.findUnique({ where: { id: item.productId } });
+                return {
+                    salesOrderId: id,
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    unitPrice: item.price,
+                    totalPrice: item.price * item.quantity,
+                    productNameSnapshot: product?.name || 'Unknown Product',
+                };
+            }));
+            await prisma.salesItem.deleteMany({ where: { salesOrderId: id } });
+            await prisma.salesItem.createMany({ data: itemsWithNames });
+        }
+
         const updated = await prisma.salesOrder.update({
             where: { id },
             data: updateData,
             include: { items: true, table: true },
         });
+
+        // Completion side effects — only when transitioning open → completed
+        if (body.status === 'completed' && existing.status === 'open') {
+            const itemsToProcess = body.items && body.items.length > 0 ? body.items : existing.items;
+            const totalToRecord = body.totalAmount ?? existing.totalAmount;
+            const payMethod = body.paymentMethod || existing.paymentMethod;
+            const empId = body.employeeId || existing.employeeId;
+
+            // Cash transaction
+            if (payMethod === 'cash') {
+                await prisma.cashTransaction.create({
+                    data: {
+                        sessionId: existing.sessionId,
+                        amount: totalToRecord,
+                        type: 'SALE',
+                        description: `Venta #${id.slice(0, 8)}`,
+                        referenceId: id,
+                    },
+                });
+            }
+
+            // Inventory deduction
+            for (const item of itemsToProcess) {
+                const productId = item.productId;
+                const quantity = item.quantity;
+                const product = await prisma.product.findUnique({
+                    where: { id: productId },
+                    include: { recipes: { include: { supplyItem: true } } },
+                });
+                if (product && product.recipes.length > 0) {
+                    for (const recipe of product.recipes) {
+                        const quantityToDeduct = recipe.quantity * quantity;
+                        await prisma.supplyItem.update({
+                            where: { id: recipe.supplyItemId },
+                            data: { stockQuantity: { decrement: quantityToDeduct } },
+                        });
+                        await prisma.inventoryLog.create({
+                            data: {
+                                tenantId,
+                                supplyItemId: recipe.supplyItemId,
+                                previousStock: 0,
+                                newStock: 0,
+                                changeAmount: -quantityToDeduct,
+                                reason: 'sale',
+                                notes: `Sold ${quantity}x ${product.name}`,
+                            },
+                        });
+                    }
+                }
+            }
+
+            // Goal tracking
+            if (empId) {
+                const today = new Date().toISOString().split('T')[0];
+                const activeGoals = await prisma.dailyGoal.findMany({
+                    where: { tenantId, employeeId: empId, date: today, status: 'ACTIVE' },
+                });
+                for (const goal of activeGoals) {
+                    let increment = 0;
+                    if (goal.type === 'PRODUCT') {
+                        const matching = itemsToProcess.filter((i: any) => i.productId === goal.targetId);
+                        increment = matching.reduce((s: number, i: any) => s + i.quantity, 0);
+                    } else if (goal.type === 'CATEGORY') {
+                        for (const item of itemsToProcess) {
+                            const p = await prisma.product.findUnique({
+                                where: { id: item.productId },
+                                select: { categoryId: true },
+                            });
+                            if (p && p.categoryId === goal.targetId) increment += item.quantity;
+                        }
+                    } else if (goal.type === 'REVENUE') {
+                        increment = totalToRecord;
+                    }
+                    if (increment > 0) {
+                        const newQty = goal.currentQty + increment;
+                        const isCompleted = newQty >= goal.targetQty;
+                        await prisma.dailyGoal.update({
+                            where: { id: goal.id },
+                            data: {
+                                currentQty: newQty,
+                                isCompleted,
+                                completedAt: isCompleted && !goal.isCompleted ? new Date() : goal.completedAt,
+                                status: isCompleted ? 'COMPLETED' : 'ACTIVE',
+                            },
+                        });
+                    }
+                }
+            }
+        }
 
         return reply.send({ success: true, data: updated });
     });

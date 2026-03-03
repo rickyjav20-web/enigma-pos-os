@@ -1,10 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import {
     ArrowLeft, Loader2, Check, Search, ShoppingCart,
-    GripHorizontal, List, MapPin, LayoutGrid, X, ChevronRight
+    GripHorizontal, List, MapPin, LayoutGrid, X, ChevronRight,
+    Save, Clock, ClipboardList
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
@@ -30,6 +31,21 @@ interface Table {
     currentOrder?: { id: string; totalAmount: number } | null;
 }
 
+interface OpenOrder {
+    id: string;
+    tableName?: string;
+    ticketName?: string;
+    totalAmount: number;
+    createdAt: string;
+    items: {
+        id: string;
+        productId: string;
+        productNameSnapshot: string;
+        quantity: number;
+        unitPrice: number;
+    }[];
+}
+
 export default function ManualSalePage() {
     const { session, employee } = useAuth();
     const [searchParams] = useSearchParams();
@@ -37,7 +53,11 @@ export default function ManualSalePage() {
     const [isLoading, setIsLoading] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    // ── Table state (mutable — can be assigned from within POS) ──────────
+    // ── Open ticket editing ───────────────────────────────────────────────
+    const [openOrderId, setOpenOrderId] = useState<string | null>(null);
+    const pendingSaveRef = useRef(false);
+
+    // ── Table state ───────────────────────────────────────────────────────
     const [selectedTableId, setSelectedTableId] = useState<string | undefined>(
         searchParams.get('tableId') || undefined
     );
@@ -50,29 +70,16 @@ export default function ManualSalePage() {
     const [tables, setTables] = useState<Table[]>([]);
     const [tableZone, setTableZone] = useState<string>('Todas');
     const [tablesLoading, setTablesLoading] = useState(false);
+    const [customTableInput, setCustomTableInput] = useState('');
 
-    const openTablePicker = async () => {
-        setShowTablePicker(true);
-        setTablesLoading(true);
-        try {
-            const res = await fetch(`${API_URL}/tables`, { headers: TENANT_HEADER });
-            const data = await res.json();
-            setTables(Array.isArray(data) ? data.filter((t: Table) => t) : []);
-        } catch { /* show empty */ } finally {
-            setTablesLoading(false);
-        }
-    };
+    // ── Open tickets panel ────────────────────────────────────────────────
+    const [showOpenTickets, setShowOpenTickets] = useState(false);
+    const [openTickets, setOpenTickets] = useState<OpenOrder[]>([]);
+    const [openTicketsLoading, setOpenTicketsLoading] = useState(false);
+    const [openTicketCount, setOpenTicketCount] = useState(0);
 
-    const selectTable = (table: Table) => {
-        setSelectedTableId(table.id);
-        setSelectedTableName(table.name);
-        setShowTablePicker(false);
-    };
-
-    const clearTable = () => {
-        setSelectedTableId(undefined);
-        setSelectedTableName(undefined);
-    };
+    // ── Save toast ────────────────────────────────────────────────────────
+    const [saveToast, setSaveToast] = useState<string | null>(null);
 
     // ── POS state ─────────────────────────────────────────────────────────
     const [products, setProducts] = useState<Product[]>([]);
@@ -83,7 +90,14 @@ export default function ManualSalePage() {
     const [method, setMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
     const [notes, setNotes] = useState('');
 
-    useEffect(() => { loadProducts(); }, []);
+    useEffect(() => {
+        loadProducts();
+        fetchOpenCount();
+    }, []);
+
+    useEffect(() => {
+        if (showOpenTickets) loadOpenTickets();
+    }, [showOpenTickets]);
 
     const loadProducts = async () => {
         try {
@@ -96,6 +110,27 @@ export default function ManualSalePage() {
         } catch (e) { console.error(e); }
     };
 
+    const fetchOpenCount = async () => {
+        try {
+            const res = await fetch(`${API_URL}/sales?status=open`, { headers: TENANT_HEADER });
+            const data = await res.json();
+            setOpenTicketCount((data.data || []).length);
+        } catch { }
+    };
+
+    const loadOpenTickets = async () => {
+        setOpenTicketsLoading(true);
+        try {
+            const res = await fetch(`${API_URL}/sales?status=open`, { headers: TENANT_HEADER });
+            const data = await res.json();
+            setOpenTickets(data.data || []);
+            setOpenTicketCount((data.data || []).length);
+        } catch { } finally {
+            setOpenTicketsLoading(false);
+        }
+    };
+
+    // ── Cart operations ───────────────────────────────────────────────────
     const addToCart = (product: Product) => {
         setCart(prev => {
             const existing = prev.find(i => i.product.id === product.id);
@@ -118,29 +153,162 @@ export default function ManualSalePage() {
 
     const total = cart.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
 
+    // ── Table picker ──────────────────────────────────────────────────────
+    const openTablePicker = async () => {
+        setShowTablePicker(true);
+        setTablesLoading(true);
+        setCustomTableInput('');
+        try {
+            const res = await fetch(`${API_URL}/tables`, { headers: TENANT_HEADER });
+            const data = await res.json();
+            setTables(Array.isArray(data) ? data.filter((t: Table) => t) : []);
+        } catch { } finally {
+            setTablesLoading(false);
+        }
+    };
+
+    const selectTable = (table: Table) => {
+        setSelectedTableId(table.id);
+        setSelectedTableName(table.name);
+        setShowTablePicker(false);
+        if (pendingSaveRef.current) {
+            pendingSaveRef.current = false;
+            executeS(table.id, table.name);
+        }
+    };
+
+    const selectCustomTable = () => {
+        const name = customTableInput.trim();
+        if (!name) return;
+        setSelectedTableId(undefined);
+        setSelectedTableName(name);
+        setCustomTableInput('');
+        setShowTablePicker(false);
+        if (pendingSaveRef.current) {
+            pendingSaveRef.current = false;
+            executeS(undefined, name);
+        }
+    };
+
+    const clearTable = () => {
+        setSelectedTableId(undefined);
+        setSelectedTableName(undefined);
+    };
+
+    // ── SAVE (open ticket) ────────────────────────────────────────────────
+    const handleSave = () => {
+        if (cart.length === 0) return;
+        if (!selectedTableId && !selectedTableName) {
+            pendingSaveRef.current = true;
+            openTablePicker();
+            return;
+        }
+        executeS(selectedTableId, selectedTableName);
+    };
+
+    const executeS = async (tableId?: string, tableName?: string) => {
+        if (cart.length === 0) return;
+        setIsLoading(true);
+        try {
+            const items = cart.map(i => ({
+                productId: i.product.id,
+                quantity: i.quantity,
+                price: i.product.price,
+            }));
+
+            let res: Response;
+            if (openOrderId) {
+                // Update existing open ticket items + table
+                res = await fetch(`${API_URL}/sales/${openOrderId}`, {
+                    method: 'PUT',
+                    headers: TENANT_HEADER,
+                    body: JSON.stringify({
+                        status: 'open',
+                        tableId,
+                        tableName,
+                        totalAmount: total,
+                        items,
+                    }),
+                });
+            } else {
+                // Create new open ticket
+                res = await fetch(`${API_URL}/sales`, {
+                    method: 'POST',
+                    headers: TENANT_HEADER,
+                    body: JSON.stringify({
+                        sessionId: session?.id,
+                        items,
+                        paymentMethod: 'cash',
+                        status: 'open',
+                        employeeId: employee?.id,
+                        tableId,
+                        tableName,
+                    }),
+                });
+            }
+
+            if (res.ok) {
+                const label = tableName || 'Sin mesa';
+                setSaveToast(label);
+                setTimeout(() => setSaveToast(null), 2500);
+                setCart([]);
+                setOpenOrderId(null);
+                setSelectedTableId(undefined);
+                setSelectedTableName(undefined);
+                setOpenTicketCount(c => c + (openOrderId ? 0 : 1));
+            } else {
+                alert('Error al guardar el ticket');
+            }
+        } catch { alert('Error de conexión'); }
+        finally { setIsLoading(false); }
+    };
+
+    // ── COBRAR ────────────────────────────────────────────────────────────
     const handleCheckout = async () => {
         if (cart.length === 0) return;
         setIsLoading(true);
         try {
-            const payload = {
-                sessionId: session?.id,
-                items: cart.map(i => ({
-                    productId: i.product.id,
-                    quantity: i.quantity,
-                    price: i.product.price,
-                })),
-                paymentMethod: method,
-                notes,
-                employeeId: employee?.id,
-                tableId: selectedTableId,
-                tableName: selectedTableName,
-            };
-
-            const res = await fetch(`${API_URL}/sales`, {
-                method: 'POST',
-                headers: TENANT_HEADER,
-                body: JSON.stringify(payload),
-            });
+            let res: Response;
+            if (openOrderId) {
+                // Complete existing open ticket
+                res = await fetch(`${API_URL}/sales/${openOrderId}`, {
+                    method: 'PUT',
+                    headers: TENANT_HEADER,
+                    body: JSON.stringify({
+                        status: 'completed',
+                        paymentMethod: method,
+                        totalAmount: total,
+                        employeeId: employee?.id,
+                        tableId: selectedTableId,
+                        tableName: selectedTableName,
+                        notes,
+                        items: cart.map(i => ({
+                            productId: i.product.id,
+                            quantity: i.quantity,
+                            price: i.product.price,
+                        })),
+                    }),
+                });
+            } else {
+                // New completed sale
+                res = await fetch(`${API_URL}/sales`, {
+                    method: 'POST',
+                    headers: TENANT_HEADER,
+                    body: JSON.stringify({
+                        sessionId: session?.id,
+                        items: cart.map(i => ({
+                            productId: i.product.id,
+                            quantity: i.quantity,
+                            price: i.product.price,
+                        })),
+                        paymentMethod: method,
+                        notes,
+                        employeeId: employee?.id,
+                        tableId: selectedTableId,
+                        tableName: selectedTableName,
+                    }),
+                });
+            }
 
             if (res.ok) {
                 setSuccess(true);
@@ -152,11 +320,40 @@ export default function ManualSalePage() {
         finally { setIsLoading(false); }
     };
 
+    // ── Resume open ticket ────────────────────────────────────────────────
+    const resumeTicket = (ticket: OpenOrder) => {
+        setOpenOrderId(ticket.id);
+        setSelectedTableId(undefined);
+        setSelectedTableName(ticket.tableName || ticket.ticketName);
+        setCart(ticket.items.map(item => ({
+            product: {
+                id: item.productId,
+                name: item.productNameSnapshot,
+                price: item.unitPrice,
+            },
+            quantity: item.quantity,
+        })));
+        setShowOpenTickets(false);
+        setShowPayment(false);
+    };
+
+    const cancelResume = () => {
+        setOpenOrderId(null);
+        setCart([]);
+        setSelectedTableId(undefined);
+        setSelectedTableName(undefined);
+    };
+
+    const elapsed = (dateStr: string) => {
+        const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
+        if (mins < 60) return `${mins}m`;
+        return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+    };
+
     const filteredProducts = (products || []).filter(p =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // ── Zones for picker filter ───────────────────────────────────────────
     const zones = ['Todas', ...Array.from(new Set(tables.map(t => t.zone || 'General'))).sort()];
     const filteredTables = tableZone === 'Todas'
         ? tables
@@ -226,6 +423,20 @@ export default function ManualSalePage() {
                             focus:outline-none focus:border-enigma-purple text-white"
                     />
                 </div>
+
+                {/* Open Tickets button */}
+                <button
+                    onClick={() => setShowOpenTickets(true)}
+                    className="relative p-2 bg-white/5 rounded-xl text-white/50 hover:text-white hover:bg-white/10 shrink-0 transition-all"
+                >
+                    <ClipboardList className="w-5 h-5" />
+                    {openTicketCount > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full text-[9px] font-bold text-black flex items-center justify-center">
+                            {openTicketCount > 9 ? '9+' : openTicketCount}
+                        </span>
+                    )}
+                </button>
+
                 <button
                     onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
                     className="p-2 bg-white/5 rounded-xl text-white/40 hover:text-white shrink-0"
@@ -234,7 +445,19 @@ export default function ManualSalePage() {
                 </button>
             </div>
 
-            {/* ── BODY: Products + Cart (split or stacked) ────────────── */}
+            {/* ── Resuming banner ─────────────────────────────────────── */}
+            {openOrderId && (
+                <div className="flex items-center justify-between px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 shrink-0">
+                    <p className="text-xs text-amber-300 font-semibold">
+                        Editando ticket: {selectedTableName || 'Sin mesa'}
+                    </p>
+                    <button onClick={cancelResume} className="text-xs text-white/30 hover:text-white underline">
+                        Cancelar
+                    </button>
+                </div>
+            )}
+
+            {/* ── BODY: Products + Cart ───────────────────────────────── */}
             <div className="flex-1 flex overflow-hidden">
 
                 {/* Product grid */}
@@ -305,7 +528,7 @@ export default function ManualSalePage() {
                     </div>
 
                     {/* Footer */}
-                    <div className="p-3 border-t border-white/5 space-y-3 bg-black/30">
+                    <div className="p-3 border-t border-white/5 space-y-2.5 bg-black/30">
                         {/* Total */}
                         <div className="flex justify-between items-baseline">
                             <span className="text-[10px] text-white/40 uppercase tracking-widest">Total</span>
@@ -375,35 +598,154 @@ export default function ManualSalePage() {
                                 </button>
                             </div>
                         ) : (
-                            <button
-                                onClick={() => setShowPayment(true)}
-                                disabled={cart.length === 0}
-                                className="w-full py-3.5 bg-enigma-purple hover:bg-enigma-purple/80 rounded-xl font-bold text-sm
-                                    text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
-                            >
-                                Cobrar
-                            </button>
+                            <div className="space-y-2">
+                                {/* SAVE button */}
+                                <button
+                                    onClick={handleSave}
+                                    disabled={isLoading || cart.length === 0}
+                                    className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20
+                                        rounded-xl font-semibold text-sm text-white/70 hover:text-white disabled:opacity-30
+                                        disabled:cursor-not-allowed transition-all active:scale-[0.97] flex items-center justify-center gap-2"
+                                >
+                                    {isLoading ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
+                                    {openOrderId ? 'Actualizar Ticket' : 'Guardar Ticket'}
+                                </button>
+
+                                {/* COBRAR button */}
+                                <button
+                                    onClick={() => setShowPayment(true)}
+                                    disabled={cart.length === 0}
+                                    className="w-full py-3.5 bg-enigma-purple hover:bg-enigma-purple/80 rounded-xl font-bold text-sm
+                                        text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
+                                >
+                                    Cobrar
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
             </div>
 
+            {/* ── SAVE TOAST ─────────────────────────────────────────── */}
+            {saveToast && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50
+                    bg-[#1C402E] border border-[#93B59D]/40 rounded-2xl px-5 py-3
+                    flex items-center gap-3 shadow-2xl animate-fade-in pointer-events-none">
+                    <div className="w-8 h-8 rounded-full bg-[#93B59D]/20 flex items-center justify-center shrink-0">
+                        <Check className="w-4 h-4 text-[#93B59D]" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-bold text-white">Ticket guardado</p>
+                        <p className="text-xs text-[#93B59D]">{saveToast}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* ── OPEN TICKETS SHEET ─────────────────────────────────── */}
+            {showOpenTickets && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex flex-col justify-end"
+                    onClick={e => { if (e.target === e.currentTarget) setShowOpenTickets(false); }}
+                >
+                    <div className="bg-[#121413] rounded-t-3xl border-t border-white/8 max-h-[80vh] flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+                            <div>
+                                <h3 className="text-base font-bold text-white">Tickets Abiertos</h3>
+                                <p className="text-xs text-white/30">Selecciona para continuar o cobrar</p>
+                            </div>
+                            <button onClick={() => setShowOpenTickets(false)} className="p-2 rounded-xl bg-white/5 text-white/50 hover:text-white">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Tickets list */}
+                        <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-2">
+                            {openTicketsLoading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
+                                </div>
+                            ) : openTickets.length === 0 ? (
+                                <div className="text-center py-16 text-white/20">
+                                    <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                                    <p className="text-sm font-semibold">Sin tickets abiertos</p>
+                                    <p className="text-xs mt-1">Los tickets guardados aparecerán aquí</p>
+                                </div>
+                            ) : openTickets.map(ticket => (
+                                <button
+                                    key={ticket.id}
+                                    onClick={() => resumeTicket(ticket)}
+                                    className="w-full bg-[#222524] border border-white/8 hover:border-[#93B59D]/40
+                                        rounded-2xl p-4 text-left transition-all active:scale-[0.98]"
+                                >
+                                    <div className="flex items-start justify-between gap-2 mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0 mt-0.5" />
+                                            <span className="font-bold text-sm text-white">
+                                                {ticket.tableName || ticket.ticketName || 'Sin mesa'}
+                                            </span>
+                                        </div>
+                                        <span className="text-emerald-400 font-mono text-sm font-bold shrink-0">
+                                            ${ticket.totalAmount.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-xs text-white/40">
+                                        <span>{ticket.items.length} {ticket.items.length === 1 ? 'item' : 'items'}</span>
+                                        <span>·</span>
+                                        <Clock className="w-3 h-3" />
+                                        <span>{elapsed(ticket.createdAt)}</span>
+                                    </div>
+                                    {ticket.items.length > 0 && (
+                                        <p className="mt-2 text-xs text-white/25 truncate">
+                                            {ticket.items.map(i => `${i.quantity}x ${i.productNameSnapshot}`).join(', ')}
+                                        </p>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ── TABLE PICKER MODAL ─────────────────────────────────── */}
             {showTablePicker && (
                 <div
                     className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex flex-col justify-end"
-                    onClick={e => { if (e.target === e.currentTarget) setShowTablePicker(false); }}
+                    onClick={e => { if (e.target === e.currentTarget) { setShowTablePicker(false); pendingSaveRef.current = false; } }}
                 >
                     <div className="bg-[#121413] rounded-t-3xl border-t border-white/8 max-h-[75vh] flex flex-col">
-                        {/* Drag handle + header */}
+                        {/* Header */}
                         <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
                             <div>
                                 <h3 className="text-base font-bold text-white">Asignar Mesa</h3>
-                                <p className="text-xs text-white/30">Selecciona una mesa para esta venta</p>
+                                <p className="text-xs text-white/30">Selecciona o crea una mesa personalizada</p>
                             </div>
-                            <button onClick={() => setShowTablePicker(false)} className="p-2 rounded-xl bg-white/5 text-white/50 hover:text-white">
+                            <button onClick={() => { setShowTablePicker(false); pendingSaveRef.current = false; }} className="p-2 rounded-xl bg-white/5 text-white/50 hover:text-white">
                                 <X className="w-5 h-5" />
                             </button>
+                        </div>
+
+                        {/* Custom table input */}
+                        <div className="px-4 pb-3 shrink-0">
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={customTableInput}
+                                    onChange={e => setCustomTableInput(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && selectCustomTable()}
+                                    placeholder="Nombre personalizado (ej: Terraza VIP)"
+                                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white
+                                        placeholder:text-white/25 focus:outline-none focus:border-[#93B59D]/50"
+                                />
+                                <button
+                                    onClick={selectCustomTable}
+                                    disabled={!customTableInput.trim()}
+                                    className="px-4 py-2 bg-[#1C402E]/60 border border-[#93B59D]/30 text-[#93B59D] text-sm
+                                        font-semibold rounded-xl hover:bg-[#1C402E] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                >
+                                    Usar
+                                </button>
+                            </div>
                         </div>
 
                         {/* Zone filter */}
@@ -435,7 +777,6 @@ export default function ManualSalePage() {
                                 <div className="text-center py-12 text-white/20">
                                     <LayoutGrid className="w-8 h-8 mx-auto mb-2 opacity-30" />
                                     <p className="text-sm">Sin mesas configuradas</p>
-                                    <p className="text-xs mt-1">Configúralas en Enigma HQ</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-3 gap-2.5">
@@ -454,7 +795,6 @@ export default function ManualSalePage() {
                                                             : 'bg-white/3 border-white/8 hover:border-white/20'
                                                     }`}
                                             >
-                                                {/* Status dot */}
                                                 <div className={`w-2 h-2 rounded-full ${
                                                     isSelected
                                                         ? 'bg-[#93B59D] shadow-[0_0_6px_rgba(147,181,157,0.7)]'
@@ -483,7 +823,6 @@ export default function ManualSalePage() {
                                 </div>
                             )}
 
-                            {/* Option: no table */}
                             {selectedTableId && (
                                 <button
                                     onClick={clearTable}
