@@ -283,8 +283,10 @@ export default function KdsPage() {
     }, [user, doneItemIds, doneOrderIds]);
 
     // ── Derived state ─────────────────────────────────────────────────────────
-    const allActiveOrders = orders.filter(o => !doneOrderIds.has(o.id));
-    const doneOrders = orders.filter(o => doneOrderIds.has(o.id));
+    // Orders paid from POS (status='completed') auto-move to done — no KDS action needed.
+    // This keeps prep-time averages clean (only KDS-processed orders generate ORDER_DONE logs).
+    const allActiveOrders = orders.filter(o => o.status === 'open' && !doneOrderIds.has(o.id));
+    const doneOrders = orders.filter(o => doneOrderIds.has(o.id) || o.status === 'completed');
 
     // Station filter: if set, show only items matching this station (or unassigned items)
     const activeOrders = stationFilter

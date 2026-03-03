@@ -2,8 +2,8 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Search, X, Menu, ChevronDown, MoreVertical,
-    ClipboardList, LogOut, Trash2, Edit3,
-    MapPin, ArrowRightLeft, RefreshCw, Users, Target
+    LogOut, Trash2, Edit3,
+    MapPin, ArrowRightLeft, RefreshCw, Users, Target, ArrowLeft
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
@@ -73,6 +73,26 @@ export default function SaleScreen() {
     const [tableSearch, setTableSearch] = useState('');
     const [editingName, setEditingName] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [showCustomForm, setShowCustomForm] = useState(false);
+    const [customName, setCustomName] = useState('');
+    const [customComment, setCustomComment] = useState('');
+    const [customOrderType, setCustomOrderType] = useState('dine_in');
+
+    const getDefaultTicketName = () => {
+        const now = new Date();
+        const h = now.getHours();
+        const m = now.getMinutes().toString().padStart(2, '0');
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `Ticket - ${h12}:${m} ${ampm}`;
+    };
+
+    const ORDER_TYPES = [
+        { key: 'dine_in', label: 'Dine-in' },
+        { key: 'takeaway', label: 'Takeaway' },
+        { key: 'delivery', label: 'Delivery' },
+        { key: 'bar', label: 'Bar Tab' },
+    ];
 
     // Products
     const { data: productsData, isLoading } = useQuery({
@@ -140,11 +160,12 @@ export default function SaleScreen() {
     const completedGoals = goals.filter(g => g.isCompleted);
     const hasGoals = goals.length > 0;
 
-    const handleSave = async (saveTableId?: string, saveTableName?: string) => {
+    const handleSave = async (saveTableId?: string, saveTableName?: string, opts?: { ticketName?: string; notes?: string }) => {
         setSaving(true);
         try {
             const sessionId = localStorage.getItem('wave_pos_session') || 'pos-mobile';
             const itemsPayload = items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price }));
+            const resolvedName = opts?.ticketName || (ticketName !== 'Ticket' ? ticketName : undefined);
             if (ticketId) {
                 await api.put(`/sales/${ticketId}`, {
                     status: 'open',
@@ -152,6 +173,8 @@ export default function SaleScreen() {
                     tableName: saveTableName || undefined,
                     totalAmount: cartTotal,
                     items: itemsPayload,
+                    ...(resolvedName && { ticketName: resolvedName }),
+                    ...(opts?.notes !== undefined && { notes: opts.notes }),
                 });
             } else {
                 await api.post('/sales', {
@@ -162,10 +185,12 @@ export default function SaleScreen() {
                     employeeId: employee?.id || undefined,
                     tableId: saveTableId || undefined,
                     tableName: saveTableName || undefined,
-                    ticketName: ticketName !== 'Ticket' ? ticketName : undefined,
+                    ticketName: resolvedName,
+                    notes: opts?.notes || undefined,
                 });
             }
             setShowTableSelector(false);
+            setShowCustomForm(false);
             setTableSearch('');
             clearCart();
         } catch (e) {
@@ -437,12 +462,30 @@ export default function SaleScreen() {
                     }}>
                     <div className="flex gap-0">
                         <button
-                            onClick={hasItems ? () => { setTableSearch(''); setShowTableSelector(true); } : () => navigate('/tickets')}
+                            onClick={
+                                hasItems
+                                    ? () => {
+                                        if (ticketId) {
+                                            // Re-saving existing ticket → skip picker, go straight to save
+                                            handleSave(tableId || undefined, tableName || undefined);
+                                        } else {
+                                            setTableSearch('');
+                                            setShowTableSelector(true);
+                                        }
+                                    }
+                                    : () => navigate('/tickets')
+                            }
+                            disabled={saving}
                             className="flex-1 py-4 px-3 btn-save text-center press transition-all"
                         >
-                            <span className="text-[13px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(244,240,234,0.5)' }}>
-                                {hasItems ? 'Save' : 'Open Tickets'}
-                            </span>
+                            {saving ? (
+                                <div className="w-4 h-4 border-2 rounded-full animate-spin mx-auto"
+                                    style={{ borderColor: 'rgba(147,181,157,0.2)', borderTopColor: '#93B59D' }} />
+                            ) : (
+                                <span className="text-[13px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(244,240,234,0.5)' }}>
+                                    {hasItems ? (ticketId ? 'Update' : 'Save') : 'Open Tickets'}
+                                </span>
+                            )}
                         </button>
                         <div style={{ width: '1px', background: 'rgba(244,240,234,0.06)' }} />
                         <button
@@ -528,13 +571,13 @@ export default function SaleScreen() {
                     <header className="px-4 pt-3 pb-3 flex items-center gap-3 shrink-0"
                         style={{ borderBottom: '1px solid rgba(244,240,234,0.06)' }}>
                         <button
-                            onClick={() => { setShowTableSelector(false); setTableSearch(''); }}
+                            onClick={() => { setShowTableSelector(false); setTableSearch(''); setShowCustomForm(false); }}
                             className="w-9 h-9 rounded-lg flex items-center justify-center press"
                             style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)' }}
                         >
                             <X className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />
                         </button>
-                        <h1 className="text-[15px] font-semibold" style={{ color: '#F4F0EA' }}>Save ticket</h1>
+                        <h1 className="text-[15px] font-semibold" style={{ color: '#F4F0EA' }}>Assign table</h1>
                     </header>
 
                     {/* Search */}
@@ -544,7 +587,7 @@ export default function SaleScreen() {
                                 style={{ color: 'rgba(244,240,234,0.15)' }} />
                             <input
                                 type="text"
-                                placeholder="Search..."
+                                placeholder="Search table..."
                                 value={tableSearch}
                                 onChange={e => setTableSearch(e.target.value)}
                                 autoFocus
@@ -556,19 +599,23 @@ export default function SaleScreen() {
 
                     {/* List */}
                     <div className="flex-1 overflow-y-auto">
-                        {/* Custom ticket — top option */}
+                        {/* Custom ticket — opens form */}
                         {!tableSearch && (
                             <button
-                                onClick={() => handleSave(undefined, undefined)}
-                                disabled={saving}
+                                onClick={() => {
+                                    setCustomName(getDefaultTicketName());
+                                    setCustomComment('');
+                                    setCustomOrderType('dine_in');
+                                    setShowCustomForm(true);
+                                }}
                                 className="w-full px-5 py-4 text-left font-semibold text-sm tracking-wide press"
                                 style={{ borderBottom: '1px solid rgba(244,240,234,0.04)', color: '#93B59D' }}
                             >
-                                {saving ? 'Guardando...' : 'CUSTOM TICKET'}
+                                CUSTOM TICKET
                             </button>
                         )}
 
-                        {/* Flat table list */}
+                        {/* Flat table list — clicking a table saves directly */}
                         {tables
                             .filter(t => !tableSearch || t.name.toLowerCase().includes(tableSearch.toLowerCase()))
                             .map(t => (
@@ -604,6 +651,101 @@ export default function SaleScreen() {
                             </div>
                         )}
                     </div>
+
+                    {/* ── Custom Ticket Form (slides over table list) ── */}
+                    {showCustomForm && (
+                        <div className="absolute inset-0 flex flex-col safe-top safe-bottom animate-slide-up"
+                            style={{ background: '#121413' }}>
+                            {/* Form header */}
+                            <header className="px-4 pt-3 pb-3 flex items-center gap-3 shrink-0"
+                                style={{ borderBottom: '1px solid rgba(244,240,234,0.06)' }}>
+                                <button
+                                    onClick={() => setShowCustomForm(false)}
+                                    className="w-9 h-9 rounded-lg flex items-center justify-center press"
+                                    style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)' }}
+                                >
+                                    <ArrowLeft className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />
+                                </button>
+                                <h1 className="flex-1 text-[15px] font-semibold" style={{ color: '#F4F0EA' }}>Save ticket</h1>
+                                <button
+                                    onClick={() => {
+                                        const orderTypeLabel = ORDER_TYPES.find(t => t.key === customOrderType)?.label;
+                                        const notesStr = [
+                                            customOrderType !== 'dine_in' ? orderTypeLabel : null,
+                                            customComment || null,
+                                        ].filter(Boolean).join(' | ') || undefined;
+                                        handleSave(undefined, undefined, {
+                                            ticketName: customName || getDefaultTicketName(),
+                                            notes: notesStr,
+                                        });
+                                    }}
+                                    disabled={saving}
+                                    className="px-3 py-1.5 rounded-lg text-sm font-bold press"
+                                    style={{ color: '#93B59D' }}
+                                >
+                                    {saving ? '...' : 'SAVE'}
+                                </button>
+                            </header>
+
+                            {/* Name field */}
+                            <div className="px-5 pt-5 pb-3"
+                                style={{ borderBottom: '1px solid rgba(244,240,234,0.06)' }}>
+                                <p className="text-[11px] font-semibold uppercase tracking-widest mb-2"
+                                    style={{ color: '#93B59D' }}>Name</p>
+                                <input
+                                    type="text"
+                                    value={customName}
+                                    onChange={e => setCustomName(e.target.value)}
+                                    autoFocus
+                                    className="w-full text-[17px] font-medium bg-transparent focus:outline-none pb-2"
+                                    style={{
+                                        color: '#F4F0EA',
+                                        borderBottom: '2px solid #93B59D',
+                                    }}
+                                />
+                            </div>
+
+                            {/* Comment field */}
+                            <div className="px-5 pt-4 pb-3"
+                                style={{ borderBottom: '1px solid rgba(244,240,234,0.06)' }}>
+                                <p className="text-[11px] font-semibold uppercase tracking-widest mb-2"
+                                    style={{ color: 'rgba(244,240,234,0.3)' }}>Comment</p>
+                                <input
+                                    type="text"
+                                    placeholder="Add a note..."
+                                    value={customComment}
+                                    onChange={e => setCustomComment(e.target.value)}
+                                    className="w-full text-[15px] bg-transparent focus:outline-none pb-2"
+                                    style={{
+                                        color: '#F4F0EA',
+                                        borderBottom: '1px solid rgba(244,240,234,0.1)',
+                                    }}
+                                />
+                            </div>
+
+                            {/* Order type */}
+                            <div className="px-5 pt-4">
+                                <p className="text-[11px] font-semibold uppercase tracking-widest mb-3"
+                                    style={{ color: 'rgba(244,240,234,0.3)' }}>Order Type</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {ORDER_TYPES.map(t => (
+                                        <button
+                                            key={t.key}
+                                            onClick={() => setCustomOrderType(t.key)}
+                                            className="py-3 rounded-xl text-sm font-semibold press transition-all"
+                                            style={{
+                                                background: customOrderType === t.key ? 'rgba(147,181,157,0.15)' : 'rgba(244,240,234,0.04)',
+                                                border: `1px solid ${customOrderType === t.key ? 'rgba(147,181,157,0.4)' : 'rgba(244,240,234,0.06)'}`,
+                                                color: customOrderType === t.key ? '#93B59D' : 'rgba(244,240,234,0.5)',
+                                            }}
+                                        >
+                                            {t.key === 'dine_in' ? '🍽️' : t.key === 'takeaway' ? '🛍️' : t.key === 'delivery' ? '🚴' : '🍺'} {t.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
