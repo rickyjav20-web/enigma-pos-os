@@ -28,7 +28,8 @@ interface Table {
     name: string;
     zone?: string;
     capacity?: number;
-    currentOrder?: { id: string; totalAmount: number } | null;
+    isOccupied?: boolean;
+    currentTicket?: { id: string; totalAmount: number } | null;
 }
 
 interface OpenOrder {
@@ -93,6 +94,9 @@ export default function ManualSalePage() {
     useEffect(() => {
         loadProducts();
         fetchOpenCount();
+        // Auto-resume open ticket if ticketId is in URL (coming from occupied table)
+        const ticketId = searchParams.get('ticketId');
+        if (ticketId) loadTicket(ticketId);
     }, []);
 
     useEffect(() => {
@@ -130,6 +134,27 @@ export default function ManualSalePage() {
         }
     };
 
+    const loadTicket = async (ticketId: string) => {
+        try {
+            const res = await fetch(`${API_URL}/sales/${ticketId}`, { headers: TENANT_HEADER });
+            if (!res.ok) return;
+            const data = await res.json();
+            const ticket = data.data || data;
+            if (!ticket?.items) return;
+            setOpenOrderId(ticket.id);
+            setSelectedTableId(ticket.tableId || undefined);
+            setSelectedTableName(ticket.tableName || ticket.ticketName || undefined);
+            setCart(ticket.items.map((item: any) => ({
+                product: {
+                    id: item.productId,
+                    name: item.productNameSnapshot,
+                    price: item.unitPrice,
+                },
+                quantity: item.quantity,
+            })));
+        } catch { }
+    };
+
     // ── Cart operations ───────────────────────────────────────────────────
     const addToCart = (product: Product) => {
         setCart(prev => {
@@ -161,7 +186,8 @@ export default function ManualSalePage() {
         try {
             const res = await fetch(`${API_URL}/tables`, { headers: TENANT_HEADER });
             const data = await res.json();
-            setTables(Array.isArray(data) ? data.filter((t: Table) => t) : []);
+            const list = data.data || (Array.isArray(data) ? data : []);
+            setTables(list.filter((t: Table) => t));
         } catch { } finally {
             setTablesLoading(false);
         }
@@ -250,12 +276,17 @@ export default function ManualSalePage() {
             if (res.ok) {
                 const label = tableName || 'Sin mesa';
                 setSaveToast(label);
-                setTimeout(() => setSaveToast(null), 2500);
                 setCart([]);
                 setOpenOrderId(null);
                 setSelectedTableId(undefined);
                 setSelectedTableName(undefined);
                 setOpenTicketCount(c => c + (openOrderId ? 0 : 1));
+                // Navigate back to floor plan after saving a tabled order
+                if (tableId || tableName) {
+                    setTimeout(() => navigate('/tables'), 1200);
+                } else {
+                    setTimeout(() => setSaveToast(null), 2500);
+                }
             } else {
                 alert('Error al guardar el ticket');
             }
@@ -781,7 +812,7 @@ export default function ManualSalePage() {
                             ) : (
                                 <div className="grid grid-cols-3 gap-2.5">
                                     {filteredTables.map(table => {
-                                        const isOccupied = !!table.currentOrder;
+                                        const isOccupied = table.isOccupied || !!table.currentTicket;
                                         const isSelected = table.id === selectedTableId;
                                         return (
                                             <button
@@ -814,7 +845,7 @@ export default function ManualSalePage() {
                                                 )}
                                                 {isOccupied && (
                                                     <span className="text-[9px] text-amber-400 font-semibold">
-                                                        ${(table.currentOrder?.totalAmount ?? 0).toFixed(0)}
+                                                        ${(table.currentTicket?.totalAmount ?? 0).toFixed(0)}
                                                     </span>
                                                 )}
                                             </button>

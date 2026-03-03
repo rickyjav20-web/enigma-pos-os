@@ -160,6 +160,10 @@ export default function TablesPage() {
 
     const handleTableClick = (table: DiningTable) => {
         const params = new URLSearchParams({ tableId: table.id, tableName: table.name });
+        // If occupied, pass the open ticket ID so ManualSale auto-resumes it
+        if (table.isOccupied && table.currentTicket?.id) {
+            params.set('ticketId', table.currentTicket.id);
+        }
         navigate(`/manual-sale?${params.toString()}`);
     };
 

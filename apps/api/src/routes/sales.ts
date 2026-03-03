@@ -170,6 +170,17 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         return order;
     });
 
+    // GET /sales/:id — get single order with items
+    fastify.get('/sales/:id', async (request, reply) => {
+        const { id } = request.params as { id: string };
+        const order = await prisma.salesOrder.findUnique({
+            where: { id },
+            include: { items: true, table: true },
+        });
+        if (!order) return reply.status(404).send({ error: 'Order not found' });
+        return reply.send({ success: true, data: order });
+    });
+
     // GET /sales — list sales with optional status filter
     fastify.get('/sales', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
