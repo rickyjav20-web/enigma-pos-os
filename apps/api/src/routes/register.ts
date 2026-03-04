@@ -9,6 +9,63 @@ export default async function registerRoutes(fastify: FastifyInstance) {
     // Helper: Get Tenant (uses middleware-resolved UUID, not raw header)
     const getTenant = (req: any) => req.tenantId as string;
 
+    // ── Default shift goals template ─────────────────────────────────
+    // Auto-assigned when a register session opens.
+    // Future: make this configurable from HQ via GoalTemplate model.
+    async function assignShiftGoals(tenantId: string, employeeId: string, sessionId: string) {
+        const today = new Date().toISOString().split('T')[0];
+
+        // Find the "Galleta" product dynamically by name match
+        const galletaProduct = await prisma.product.findFirst({
+            where: { tenantId, name: { contains: 'alleta', mode: 'insensitive' } },
+            select: { id: true, name: true },
+        });
+
+        const goals = [
+            // Goal 1: Upsell galletas
+            ...(galletaProduct ? [{
+                tenantId,
+                employeeId,
+                date: today,
+                sessionId,
+                type: 'PRODUCT',
+                targetId: galletaProduct.id,
+                targetName: galletaProduct.name,
+                targetQty: 10,
+                rewardType: 'BONUS',
+                rewardValue: 1.5,
+                rewardNote: 'Bono por upsell de galletas',
+                createdBy: 'system',
+                status: 'ACTIVE',
+                currentQty: 0,
+                isCompleted: false,
+            }] : []),
+            // Goal 2: Revenue target
+            {
+                tenantId,
+                employeeId,
+                date: today,
+                sessionId,
+                type: 'REVENUE',
+                targetId: null,
+                targetName: 'Ventas del Turno',
+                targetQty: 200,
+                rewardType: 'BONUS',
+                rewardValue: 1.5,
+                rewardNote: 'Bono por meta de ventas',
+                createdBy: 'system',
+                status: 'ACTIVE',
+                currentQty: 0,
+                isCompleted: false,
+            },
+        ];
+
+        for (const g of goals) {
+            await prisma.dailyGoal.create({ data: g as any });
+        }
+        console.log(`[Goals] Auto-assigned ${goals.length} shift goals for session ${sessionId.slice(0, 8)}`);
+    }
+
     // --- OPEN REGISTER (DUAL: PHYSICAL + ELECTRONIC) ---
     const cashBreakdownSchema = z.object({
         startingCash: z.number().min(0),                 // USD equivalent total
@@ -86,6 +143,14 @@ export default async function registerRoutes(fastify: FastifyInstance) {
             physicalCash: physical.startingCash,
             electronicCash: electronic.startingCash
         });
+
+        // ── Auto-assign shift goals ──────────────────────────────────
+        // Creates default goals for this session (non-fatal)
+        try {
+            await assignShiftGoals(tenantId, employeeId, physicalSession.id);
+        } catch (e) {
+            console.error('[Register] Failed to auto-assign goals:', e);
+        }
 
         return { physicalSession, electronicSession };
     });
