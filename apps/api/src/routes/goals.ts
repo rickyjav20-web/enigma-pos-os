@@ -5,10 +5,11 @@ import { z } from 'zod';
 
 export default async function goalsRoutes(fastify: FastifyInstance) {
 
-    // POST /goals — create daily goal
+    // POST /goals — create daily goal (optionally tied to a session/shift)
     const createSchema = z.object({
         employeeId: z.string(),
         date: z.string().optional(), // defaults to today
+        sessionId: z.string().optional(), // RegisterSession ID — ties goal to a shift
         type: z.enum(['PRODUCT', 'CATEGORY', 'REVENUE']),
         targetId: z.string().optional(),
         targetName: z.string(),
@@ -28,6 +29,7 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
                 tenantId,
                 employeeId: body.employeeId,
                 date,
+                sessionId: body.sessionId || null,
                 type: body.type,
                 targetId: body.targetId,
                 targetName: body.targetName,
@@ -45,16 +47,18 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
     // GET /goals — list goals with filters
     fastify.get('/goals', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
-        const { date, employeeId, status } = request.query as {
+        const { date, employeeId, status, sessionId } = request.query as {
             date?: string;
             employeeId?: string;
             status?: string;
+            sessionId?: string;
         };
 
         const where: any = { tenantId };
         if (date) where.date = date;
         if (employeeId) where.employeeId = employeeId;
         if (status) where.status = status;
+        if (sessionId) where.sessionId = sessionId;
 
         // Default to today if no date specified
         if (!date && !employeeId) {
@@ -72,11 +76,14 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
     // GET /goals/leaderboard — all employees progress for a date
     fastify.get('/goals/leaderboard', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
-        const { date } = request.query as { date?: string };
+        const { date, sessionId } = request.query as { date?: string; sessionId?: string };
         const targetDate = date || new Date().toISOString().split('T')[0];
 
+        const where: any = { tenantId, date: targetDate };
+        if (sessionId) where.sessionId = sessionId;
+
         const goals = await prisma.dailyGoal.findMany({
-            where: { tenantId, date: targetDate },
+            where,
             orderBy: { currentQty: 'desc' },
         });
 
@@ -107,6 +114,30 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
         })).sort((a, b) => b.completionRate - a.completionRate);
 
         return reply.send({ success: true, data: leaderboard });
+    });
+
+    // GET /goals/history — completed goals + accumulated rewards for an employee
+    fastify.get('/goals/history', async (request, reply) => {
+        const tenantId = request.tenantId || 'enigma_hq';
+        const { employeeId, limit } = request.query as { employeeId?: string; limit?: string };
+
+        const goals = await prisma.dailyGoal.findMany({
+            where: {
+                tenantId,
+                ...(employeeId ? { employeeId } : {}),
+                status: 'COMPLETED',
+            },
+            orderBy: { completedAt: 'desc' },
+            take: parseInt(limit || '50'),
+        });
+
+        const totalRewards = goals.reduce((sum, g) => sum + (g.rewardValue || 0), 0);
+        const totalCompleted = goals.length;
+
+        return reply.send({
+            success: true,
+            data: { goals, totalRewards, totalCompleted },
+        });
     });
 
     // PUT /goals/:id — update goal
@@ -157,6 +188,7 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
                     tenantId,
                     employeeId: g.employeeId,
                     date: g.date || date,
+                    sessionId: g.sessionId || null,
                     type: g.type,
                     targetId: g.targetId,
                     targetName: g.targetName,

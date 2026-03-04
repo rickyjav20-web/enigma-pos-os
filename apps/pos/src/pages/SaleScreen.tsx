@@ -572,6 +572,7 @@ export default function SaleScreen() {
                             {[
                                 { label: 'Sales', icon: '🛒', active: true, action: () => setShowSideMenu(false) },
                                 { label: 'Open Tickets', icon: '📋', active: false, action: () => { setShowSideMenu(false); navigate('/tickets'); } },
+                                { label: 'Mis Metas', icon: '🎯', active: false, action: () => { setShowSideMenu(false); navigate('/goals'); } },
                                 { label: 'New Ticket', icon: '⚡', active: false, action: () => { clearCart(); setShowSideMenu(false); } },
                             ].map((item, i) => (
                                 <button

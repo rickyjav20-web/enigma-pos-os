@@ -13,6 +13,7 @@ export default function DailyGoals() {
 
     // Form state
     const [employeeId, setEmployeeId] = useState('');
+    const [sessionId, setSessionId] = useState('');
     const [type, setType] = useState('PRODUCT');
     const [targetName, setTargetName] = useState('');
     const [targetId, setTargetId] = useState('');
@@ -26,6 +27,20 @@ export default function DailyGoals() {
             const res = await api.get('/staff');
             return res.data?.data || [];
         }
+    });
+
+    // Fetch open sessions for shift assignment
+    const { data: openSessions = [] } = useQuery({
+        queryKey: ['open-sessions'],
+        queryFn: async () => {
+            const res = await api.get('/register/sessions?status=open');
+            const sessions = Array.isArray(res.data) ? res.data : res.data?.data || [];
+            return sessions.map((s: any) => ({
+                id: s.id,
+                label: `${s.employee?.fullName || 'Sin nombre'} — ${s.registerType || 'PHYSICAL'}`,
+                employeeId: s.employee?.id || s.employeeId,
+            }));
+        },
     });
 
     const { data: leaderboard = [], isLoading } = useQuery({
@@ -62,7 +77,8 @@ export default function DailyGoals() {
             targetQty: Number(targetQty),
             rewardType: 'BONUS',
             rewardValue: Number(rewardValue),
-            rewardNote
+            rewardNote,
+            ...(sessionId && { sessionId }),
         });
     };
 
@@ -105,6 +121,19 @@ export default function DailyGoals() {
                                     <option value="" disabled>Seleccione...</option>
                                     {employees.map((e: any) => (
                                         <option key={e.id} value={e.id}>{e.fullName}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-zinc-400 uppercase">Turno (Opcional)</label>
+                                <select
+                                    value={sessionId}
+                                    onChange={(e) => setSessionId(e.target.value)}
+                                    className="w-full h-10 px-3 bg-black/40 border border-white/10 rounded-md text-sm text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                >
+                                    <option value="">Meta del Día (sin turno)</option>
+                                    {openSessions.map((s: any) => (
+                                        <option key={s.id} value={s.id}>{s.label}</option>
                                     ))}
                                 </select>
                             </div>
@@ -223,6 +252,9 @@ export default function DailyGoals() {
                                                 <div className="flex items-center gap-2">
                                                     <Icon className="w-4 h-4 text-zinc-400" />
                                                     <span className="text-sm font-medium text-zinc-200">{goal.targetName}</span>
+                                                    {goal.sessionId && (
+                                                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400">Turno</span>
+                                                    )}
                                                     {goal.isCompleted && <CheckCircle2 className="w-4 h-4 text-pink-400 ml-1" />}
                                                 </div>
                                                 <div className="text-sm font-mono text-zinc-300">

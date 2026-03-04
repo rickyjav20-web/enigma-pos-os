@@ -71,12 +71,14 @@ export default async function salesRoutes(fastify: FastifyInstance) {
     }
 
     /** Update daily goals for completed sales */
-    async function trackGoals(tenantId: string, employeeId: string, items: { productId: string; quantity: number }[], totalAmount: number) {
+    async function trackGoals(tenantId: string, employeeId: string, items: { productId: string; quantity: number }[], totalAmount: number, sessionId?: string) {
         const today = new Date().toISOString().split('T')[0];
         const goals = await prisma.dailyGoal.findMany({
             where: { tenantId, employeeId, date: today, status: 'ACTIVE' },
         });
         for (const goal of goals) {
+            // Session-scoped goals only track when the sale is in the matching session
+            if (goal.sessionId && goal.sessionId !== sessionId) continue;
             let increment = 0;
             if (goal.type === 'PRODUCT') {
                 increment = items.filter(i => i.productId === goal.targetId).reduce((s, i) => s + i.quantity, 0);
@@ -184,7 +186,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
             await deductInventory(tenantId, items.map(i => ({ productId: i.productId, quantity: i.quantity })));
 
             if (employeeId) {
-                await trackGoals(tenantId, employeeId, items, totalAmount);
+                await trackGoals(tenantId, employeeId, items, totalAmount, resolvedSessionId);
             }
         }
 
@@ -327,7 +329,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
             })));
 
             if (empId) {
-                await trackGoals(tenantId, empId, itemsToProcess, totalToRecord);
+                await trackGoals(tenantId, empId, itemsToProcess, totalToRecord, cashSessionId || undefined);
             }
         }
 
