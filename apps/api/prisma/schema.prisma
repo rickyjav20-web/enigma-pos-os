@@ -693,7 +693,7 @@ model DailyGoal {
   tenantId   String
   employeeId String // Assigned to
   date       String // "2026-03-02" ISO date
-  sessionId  String? // RegisterSession ID — ties goal to a specific shift/turno (null = daily goal)
+  sessionId  String? // RegisterSession ID - ties goal to a specific shift (null = daily goal)
 
   // Goal definition
   type       String // "PRODUCT" | "CATEGORY" | "REVENUE"
