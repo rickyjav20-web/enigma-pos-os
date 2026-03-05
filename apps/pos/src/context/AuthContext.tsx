@@ -76,11 +76,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(physical);
         setElectronicSession(electronic);
 
-        // Store physical session ID for sales resolution
+        // Store session IDs for sales resolution (resolveSession picks by payment method)
         if (physical?.id) {
             localStorage.setItem('wave_pos_session', physical.id);
         } else {
             localStorage.removeItem('wave_pos_session');
+        }
+        if (electronic?.id) {
+            localStorage.setItem('wave_pos_electronic_session', electronic.id);
+        } else {
+            localStorage.removeItem('wave_pos_electronic_session');
         }
     }, []);
 
@@ -123,6 +128,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 } else {
                     localStorage.removeItem('wave_pos_session');
                 }
+                if (electronic?.id) {
+                    localStorage.setItem('wave_pos_electronic_session', electronic.id);
+                } else {
+                    localStorage.removeItem('wave_pos_electronic_session');
+                }
 
                 return true;
             }
@@ -143,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setElectronicSession(null);
         localStorage.removeItem('wave_pos_employee');
         localStorage.removeItem('wave_pos_session');
+        localStorage.removeItem('wave_pos_electronic_session');
     }, []);
 
     return (
