@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import api from '../lib/api';
 
 interface Employee {
@@ -8,14 +8,55 @@ interface Employee {
     pinCode: string;
 }
 
+interface RegisterSession {
+    id: string;
+    employeeId: string;
+    registerType: 'PHYSICAL' | 'ELECTRONIC';
+    status: 'open' | 'closed';
+    startedAt: string;
+    startingCash: number;
+    linkedSessionId: string | null;
+}
+
 interface AuthState {
     employee: Employee | null;
     isLoading: boolean;
+    /** Active physical register session (any employee, tenant-wide) */
+    session: RegisterSession | null;
+    /** Active electronic register session */
+    electronicSession: RegisterSession | null;
     login: (pin: string) => Promise<boolean | string>;
     logout: () => void;
+    /** Force re-sync session from API */
+    syncSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
+
+/** Fetch any open register session for the tenant (not employee-specific) */
+async function fetchTenantSessions(): Promise<{
+    physical: RegisterSession | null;
+    electronic: RegisterSession | null;
+}> {
+    try {
+        const { data } = await api.get('/register/sessions?status=open');
+        const sessions: RegisterSession[] = Array.isArray(data) ? data : (data?.data || []);
+
+        if (sessions.length === 0) {
+            return { physical: null, electronic: null };
+        }
+
+        // Find the most recent physical and electronic sessions
+        const physical = sessions.find(s => s.registerType === 'PHYSICAL' && s.status === 'open')
+            || sessions.find(s => s.status === 'open') // fallback for legacy
+            || null;
+        const electronic = sessions.find(s => s.registerType === 'ELECTRONIC' && s.status === 'open') || null;
+
+        return { physical, electronic };
+    } catch {
+        return { physical: null, electronic: null };
+    }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [employee, setEmployee] = useState<Employee | null>(() => {
@@ -23,6 +64,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return saved ? JSON.parse(saved) : null;
     });
     const [isLoading, setIsLoading] = useState(false);
+    const [session, setSession] = useState<RegisterSession | null>(null);
+    const [electronicSession, setElectronicSession] = useState<RegisterSession | null>(null);
+
+    // ─── Sync sessions: find any open session for the tenant ────────────
+    const syncSession = useCallback(async () => {
+        const { physical, electronic } = await fetchTenantSessions();
+
+        setSession(physical);
+        setElectronicSession(electronic);
+
+        // Store physical session ID for sales resolution
+        if (physical?.id) {
+            localStorage.setItem('wave_pos_session', physical.id);
+        } else {
+            localStorage.removeItem('wave_pos_session');
+        }
+    }, []);
+
+    // ─── Auto-sync on mount if employee is already logged in ────────────
+    useEffect(() => {
+        if (employee) {
+            syncSession();
+        }
+    }, [employee, syncSession]);
+
+    // ─── Periodic sync every 30s to catch OPS opening/closing ───────────
+    useEffect(() => {
+        if (!employee) return;
+        const interval = setInterval(syncSession, 30_000);
+        return () => clearInterval(interval);
+    }, [employee, syncSession]);
 
     const login = useCallback(async (pin: string): Promise<boolean | string> => {
         setIsLoading(true);
@@ -39,17 +111,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setEmployee(emp);
                 localStorage.setItem('wave_pos_employee', JSON.stringify(emp));
 
-                // Fetch the employee's open register session and store it
-                // so sales can be tied to the correct register
-                try {
-                    const { data: regData } = await api.get(`/register/status/${data.employee.id}`);
-                    const session = regData?.physical || regData?.electronic || null;
-                    if (session?.id) {
-                        localStorage.setItem('wave_pos_session', session.id);
-                    } else {
-                        localStorage.removeItem('wave_pos_session');
-                    }
-                } catch {
+                // Immediately sync with any open register session (tenant-wide)
+                const { physical, electronic } = await fetchTenantSessions();
+                setSession(physical);
+                setElectronicSession(electronic);
+
+                if (physical?.id) {
+                    localStorage.setItem('wave_pos_session', physical.id);
+                } else {
                     localStorage.removeItem('wave_pos_session');
                 }
 
@@ -68,11 +137,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = useCallback(() => {
         setEmployee(null);
+        setSession(null);
+        setElectronicSession(null);
         localStorage.removeItem('wave_pos_employee');
+        localStorage.removeItem('wave_pos_session');
     }, []);
 
     return (
-        <AuthContext.Provider value={{ employee, isLoading, login, logout }}>
+        <AuthContext.Provider value={{
+            employee, isLoading, session, electronicSession,
+            login, logout, syncSession,
+        }}>
             {children}
         </AuthContext.Provider>
     );

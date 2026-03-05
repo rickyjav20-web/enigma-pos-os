@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Menu, ArrowLeft, Clock, DollarSign, TrendingUp, TrendingDown,
-    Plus, Minus, X, ChevronRight, RefreshCw, CreditCard, Banknote,
+    X, ChevronRight, RefreshCw, CreditCard, Banknote,
     ArrowDownCircle, ArrowUpCircle, ShoppingCart,
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -96,7 +96,7 @@ const txTypeConfig: Record<string, { label: string; icon: any; color: string }> 
 
 export default function ShiftPage() {
     const navigate = useNavigate();
-    const { employee } = useAuth();
+    const { employee, session: physicalSession, electronicSession, syncSession } = useAuth();
     const queryClient = useQueryClient();
 
     const [activeTab, setActiveTab] = useState<'physical' | 'electronic'>('physical');
@@ -107,26 +107,10 @@ export default function ShiftPage() {
     const [cashCurrency, setCashCurrency] = useState('USD');
     const [submitting, setSubmitting] = useState(false);
     const [showTransactions, setShowTransactions] = useState(false);
+    const [loadingStatus, setLoadingStatus] = useState(false);
 
-    // ─── Fetch register status ──────────────────────────────────────────
-    const { data: regStatus, isLoading: loadingStatus } = useQuery({
-        queryKey: ['shift-status', employee?.id],
-        queryFn: async () => {
-            if (!employee?.id) return null;
-            const { data } = await api.get(`/register/status/${employee.id}`);
-            return data as {
-                status: string;
-                physical: RegisterSession | null;
-                electronic: RegisterSession | null;
-            };
-        },
-        enabled: !!employee?.id,
-        refetchInterval: 30_000,
-    });
-
-    const physicalSession = regStatus?.physical || null;
-    const electronicSession = regStatus?.electronic || null;
-    const isOpen = regStatus?.status === 'open';
+    // Sessions come from AuthContext (tenant-wide, not employee-specific)
+    const isOpen = !!(physicalSession || electronicSession);
     const activeSession = activeTab === 'physical' ? physicalSession : electronicSession;
 
     // ─── Fetch audit for active session ─────────────────────────────────
@@ -141,7 +125,6 @@ export default function ShiftPage() {
         refetchInterval: 15_000,
     });
 
-    // Also fetch the other session's audit for combined totals
     const otherSession = activeTab === 'physical' ? electronicSession : physicalSession;
     const { data: otherAudit } = useQuery({
         queryKey: ['shift-audit', otherSession?.id],
@@ -231,7 +214,7 @@ export default function ShiftPage() {
     };
 
     const refreshAll = () => {
-        queryClient.invalidateQueries({ queryKey: ['shift-status'] });
+        syncSession(); // Re-fetch tenant-wide sessions
         queryClient.invalidateQueries({ queryKey: ['shift-audit'] });
         queryClient.invalidateQueries({ queryKey: ['shift-transactions'] });
     };
@@ -394,7 +377,7 @@ export default function ShiftPage() {
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-sm" style={{ color: 'rgba(244,240,234,0.5)' }}>
-                                Shift opened: {employee?.fullName || 'Staff'}
+                                Shift opened: {(physicalSession as any)?.employee?.fullName || employee?.fullName || 'Staff'}
                             </span>
                             <span className="text-sm font-mono" style={{ color: 'rgba(244,240,234,0.5)' }}>
                                 {physicalSession ? formatDateTime(physicalSession.startedAt) : '—'}
