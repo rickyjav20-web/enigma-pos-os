@@ -571,6 +571,7 @@ export default function SaleScreen() {
                         <nav className="py-2">
                             {[
                                 { label: 'Sales', icon: '🛒', active: true, action: () => setShowSideMenu(false) },
+                                { label: 'Receipts', icon: '🧾', active: false, action: () => { setShowSideMenu(false); navigate('/receipts'); } },
                                 { label: 'Open Tickets', icon: '📋', active: false, action: () => { setShowSideMenu(false); navigate('/tickets'); } },
                                 { label: 'Mis Metas', icon: '🎯', active: false, action: () => { setShowSideMenu(false); navigate('/goals'); } },
                                 { label: 'New Ticket', icon: '⚡', active: false, action: () => { clearCart(); setShowSideMenu(false); } },

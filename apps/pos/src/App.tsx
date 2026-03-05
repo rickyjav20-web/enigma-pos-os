@@ -7,6 +7,7 @@ import SaleScreen from './pages/SaleScreen';
 import PaymentPage from './pages/PaymentPage';
 import OpenTicketsPage from './pages/OpenTicketsPage';
 import GoalsPage from './pages/GoalsPage';
+import ReceiptsPage from './pages/ReceiptsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { employee } = useAuth();
@@ -42,6 +43,11 @@ export default function App() {
       {/* Goals */}
       <Route path="/goals" element={
         <ProtectedRoute><GoalsPage /></ProtectedRoute>
+      } />
+
+      {/* Receipts */}
+      <Route path="/receipts" element={
+        <ProtectedRoute><ReceiptsPage /></ProtectedRoute>
       } />
 
       {/* Fallback */}
