@@ -363,6 +363,7 @@ export default async function registerRoutes(fastify: FastifyInstance) {
             return {
                 id: s.id,
                 employee: s.employee,
+                registerType: s.registerType,
                 startedAt: s.startedAt,
                 endedAt: s.endedAt,
                 status: s.status,

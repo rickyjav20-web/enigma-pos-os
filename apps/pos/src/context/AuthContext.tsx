@@ -47,13 +47,15 @@ async function fetchTenantSessions(): Promise<{
         }
 
         // Find the most recent physical and electronic sessions
-        const physical = sessions.find(s => s.registerType === 'PHYSICAL' && s.status === 'open')
-            || sessions.find(s => s.status === 'open') // fallback for legacy
+        const physical = sessions.find(s => s.registerType === 'PHYSICAL')
+            || sessions.find(s => !s.registerType || s.registerType !== 'ELECTRONIC') // fallback: any non-electronic
+            || sessions[0] // ultimate fallback: first open session
             || null;
-        const electronic = sessions.find(s => s.registerType === 'ELECTRONIC' && s.status === 'open') || null;
+        const electronic = sessions.find(s => s.registerType === 'ELECTRONIC') || null;
 
         return { physical, electronic };
-    } catch {
+    } catch (err) {
+        console.error('[POS Auth] Failed to fetch tenant sessions:', err);
         return { physical: null, electronic: null };
     }
 }

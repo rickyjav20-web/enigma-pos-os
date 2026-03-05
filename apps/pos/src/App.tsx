@@ -9,6 +9,7 @@ import OpenTicketsPage from './pages/OpenTicketsPage';
 import GoalsPage from './pages/GoalsPage';
 import ReceiptsPage from './pages/ReceiptsPage';
 import ShiftPage from './pages/ShiftPage';
+import SettingsPage from './pages/SettingsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { employee } = useAuth();
@@ -54,6 +55,11 @@ export default function App() {
       {/* Shift / Cash Management */}
       <Route path="/shift" element={
         <ProtectedRoute><ShiftPage /></ProtectedRoute>
+      } />
+
+      {/* Settings */}
+      <Route path="/settings" element={
+        <ProtectedRoute><SettingsPage /></ProtectedRoute>
       } />
 
       {/* Fallback */}

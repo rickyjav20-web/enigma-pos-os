@@ -152,7 +152,14 @@ export default function SaleScreen() {
         if (activeCategory) {
             list = list.filter(p => (p.categoryId || p.category || 'General') === activeCategory);
         }
-        return list.sort((a, b) => a.name.localeCompare(b.name));
+        // Sort alphabetically, but push items with emoji names to the end
+        const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u;
+        return list.sort((a, b) => {
+            const aHasEmoji = emojiRegex.test(a.name);
+            const bHasEmoji = emojiRegex.test(b.name);
+            if (aHasEmoji !== bHasEmoji) return aHasEmoji ? 1 : -1;
+            return a.name.localeCompare(b.name);
+        });
     }, [products, search, activeCategory]);
 
     const cartTotal = total();
@@ -576,6 +583,7 @@ export default function SaleScreen() {
                                 { label: 'Open Tickets', icon: '📋', active: false, action: () => { setShowSideMenu(false); navigate('/tickets'); } },
                                 { label: 'Mis Metas', icon: '🎯', active: false, action: () => { setShowSideMenu(false); navigate('/goals'); } },
                                 { label: 'New Ticket', icon: '⚡', active: false, action: () => { clearCart(); setShowSideMenu(false); } },
+                                { label: 'Settings', icon: '⚙️', active: false, action: () => { setShowSideMenu(false); navigate('/settings'); } },
                             ].map((item, i) => (
                                 <button
                                     key={i}
