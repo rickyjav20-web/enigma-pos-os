@@ -3,6 +3,8 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
 import { notifyRegisterOpen, notifyRegisterClose, notifyCashMovement } from '../services/whatsapp';
+import { requireAdmin } from '../middleware/requireAdmin';
+import { logAudit } from '../lib/audit';
 
 export default async function registerRoutes(fastify: FastifyInstance) {
 
@@ -166,6 +168,12 @@ export default async function registerRoutes(fastify: FastifyInstance) {
             console.error('[Register] Failed to auto-assign goals:', e);
         }
 
+        logAudit({
+            tenantId, action: 'REGISTER_OPEN', entityType: 'RegisterSession', entityId: physicalSession.id,
+            employeeId, employeeName: employee.fullName,
+            amount: physical.startingCash + electronic.startingCash, ipAddress: request.ip,
+        });
+
         return { physicalSession, electronicSession };
     });
 
@@ -245,6 +253,13 @@ export default async function registerRoutes(fastify: FastifyInstance) {
                 openedAt: existingSession.startedAt
             });
         }).catch(() => {});
+
+        logAudit({
+            tenantId, action: 'REGISTER_CLOSE', entityType: 'RegisterSession', entityId: sessionId,
+            employeeId: closingEmployee.id, employeeName: closingEmployee.fullName,
+            amount: declaredCash, ipAddress: request.ip,
+            metadata: { expectedCash, difference, transactionCount: existingSession.transactions.length },
+        });
 
         return {
             ...session,
@@ -681,9 +696,10 @@ export default async function registerRoutes(fastify: FastifyInstance) {
     // ADMIN: Force-close a single open session (HQ use only)
     // POST /register/sessions/:id/force-close
     // ─────────────────────────────────────────────────────────────────────────
-    fastify.post('/register/sessions/:id/force-close', async (request, reply) => {
+    fastify.post('/register/sessions/:id/force-close', { preHandler: requireAdmin }, async (request, reply) => {
         const tenantId = getTenant(request);
         const { id } = request.params as { id: string };
+        const admin = (request as any).adminEmployee;
 
         const existing = await prisma.registerSession.findUnique({ where: { id } });
         if (!existing) return reply.status(404).send({ error: 'Session not found' });
@@ -701,8 +717,15 @@ export default async function registerRoutes(fastify: FastifyInstance) {
                 endedAt: new Date(),
                 expectedCash,
                 declaredCash: existing.declaredCash ?? expectedCash,
-                notes: `[Cierre forzado por admin — ${new Date().toISOString()}]`
+                notes: `[Cierre forzado por ${admin?.name || 'admin'} (${admin?.role || '?'}) — ${new Date().toISOString()}]`
             }
+        });
+
+        logAudit({
+            tenantId, action: 'REGISTER_FORCE_CLOSE', entityType: 'RegisterSession', entityId: id,
+            employeeId: admin?.id, employeeName: admin?.name,
+            amount: expectedCash, ipAddress: request.ip,
+            metadata: { originalEmployee: existing.employeeId },
         });
 
         return { message: 'Force-closed', session };

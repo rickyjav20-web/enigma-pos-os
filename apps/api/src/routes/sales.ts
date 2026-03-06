@@ -2,6 +2,7 @@
 import { FastifyInstance } from 'fastify';
 import prisma from '../lib/prisma';
 import { z } from 'zod';
+import { logAudit } from '../lib/audit';
 
 export default async function salesRoutes(fastify: FastifyInstance) {
 
@@ -39,35 +40,37 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         return any?.id ?? null;
     }
 
-    /** Run inventory deduction for a set of sold items */
+    /** Run inventory deduction for a set of sold items (atomic transaction) */
     async function deductInventory(tenantId: string, items: { productId: string; quantity: number; name?: string }[]) {
-        for (const item of items) {
-            const product = await prisma.product.findUnique({
-                where: { id: item.productId },
-                include: { recipes: { include: { supplyItem: true } } },
-            });
-            if (!product || product.recipes.length === 0) continue;
-            for (const recipe of product.recipes) {
-                const toDeduct = recipe.quantity * item.quantity;
-                const current = await prisma.supplyItem.findUnique({ where: { id: recipe.supplyItemId } });
-                const prev = current?.stockQuantity ?? 0;
-                await prisma.supplyItem.update({
-                    where: { id: recipe.supplyItemId },
-                    data: { stockQuantity: { decrement: toDeduct } },
+        await prisma.$transaction(async (tx) => {
+            for (const item of items) {
+                const product = await tx.product.findUnique({
+                    where: { id: item.productId },
+                    include: { recipes: { include: { supplyItem: true } } },
                 });
-                await prisma.inventoryLog.create({
-                    data: {
-                        tenantId,
-                        supplyItemId: recipe.supplyItemId,
-                        previousStock: prev,
-                        newStock: prev - toDeduct,
-                        changeAmount: -toDeduct,
-                        reason: 'sale',
-                        notes: `Sold ${item.quantity}x ${product.name}`,
-                    },
-                });
+                if (!product || product.recipes.length === 0) continue;
+                for (const recipe of product.recipes) {
+                    const toDeduct = recipe.quantity * item.quantity;
+                    const current = await tx.supplyItem.findUnique({ where: { id: recipe.supplyItemId } });
+                    const prev = current?.stockQuantity ?? 0;
+                    await tx.supplyItem.update({
+                        where: { id: recipe.supplyItemId },
+                        data: { stockQuantity: { decrement: toDeduct } },
+                    });
+                    await tx.inventoryLog.create({
+                        data: {
+                            tenantId,
+                            supplyItemId: recipe.supplyItemId,
+                            previousStock: prev,
+                            newStock: prev - toDeduct,
+                            changeAmount: -toDeduct,
+                            reason: 'sale',
+                            notes: `Sold ${item.quantity}x ${product.name}`,
+                        },
+                    });
+                }
             }
-        }
+        });
     }
 
     /** Update daily goals for completed sales */
@@ -199,6 +202,12 @@ export default async function salesRoutes(fastify: FastifyInstance) {
             if (employeeId) {
                 await trackGoals(tenantId, employeeId, verifiedItems, totalAmount, resolvedSessionId);
             }
+
+            logAudit({
+                tenantId, action: 'SALE_COMPLETED', entityType: 'SalesOrder', entityId: order.id,
+                employeeId, amount: totalAmount, ipAddress: request.ip,
+                metadata: { paymentMethod, itemCount: verifiedItems.length },
+            });
         }
 
         return reply.send({ success: true, data: order });
@@ -218,13 +227,19 @@ export default async function salesRoutes(fastify: FastifyInstance) {
     // ── GET /sales ────────────────────────────────────────────────────────────
     fastify.get('/sales', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
-        const { status } = request.query as { status?: string };
+        const { status, from } = request.query as { status?: string; from?: string };
 
         const where: any = { tenantId };
         if (status) {
             where.status = status.includes(',')
                 ? { in: status.split(',').map((s: string) => s.trim()) }
                 : status;
+        }
+        if (from) {
+            const fromDate = new Date(from);
+            if (!isNaN(fromDate.getTime())) {
+                where.createdAt = { gte: fromDate };
+            }
         }
 
         const sales = await prisma.salesOrder.findMany({
@@ -330,6 +345,12 @@ export default async function salesRoutes(fastify: FastifyInstance) {
             return { original: updatedOriginal, split: newTicket };
         });
 
+        logAudit({
+            tenantId, action: 'TICKET_SPLIT', entityType: 'SalesOrder', entityId: id,
+            amount: result.split.totalAmount, ipAddress: request.ip,
+            metadata: { newTicketId: result.split.id, itemsMoved: body.items.length },
+        });
+
         return reply.send({
             success: true,
             original: { id: result.original.id, totalAmount: result.original.totalAmount, items: result.original.items },
@@ -350,6 +371,12 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         // Delete items first (FK constraint), then the order
         await prisma.salesItem.deleteMany({ where: { salesOrderId: id } });
         await prisma.salesOrder.delete({ where: { id } });
+
+        logAudit({
+            tenantId: existing.tenantId, action: 'SALE_VOIDED', entityType: 'SalesOrder', entityId: id,
+            amount: existing.totalAmount, ipAddress: request.ip,
+            metadata: { ticketName: existing.ticketName, tableName: existing.tableName },
+        });
 
         return reply.send({ success: true });
     });
@@ -454,6 +481,18 @@ export default async function salesRoutes(fastify: FastifyInstance) {
             if (empId) {
                 await trackGoals(tenantId, empId, itemsToProcess, totalToRecord, cashSessionId || undefined);
             }
+
+            logAudit({
+                tenantId, action: 'SALE_COMPLETED', entityType: 'SalesOrder', entityId: id,
+                employeeId: empId, amount: totalToRecord, ipAddress: request.ip,
+                metadata: { paymentMethod: payMethod, fromTicket: true },
+            });
+        } else if (body.items) {
+            logAudit({
+                tenantId, action: 'SALE_MODIFIED', entityType: 'SalesOrder', entityId: id,
+                amount: updated.totalAmount, ipAddress: request.ip,
+                metadata: { itemCount: body.items.length },
+            });
         }
 
         return reply.send({ success: true, data: updated });

@@ -1,19 +1,20 @@
 /**
- * KdsPage — Kitchen Display System v3
+ * KdsPage — Kitchen Display System v4
  *
- * Horizontal card layout optimized for landscape kitchen displays.
- * - Colored header bar per card (tap to send all)
+ * POS-matching dark theme. Landscape-first card layout.
+ * - Colored header bar per card (tap to bump all)
  * - Per-item tap-to-mark with large touch targets
  * - Urgency colors: green → blue → amber → red
  * - Loud notification sound on new orders
- * - Auto-refresh every 8s
+ * - Auto-refresh every 5s with stale data warning
+ * - Bump animation on completion
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import {
     CheckCircle2, Clock, RefreshCw,
-    Loader2, Wifi, WifiOff, Volume2, VolumeX,
+    Loader2, Wifi, WifiOff, Volume2, VolumeX, AlertTriangle,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -40,6 +41,19 @@ interface Order {
 
 type Urgency = 'fresh' | 'normal' | 'late' | 'urgent';
 
+// ─── POS Design Tokens ──────────────────────────────────────────────────────
+const COLORS = {
+    bg: '#121413',
+    cardBg: '#1A1D1B',
+    text: '#F4F0EA',
+    textMuted: 'rgba(244,240,234,0.4)',
+    textDim: 'rgba(244,240,234,0.2)',
+    accent: '#93B59D',
+    accentDark: '#1C402E',
+    border: 'rgba(244,240,234,0.06)',
+    borderLight: 'rgba(244,240,234,0.08)',
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function minutesAgo(dateStr: string): number {
     return Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
@@ -64,19 +78,19 @@ function formatTime(dateStr: string): string {
     return new Date(dateStr).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
 }
 
-// ─── Urgency colors ──────────────────────────────────────────────────────────
+// ─── Urgency colors (POS-aligned palette) ────────────────────────────────────
 const URGENCY_COLORS: Record<Urgency, { bar: string; barText: string; glow: string }> = {
-    fresh:  { bar: '#1C6B3A', barText: '#C8E6C9', glow: 'rgba(76,175,80,0.3)' },
-    normal: { bar: '#1565C0', barText: '#BBDEFB', glow: 'rgba(33,150,243,0.3)' },
-    late:   { bar: '#E65100', barText: '#FFE0B2', glow: 'rgba(255,152,0,0.4)' },
-    urgent: { bar: '#B71C1C', barText: '#FFCDD2', glow: 'rgba(244,67,54,0.5)' },
+    fresh:  { bar: '#1C402E', barText: '#93B59D', glow: 'rgba(147,181,157,0.2)' },
+    normal: { bar: '#1a3a5c', barText: '#7db8e0', glow: 'rgba(33,150,243,0.2)' },
+    late:   { bar: '#5c3a1a', barText: '#f0a050', glow: 'rgba(255,152,0,0.3)' },
+    urgent: { bar: '#5c1a1a', barText: '#f06060', glow: 'rgba(244,67,54,0.35)' },
 };
 
 // ─── Notification Sound (Web Audio API) ──────────────────────────────────────
 function playNotificationSound() {
     try {
         const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const notes = [880, 1108.73, 1318.51]; // A5, C#6, E6 — bright major chord
+        const notes = [880, 1108.73, 1318.51];
         notes.forEach((freq, i) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -89,7 +103,6 @@ function playNotificationSound() {
             osc.start(ctx.currentTime + i * 0.08);
             osc.stop(ctx.currentTime + 0.6);
         });
-        // Second pulse for loudness
         setTimeout(() => {
             const osc2 = ctx.createOscillator();
             const gain2 = ctx.createGain();
@@ -107,6 +120,9 @@ function playNotificationSound() {
     }
 }
 
+const POLL_INTERVAL = 5000; // 5 seconds
+const STALE_THRESHOLD = 15000; // 15 seconds without update = stale warning
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function KdsPage() {
     const { user } = useAuth();
@@ -117,10 +133,12 @@ export default function KdsPage() {
     const [loading, setLoading] = useState(true);
     const [online, setOnline] = useState(true);
     const [lastRefresh, setLastRefresh] = useState(new Date());
+    const [isStale, setIsStale] = useState(false);
     const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('kds_sound') !== 'off');
     const [stationFilter, setStationFilter] = useState<string>(
         () => localStorage.getItem('kds_station_filter') || ''
     );
+    const [failCount, setFailCount] = useState(0);
 
     const prevOrderIdsRef = useRef<Set<string>>(new Set());
     const initialLoadRef = useRef(true);
@@ -138,15 +156,14 @@ export default function KdsPage() {
         } catch { /* non-critical */ }
     }, []);
 
-    // ── Fetch orders ─────────────────────────────────────────────────────────
+    // ── Fetch orders (only open for KDS — completed are tracked via doneState) ──
     const fetchOrders = useCallback(async (silent = false) => {
         if (!silent) setLoading(true);
         try {
-            const res = await api.get('/sales', { params: { status: 'open,completed' } });
+            const fromCutoff = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+            const res = await api.get('/sales', { params: { status: 'open,completed', from: fromCutoff } });
             const all: Order[] = res.data?.data || [];
-            const cutoff = Date.now() - 6 * 60 * 60 * 1000;
             const recent = all
-                .filter(o => new Date(o.createdAt).getTime() > cutoff)
                 .map(o => {
                     const mins = minutesAgo(o.createdAt);
                     return { ...o, _elapsed: mins, _urgency: getUrgency(mins) };
@@ -163,7 +180,7 @@ export default function KdsPage() {
                 for (const id of currentIds) {
                     if (!prevOrderIdsRef.current.has(id)) {
                         playNotificationSound();
-                        break; // One sound per poll cycle
+                        break;
                     }
                 }
             }
@@ -173,8 +190,11 @@ export default function KdsPage() {
             setOrders(recent);
             setLastRefresh(new Date());
             setOnline(true);
+            setIsStale(false);
+            setFailCount(0);
         } catch {
             setOnline(false);
+            setFailCount(prev => prev + 1);
         } finally {
             setLoading(false);
         }
@@ -189,20 +209,24 @@ export default function KdsPage() {
         const interval = setInterval(() => {
             fetchOrders(true);
             fetchDoneState();
-        }, 8000);
+        }, POLL_INTERVAL);
         return () => clearInterval(interval);
     }, [fetchOrders, fetchDoneState]);
 
-    // ── Update elapsed timers every 30s ──────────────────────────────────────
+    // ── Update elapsed timers every 15s + check stale ────────────────────────
     useEffect(() => {
         const timer = setInterval(() => {
             setOrders(prev => prev.map(o => {
                 const mins = minutesAgo(o.createdAt);
                 return { ...o, _elapsed: mins, _urgency: getUrgency(mins) };
             }));
-        }, 30000);
+            // Check if data is stale
+            if (Date.now() - lastRefresh.getTime() > STALE_THRESHOLD) {
+                setIsStale(true);
+            }
+        }, 15000);
         return () => clearInterval(timer);
-    }, []);
+    }, [lastRefresh]);
 
     // ── Mark single item done ────────────────────────────────────────────────
     const handleMarkItemDone = useCallback(async (order: Order, item: OrderItem) => {
@@ -218,7 +242,7 @@ export default function KdsPage() {
                 action: 'ITEM_DONE',
                 entityType: 'SalesItem',
                 entityId: item.id,
-                entityName: `${item.quantity}× ${item.productNameSnapshot}`,
+                entityName: `${item.quantity}x ${item.productNameSnapshot}`,
                 quantity: item.quantity,
                 metadata: { orderId: order.id, productName: item.productNameSnapshot },
             });
@@ -261,7 +285,7 @@ export default function KdsPage() {
                     action: 'ITEM_DONE',
                     entityType: 'SalesItem',
                     entityId: item.id,
-                    entityName: `${item.quantity}× ${item.productNameSnapshot}`,
+                    entityName: `${item.quantity}x ${item.productNameSnapshot}`,
                     quantity: item.quantity,
                     metadata: { orderId: order.id, productName: item.productNameSnapshot },
                 })
@@ -311,33 +335,45 @@ export default function KdsPage() {
     // ── Loading state ────────────────────────────────────────────────────────
     if (loading) {
         return (
-            <div className="h-full flex items-center justify-center" style={{ background: '#0D0F0E' }}>
-                <Loader2 size={32} className="animate-spin" style={{ color: '#93B59D' }} />
+            <div className="h-full flex items-center justify-center" style={{ background: COLORS.bg }}>
+                <Loader2 size={32} className="animate-spin" style={{ color: COLORS.accent }} />
             </div>
         );
     }
 
     return (
-        <div className="h-full flex flex-col overflow-hidden" style={{ background: '#0D0F0E' }}>
+        <div className="h-full flex flex-col overflow-hidden" style={{ background: COLORS.bg, color: COLORS.text }}>
+
+            {/* ── Connection lost banner ── */}
+            {!online && (
+                <div className="flex items-center justify-center gap-2 px-4 py-2 shrink-0"
+                    style={{ background: 'rgba(239,68,68,0.15)', borderBottom: '1px solid rgba(239,68,68,0.3)' }}>
+                    <WifiOff size={14} style={{ color: '#ef4444' }} />
+                    <span className="text-xs font-bold" style={{ color: '#ef4444' }}>
+                        Sin conexion — reintentando{failCount > 2 ? ` (${failCount} fallos)` : '...'}
+                    </span>
+                </div>
+            )}
 
             {/* ── Top Bar ── */}
-            <div className="flex items-center justify-between px-4 py-2 shrink-0"
-                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.3)' }}>
+            <div className="flex items-center justify-between px-4 py-2.5 shrink-0"
+                style={{ borderBottom: `1px solid ${COLORS.border}`, background: 'rgba(0,0,0,0.25)' }}>
                 <div className="flex items-center gap-3">
-                    <h1 className="text-sm font-bold uppercase tracking-wider" style={{ color: '#93B59D' }}>
-                        KDS
+                    <h1 className="text-sm font-extrabold uppercase tracking-widest" style={{ color: COLORS.accent }}>
+                        Cocina
                     </h1>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full"
                         style={{
-                            background: activeOrders.length > 0 ? 'rgba(239,68,68,0.2)' : 'rgba(147,181,157,0.15)',
-                            color: activeOrders.length > 0 ? '#ef4444' : '#93B59D',
+                            background: activeOrders.length > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(147,181,157,0.1)',
+                            color: activeOrders.length > 0 ? '#ef4444' : COLORS.accent,
+                            border: `1px solid ${activeOrders.length > 0 ? 'rgba(239,68,68,0.25)' : 'rgba(147,181,157,0.2)'}`,
                         }}>
                         {activeOrders.length} pendiente{activeOrders.length !== 1 ? 's' : ''}
                     </span>
                     {doneOrders.length > 0 && (
                         <span className="text-[11px] px-2 py-0.5 rounded-full"
-                            style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.3)' }}>
-                            {doneOrders.length} completado{doneOrders.length !== 1 ? 's' : ''}
+                            style={{ background: 'rgba(147,181,157,0.08)', color: COLORS.textMuted }}>
+                            {doneOrders.length} listo{doneOrders.length !== 1 ? 's' : ''}
                         </span>
                     )}
                 </div>
@@ -348,13 +384,13 @@ export default function KdsPage() {
                         <div className="flex gap-1.5 mr-2">
                             <button
                                 onClick={() => { setStationFilter(''); localStorage.setItem('kds_station_filter', ''); }}
-                                className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all"
+                                className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95"
                                 style={{
-                                    background: !stationFilter ? '#93B59D' : 'rgba(255,255,255,0.04)',
-                                    color: !stationFilter ? '#0D0F0E' : 'rgba(255,255,255,0.35)',
-                                    border: `1px solid ${!stationFilter ? '#93B59D' : 'rgba(255,255,255,0.06)'}`,
+                                    background: !stationFilter ? COLORS.accent : 'rgba(244,240,234,0.04)',
+                                    color: !stationFilter ? COLORS.bg : COLORS.textMuted,
+                                    border: `1px solid ${!stationFilter ? COLORS.accent : COLORS.border}`,
                                 }}
-                            >All</button>
+                            >Todo</button>
                             {availableStations.map(s => (
                                 <button key={s}
                                     onClick={() => {
@@ -362,11 +398,11 @@ export default function KdsPage() {
                                         setStationFilter(next);
                                         localStorage.setItem('kds_station_filter', next);
                                     }}
-                                    className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all"
+                                    className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95"
                                     style={{
-                                        background: stationFilter === s ? '#93B59D' : 'rgba(255,255,255,0.04)',
-                                        color: stationFilter === s ? '#0D0F0E' : 'rgba(255,255,255,0.35)',
-                                        border: `1px solid ${stationFilter === s ? '#93B59D' : 'rgba(255,255,255,0.06)'}`,
+                                        background: stationFilter === s ? COLORS.accent : 'rgba(244,240,234,0.04)',
+                                        color: stationFilter === s ? COLORS.bg : COLORS.textMuted,
+                                        border: `1px solid ${stationFilter === s ? COLORS.accent : COLORS.border}`,
                                     }}
                                 >{s}</button>
                             ))}
@@ -381,20 +417,24 @@ export default function KdsPage() {
                             localStorage.setItem('kds_sound', next ? 'on' : 'off');
                             if (next) playNotificationSound();
                         }}
-                        className="p-1.5 rounded-lg transition-all"
+                        className="p-2 rounded-xl transition-all active:scale-95"
                         style={{
-                            background: soundEnabled ? 'rgba(147,181,157,0.15)' : 'rgba(255,255,255,0.04)',
-                            color: soundEnabled ? '#93B59D' : 'rgba(255,255,255,0.2)',
+                            background: soundEnabled ? 'rgba(147,181,157,0.12)' : 'rgba(244,240,234,0.04)',
+                            color: soundEnabled ? COLORS.accent : COLORS.textDim,
                         }}
                         title={soundEnabled ? 'Sonido activado' : 'Sonido desactivado'}
                     >
-                        {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                        {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
                     </button>
 
-                    {/* Connection */}
-                    <div className="flex items-center gap-1" style={{ color: online ? 'rgba(255,255,255,0.2)' : '#ef4444' }}>
-                        {online ? <Wifi size={12} /> : <WifiOff size={12} />}
-                        <span className="text-[10px] tabular-nums">
+                    {/* Connection status */}
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg"
+                        style={{
+                            background: isStale ? 'rgba(245,158,11,0.1)' : 'transparent',
+                            color: isStale ? '#f59e0b' : online ? COLORS.textDim : '#ef4444',
+                        }}>
+                        {isStale ? <AlertTriangle size={12} /> : online ? <Wifi size={12} /> : <WifiOff size={12} />}
+                        <span className="text-[10px] tabular-nums font-mono">
                             {lastRefresh.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </span>
                     </div>
@@ -402,10 +442,10 @@ export default function KdsPage() {
                     {/* Refresh */}
                     <button
                         onClick={() => { void fetchOrders(true); void fetchDoneState(); }}
-                        className="p-1.5 rounded-lg transition-all"
-                        style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.3)' }}
+                        className="p-2 rounded-xl transition-all active:scale-95"
+                        style={{ background: 'rgba(244,240,234,0.04)', color: COLORS.textMuted }}
                     >
-                        <RefreshCw size={14} />
+                        <RefreshCw size={16} />
                     </button>
                 </div>
             </div>
@@ -413,22 +453,20 @@ export default function KdsPage() {
             {/* ── Cards Grid — Horizontal Scroll ── */}
             <div className="flex-1 overflow-x-auto overflow-y-hidden">
                 {activeOrders.length === 0 ? (
-                    /* Empty state */
-                    <div className="h-full flex flex-col items-center justify-center gap-4">
-                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                            style={{ background: 'rgba(147,181,157,0.1)', border: '1px solid rgba(147,181,157,0.15)' }}>
-                            <CheckCircle2 size={28} style={{ color: '#93B59D' }} />
+                    <div className="h-full flex flex-col items-center justify-center gap-5">
+                        <div className="w-20 h-20 rounded-2xl flex items-center justify-center"
+                            style={{ background: 'rgba(147,181,157,0.08)', border: `1px solid rgba(147,181,157,0.15)` }}>
+                            <CheckCircle2 size={36} style={{ color: COLORS.accent }} />
                         </div>
                         <div className="text-center">
-                            <p className="text-base font-bold" style={{ color: 'rgba(255,255,255,0.8)' }}>Cocina al día</p>
-                            <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                            <p className="text-lg font-bold" style={{ color: 'rgba(244,240,234,0.8)' }}>Cocina al dia</p>
+                            <p className="text-sm mt-1" style={{ color: COLORS.textMuted }}>
                                 No hay pedidos pendientes
                             </p>
                         </div>
                     </div>
                 ) : (
-                    <div className="flex gap-3 p-3 h-full"
-                        style={{ minWidth: 'min-content' }}>
+                    <div className="flex gap-3 p-3 h-full" style={{ minWidth: 'min-content' }}>
                         {activeOrders.map(order => (
                             <OrderCard
                                 key={order.id}
@@ -443,27 +481,27 @@ export default function KdsPage() {
                         {/* Done orders — compact column at the end */}
                         {doneOrders.length > 0 && (
                             <div className="w-[260px] shrink-0 flex flex-col h-full">
-                                <div className="px-3 py-2 shrink-0">
+                                <div className="px-3 py-2.5 shrink-0">
                                     <span className="text-[10px] font-bold uppercase tracking-widest"
-                                        style={{ color: 'rgba(255,255,255,0.2)' }}>
+                                        style={{ color: COLORS.textDim }}>
                                         Completados ({doneOrders.length})
                                     </span>
                                 </div>
                                 <div className="flex-1 overflow-y-auto space-y-1.5 px-1">
                                     {doneOrders.slice(0, 20).map(order => (
                                         <div key={order.id}
-                                            className="rounded-lg px-3 py-2 flex items-center gap-2"
-                                            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                                            <CheckCircle2 size={12} style={{ color: '#93B59D', opacity: 0.5 }} />
+                                            className="rounded-xl px-3 py-2.5 flex items-center gap-2"
+                                            style={{ background: 'rgba(147,181,157,0.04)', border: `1px solid ${COLORS.border}` }}>
+                                            <CheckCircle2 size={13} style={{ color: COLORS.accent, opacity: 0.5 }} />
                                             <div className="flex-1 min-w-0">
                                                 <span className="text-[11px] font-semibold truncate block"
-                                                    style={{ color: 'rgba(255,255,255,0.35)' }}>
+                                                    style={{ color: COLORS.textMuted }}>
                                                     {order.tableName || order.ticketName || 'Para llevar'}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-1 shrink-0">
-                                                <Clock size={9} style={{ color: 'rgba(255,255,255,0.15)' }} />
-                                                <span className="text-[10px] tabular-nums" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                                                <Clock size={9} style={{ color: COLORS.textDim }} />
+                                                <span className="text-[10px] tabular-nums font-mono" style={{ color: COLORS.textDim }}>
                                                     {formatTime(order.createdAt)}
                                                 </span>
                                             </div>
@@ -497,40 +535,40 @@ function OrderCard({
     const label = order.tableName || order.ticketName || 'Para llevar';
 
     return (
-        <div className="w-[280px] shrink-0 flex flex-col h-full rounded-xl overflow-hidden transition-all"
+        <div className="w-[290px] shrink-0 flex flex-col h-full rounded-2xl overflow-hidden transition-all"
             style={{
-                background: '#161918',
-                border: `1px solid rgba(255,255,255,0.06)`,
-                boxShadow: `0 4px 24px rgba(0,0,0,0.3), 0 0 0 0 ${colors.glow}`,
+                background: COLORS.cardBg,
+                border: `1px solid ${COLORS.borderLight}`,
+                boxShadow: `0 4px 24px rgba(0,0,0,0.4), 0 0 20px ${colors.glow}`,
             }}>
 
-            {/* ── Colored Header Bar — TAP TO SEND ALL ── */}
+            {/* ── Colored Header Bar — TAP TO BUMP ALL ── */}
             <button
                 onClick={onMarkAll}
                 disabled={isMarkingAll || allDone}
-                className="w-full shrink-0 px-4 py-3.5 flex items-center justify-between transition-all active:brightness-110 disabled:opacity-60"
-                style={{ background: allDone ? '#1C402E' : colors.bar, minHeight: '56px' }}
+                className="w-full shrink-0 px-4 py-4 flex items-center justify-between transition-all active:brightness-125 disabled:opacity-60"
+                style={{ background: allDone ? COLORS.accentDark : colors.bar, minHeight: '60px' }}
             >
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
                     {isMarkingAll ? (
-                        <Loader2 size={18} className="animate-spin" style={{ color: colors.barText }} />
+                        <Loader2 size={20} className="animate-spin" style={{ color: colors.barText }} />
                     ) : allDone ? (
-                        <CheckCircle2 size={18} style={{ color: '#93B59D' }} />
+                        <CheckCircle2 size={20} style={{ color: COLORS.accent }} />
                     ) : null}
-                    <span className="font-extrabold text-[15px] uppercase tracking-wide truncate"
-                        style={{ color: allDone ? '#93B59D' : colors.barText }}>
+                    <span className="font-extrabold text-base uppercase tracking-wide truncate"
+                        style={{ color: allDone ? COLORS.accent : colors.barText }}>
                         {label}
                     </span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2.5 shrink-0">
                     {doneCount > 0 && !allDone && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                            style={{ background: 'rgba(0,0,0,0.3)', color: colors.barText }}>
+                        <span className="text-[10px] font-bold px-2 py-1 rounded-lg"
+                            style={{ background: 'rgba(0,0,0,0.35)', color: colors.barText }}>
                             {doneCount}/{order.items.length}
                         </span>
                     )}
                     <div className="flex items-center gap-1">
-                        <Clock size={12} style={{ color: colors.barText, opacity: 0.7 }} />
+                        <Clock size={13} style={{ color: colors.barText, opacity: 0.7 }} />
                         <span className="text-sm font-bold font-mono tabular-nums"
                             style={{ color: colors.barText }}>
                             {formatElapsed(elapsed)}
@@ -548,27 +586,27 @@ function OrderCard({
                             key={item.id}
                             onClick={() => onMarkItem(item)}
                             disabled={done}
-                            className="w-full flex items-center gap-3 px-3 py-3 text-left transition-all active:scale-[0.98] touch-manipulation"
+                            className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all active:scale-[0.97] touch-manipulation"
                             style={{
-                                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                                borderBottom: `1px solid ${COLORS.border}`,
                                 background: done ? 'rgba(147,181,157,0.06)' : 'transparent',
-                                opacity: done ? 0.5 : 1,
+                                opacity: done ? 0.45 : 1,
                             }}
                         >
                             {/* Quantity badge */}
-                            <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-black"
+                            <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-sm font-black"
                                 style={{
-                                    background: done ? 'rgba(147,181,157,0.2)' : 'rgba(255,255,255,0.08)',
-                                    color: done ? '#93B59D' : '#fff',
-                                    border: `1px solid ${done ? 'rgba(147,181,157,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                                    background: done ? 'rgba(147,181,157,0.15)' : 'rgba(244,240,234,0.06)',
+                                    color: done ? COLORS.accent : COLORS.text,
+                                    border: `1px solid ${done ? 'rgba(147,181,157,0.25)' : COLORS.borderLight}`,
                                 }}>
                                 {item.quantity}
                             </span>
 
                             {/* Product name */}
-                            <span className="flex-1 text-sm font-semibold leading-tight"
+                            <span className="flex-1 text-[15px] font-semibold leading-tight"
                                 style={{
-                                    color: done ? 'rgba(147,181,157,0.6)' : 'rgba(255,255,255,0.9)',
+                                    color: done ? 'rgba(147,181,157,0.5)' : 'rgba(244,240,234,0.9)',
                                     textDecoration: done ? 'line-through' : 'none',
                                 }}>
                                 {item.productNameSnapshot}
@@ -576,7 +614,7 @@ function OrderCard({
 
                             {/* Check icon */}
                             {done && (
-                                <CheckCircle2 size={16} style={{ color: '#93B59D' }} className="shrink-0" />
+                                <CheckCircle2 size={18} style={{ color: COLORS.accent }} className="shrink-0" />
                             )}
                         </button>
                     );
@@ -584,13 +622,13 @@ function OrderCard({
             </div>
 
             {/* ── Bottom info ── */}
-            <div className="shrink-0 px-3 py-2 flex items-center justify-between"
-                style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: 'rgba(0,0,0,0.2)' }}>
-                <span className="text-[10px] tabular-nums" style={{ color: 'rgba(255,255,255,0.25)' }}>
+            <div className="shrink-0 px-4 py-2.5 flex items-center justify-between"
+                style={{ borderTop: `1px solid ${COLORS.border}`, background: 'rgba(0,0,0,0.2)' }}>
+                <span className="text-[10px] tabular-nums font-mono" style={{ color: COLORS.textDim }}>
                     {formatTime(order.createdAt)}
                 </span>
                 <span className="text-[11px] font-bold font-mono tabular-nums"
-                    style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    style={{ color: COLORS.textMuted }}>
                     ${order.totalAmount.toFixed(2)}
                 </span>
             </div>

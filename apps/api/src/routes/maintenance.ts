@@ -9,7 +9,8 @@ export default async function maintenanceRoutes(fastify: FastifyInstance) {
     fastify.post<{ Body: { secret: string; schema?: string } }>('/system/maintenance/migrate', async (request, reply) => {
         const { secret, schema } = request.body;
 
-        if (secret !== 'enigma-db-force-migrate') {
+        const validSecret = process.env.MAINTENANCE_SECRET || 'enigma-db-force-migrate';
+        if (secret !== validSecret) {
             return reply.status(403).send({ error: "Unauthorized" });
         }
 

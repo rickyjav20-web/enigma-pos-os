@@ -11,11 +11,26 @@ const fastify = Fastify({
     logger: true
 });
 
+// CORS: Allow known origins + local dev. In production, restrict to your domain.
+const ALLOWED_ORIGINS = [
+    /^https?:\/\/localhost(:\d+)?$/,
+    /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
+    /^https?:\/\/192\.168\.\d+\.\d+(:\d+)?$/,    // Local network devices (POS, KDS tablets)
+    /^https?:\/\/.*\.enigma\.com$/,                // Production domain
+    /^https?:\/\/.*\.vercel\.app$/,                // Vercel deployments
+    /^https?:\/\/.*\.railway\.app$/,               // Railway deployments
+];
+
 fastify.register(cors, {
-    origin: '*',
+    origin: (origin, cb) => {
+        // Allow requests with no origin (mobile apps, curl, server-to-server)
+        if (!origin) return cb(null, true);
+        const allowed = ALLOWED_ORIGINS.some(pattern => pattern.test(origin));
+        cb(null, allowed);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
-    credentials: false
+    credentials: true
 });
 
 fastify.addHook('onRequest', (req, reply, done) => {

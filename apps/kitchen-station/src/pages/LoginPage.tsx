@@ -53,7 +53,7 @@ export default function LoginPage() {
                     console.warn('Failed to log login activity:', logErr);
                 }
 
-                navigate('/production');
+                navigate('/kds');
             } else {
                 setError('Credenciales inválidas');
             }

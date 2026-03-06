@@ -1,23 +1,27 @@
 import axios from 'axios';
 
-// Default to local development URL, or environmental variable
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+const TENANT_ID = import.meta.env.VITE_TENANT_ID || 'enigma_hq';
 
-export const CURRENT_TENANT_ID = 'enigma_hq'; // Hardcoded for MVP, ideally dynamic
+export { API_URL, TENANT_ID };
 
 export const api = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
-        'x-tenant-id': CURRENT_TENANT_ID
-    }
+        'x-tenant-id': TENANT_ID,
+    },
 });
 
-// Interceptor to attach token if we have one (future proofing)
-api.interceptors.request.use(config => {
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //     config.headers.Authorization = `Bearer ${token}`;
-    // }
-    return config;
-});
+// Auto-logout on 401 (session expired or invalid)
+api.interceptors.response.use(
+    res => res,
+    error => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('kitchen_user');
+            localStorage.removeItem('kitchen_login_at');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    },
+);

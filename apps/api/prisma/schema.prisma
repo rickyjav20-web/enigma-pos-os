@@ -107,6 +107,9 @@ model Employee {
   documents           Document[]
   payments            Payment[]
   registeredPurchases PurchaseOrder[]     @relation("RegisteredPurchases")
+
+  @@index([tenantId, status])
+  @@index([tenantId, pinCode, status])
 }
 
 model Payment {
@@ -213,6 +216,10 @@ model RegisterSession {
   tenant       Tenant            @relation(fields: [tenantId], references: [id])
   transactions CashTransaction[]
   salesOrders  SalesOrder[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, startedAt])
+  @@index([employeeId, status])
 }
 
 model CashTransaction {
@@ -237,6 +244,9 @@ model CashTransaction {
   unitCost     Float? // Cost per unit in USD (optional override)
 
   supplyItem SupplyItem? @relation(fields: [supplyItemId], references: [id])
+
+  @@index([sessionId])
+  @@index([referenceId])
 }
 
 // --- MODULE: PRODUCTS (Ingest) ---
@@ -496,6 +506,11 @@ model SalesOrder {
   session RegisterSession @relation(fields: [sessionId], references: [id])
   table   DiningTable?    @relation(fields: [tableId], references: [id])
   items   SalesItem[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@index([sessionId])
+  @@index([tableId])
 }
 
 model SalesItem {
@@ -514,6 +529,9 @@ model SalesItem {
   // Relations
   salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id])
   product    Product    @relation(fields: [productId], references: [id])
+
+  @@index([salesOrderId])
+  @@index([productId])
 }
 
 // --- MODULE: SALES IMPORT V2 ---
@@ -721,4 +739,25 @@ model DailyGoal {
   @@index([tenantId, date])
   @@index([employeeId, date])
   @@index([sessionId])
+}
+
+// --- MODULE: AUDIT LOG ---
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  action     String   // 'SALE_COMPLETED', 'SALE_VOIDED', 'REGISTER_OPEN', 'REGISTER_CLOSE', 'REGISTER_FORCE_CLOSE', 'TICKET_SPLIT', 'SALE_MODIFIED'
+  entityType String   // 'SalesOrder', 'RegisterSession', etc.
+  entityId   String   // ID of the affected entity
+  employeeId String?  // Who performed the action
+  employeeName String? // Snapshot
+  amount     Float?   // Financial amount involved
+  metadata   Json?    // Extra context (paymentMethod, oldStatus, etc.)
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, action])
+  @@index([tenantId, createdAt])
+  @@index([entityId])
+  @@index([employeeId])
 }

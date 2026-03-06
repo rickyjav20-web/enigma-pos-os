@@ -1,6 +1,15 @@
 import { FastifyInstance } from 'fastify';
 import prisma from '../lib/prisma';
 
+const SETUP_SECRET = process.env.SETUP_SECRET || 'enigma-setup-2024';
+
+function verifySetupSecret(request: any, reply: any) {
+    const secret = request.headers['x-setup-secret'] || (request.body as any)?.secret || (request.query as any)?.secret;
+    if (secret !== SETUP_SECRET) {
+        return reply.status(403).send({ error: 'Setup secret required. Pass x-setup-secret header or secret in body.' });
+    }
+}
+
 export default async function setupRoutes(fastify: FastifyInstance) {
     // POST /setup/init-tenant
     // Temporary endpoint to seed the default tenant
@@ -36,10 +45,12 @@ export default async function setupRoutes(fastify: FastifyInstance) {
     // POST /setup/reset
     // Wipes operational data (Products, Inventory, Suppliers) and re-seeds defaults.
     // OPTIONAL: ?keepStaff=true (default) to preserve employees.
+    // REQUIRES: x-setup-secret header or secret in body
     fastify.post('/setup/reset', async (request, reply) => {
         try {
-            // Middleware now guarantees tenantId (defaults to 'enigma-cafe' if missing)
-            // But we prefer explicit.
+            verifySetupSecret(request, reply);
+            if (reply.sent) return;
+
             const tenantId = request.tenantId;
             const { keepStaff = true } = request.query as any;
 
@@ -206,8 +217,12 @@ export default async function setupRoutes(fastify: FastifyInstance) {
     // POST /setup/nuke
     // GLOBAL RESET: Wipes all operational data across ALL tenants.
     // DANGEROUS: Use with caution.
+    // REQUIRES: x-setup-secret header or secret in body
     fastify.post('/setup/nuke', async (request, reply) => {
         try {
+            verifySetupSecret(request, reply);
+            if (reply.sent) return;
+
             console.warn('☢️ INITIATING GLOBAL NUKE ☢️');
 
             // 1. Global Wipe (No Tenant Filter)
