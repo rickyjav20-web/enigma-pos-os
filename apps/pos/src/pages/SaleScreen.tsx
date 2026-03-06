@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
     Search, X, Menu, ChevronDown, MoreVertical,
     LogOut, Trash2, Edit3,
-    MapPin, ArrowRightLeft, RefreshCw, Users, Target, ArrowLeft
+    MapPin, ArrowRightLeft, RefreshCw, Users, Target, ArrowLeft, Scissors
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import { useCartStore } from '../stores/cartStore';
 import { useAuth } from '../context/AuthContext';
@@ -79,6 +79,10 @@ export default function SaleScreen() {
     const [customName, setCustomName] = useState('');
     const [customComment, setCustomComment] = useState('');
     const [customOrderType, setCustomOrderType] = useState('dine_in');
+    const [showSplitView, setShowSplitView] = useState(false);
+    const [splitQtys, setSplitQtys] = useState<Record<string, number>>({});
+    const [splitting, setSplitting] = useState(false);
+    const queryClient = useQueryClient();
 
     const getDefaultTicketName = () => {
         const now = new Date();
@@ -202,6 +206,7 @@ export default function SaleScreen() {
             setShowCustomForm(false);
             setTableSearch('');
             clearCart();
+            queryClient.invalidateQueries({ queryKey: ['open-tickets'] });
         } catch (e) {
             console.error('Save error:', e);
             alert('Error guardando el ticket');
@@ -313,6 +318,10 @@ export default function SaleScreen() {
                             { label: 'Assign table', icon: MapPin, color: '#93B59D', action: () => { setTableSearch(''); setShowTableSelector(true); setShowTicketMenu(false); } },
                             { label: 'Move ticket', icon: ArrowRightLeft, color: '#F4F0EA', action: () => { setTableSearch(''); setShowTableSelector(true); setShowTicketMenu(false); } },
                             { label: 'Sync', icon: RefreshCw, color: '#F4F0EA', action: handleSync },
+                            ...(ticketId && items.length > 1 ? [{
+                                label: 'Split ticket', icon: Scissors, color: '#f59e0b',
+                                action: () => { setSplitQtys({}); setShowSplitView(true); setShowTicketMenu(false); },
+                            }] : []),
                         ].map((item, i) => {
                             const Icon = item.icon;
                             return (
@@ -939,6 +948,181 @@ export default function SaleScreen() {
                     )}
                 </div>
             )}
+            {/* ═══ Split Ticket View ═══ */}
+            {showSplitView && (() => {
+                const splitItems = items.map(item => {
+                    const moveQty = splitQtys[item.productId] || 0;
+                    return { ...item, moveQty };
+                });
+                const splitTotal = splitItems.reduce((s, i) => s + i.price * i.moveQty, 0);
+                const originalTotal = cartTotal - splitTotal;
+                const hasSplitItems = splitItems.some(i => i.moveQty > 0);
+
+                const handleTapItem = (productId: string, maxQty: number) => {
+                    setSplitQtys(prev => {
+                        const current = prev[productId] || 0;
+                        const next = current >= maxQty ? 0 : current + 1;
+                        return { ...prev, [productId]: next };
+                    });
+                };
+
+                const handleConfirmSplit = async () => {
+                    if (!ticketId || !hasSplitItems) return;
+                    setSplitting(true);
+                    try {
+                        const splitPayload = splitItems
+                            .filter(i => i.moveQty > 0)
+                            .map(i => ({ productId: i.productId, quantity: i.moveQty }));
+
+                        const { data } = await api.post(`/sales/${ticketId}/split`, { items: splitPayload });
+
+                        // Reload the original ticket with updated items
+                        const origItems = (data.original.items || []).map((i: any) => ({
+                            productId: i.productId,
+                            name: i.productNameSnapshot,
+                            price: i.unitPrice,
+                            quantity: i.quantity,
+                        }));
+                        loadTicket({
+                            id: data.original.id,
+                            name: ticketName,
+                            tableId: tableId || undefined,
+                            tableName: tableName || undefined,
+                            items: origItems,
+                        });
+
+                        queryClient.invalidateQueries({ queryKey: ['open-tickets'] });
+                        setShowSplitView(false);
+                        setSplitQtys({});
+                    } catch (e) {
+                        console.error('Split error:', e);
+                        alert('Error al dividir el ticket');
+                    } finally {
+                        setSplitting(false);
+                    }
+                };
+
+                return (
+                    <div className="fixed inset-0 z-50 flex flex-col safe-top safe-bottom animate-fade-in"
+                        style={{ background: '#121413' }}>
+                        {/* Header */}
+                        <header className="px-4 pt-3 pb-3 flex items-center justify-between shrink-0"
+                            style={{ borderBottom: '1px solid rgba(244,240,234,0.06)' }}>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => { setShowSplitView(false); setSplitQtys({}); }}
+                                    className="w-9 h-9 rounded-lg flex items-center justify-center press"
+                                    style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)' }}
+                                >
+                                    <ArrowLeft className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />
+                                </button>
+                                <h1 className="text-[15px] font-semibold" style={{ color: '#F4F0EA' }}>
+                                    <Scissors className="w-4 h-4 inline mr-1.5" style={{ verticalAlign: '-2px', color: '#f59e0b' }} />
+                                    Split Ticket
+                                </h1>
+                            </div>
+                        </header>
+
+                        {/* Totals bar */}
+                        <div className="px-5 py-3 flex items-center gap-4"
+                            style={{ borderBottom: '1px solid rgba(244,240,234,0.06)', background: 'rgba(244,240,234,0.02)' }}>
+                            <div className="flex-1">
+                                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(244,240,234,0.3)' }}>Original</p>
+                                <p className="text-[17px] font-bold font-mono tabular-nums" style={{ color: '#93B59D' }}>${originalTotal.toFixed(2)}</p>
+                            </div>
+                            <ArrowRightLeft className="w-4 h-4 shrink-0" style={{ color: 'rgba(244,240,234,0.15)' }} />
+                            <div className="flex-1 text-right">
+                                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(244,240,234,0.3)' }}>Split</p>
+                                <p className="text-[17px] font-bold font-mono tabular-nums" style={{ color: hasSplitItems ? '#f59e0b' : 'rgba(244,240,234,0.15)' }}>${splitTotal.toFixed(2)}</p>
+                            </div>
+                        </div>
+
+                        {/* Instruction */}
+                        <div className="px-5 py-2">
+                            <p className="text-[11px]" style={{ color: 'rgba(244,240,234,0.25)' }}>
+                                Tap items to move to the new ticket. Tap again to adjust quantity.
+                            </p>
+                        </div>
+
+                        {/* Items */}
+                        <div className="flex-1 overflow-y-auto">
+                            {splitItems.map(item => {
+                                const isFullyMoved = item.moveQty === item.quantity;
+                                const isPartial = item.moveQty > 0 && !isFullyMoved;
+                                return (
+                                    <button
+                                        key={item.productId}
+                                        onClick={() => handleTapItem(item.productId, item.quantity)}
+                                        className="w-full flex items-center gap-3 px-5 py-3.5 text-left transition-all active:bg-white/5"
+                                        style={{
+                                            borderBottom: '1px solid rgba(244,240,234,0.04)',
+                                            background: isFullyMoved ? 'rgba(245,158,11,0.06)' : isPartial ? 'rgba(245,158,11,0.03)' : 'transparent',
+                                        }}
+                                    >
+                                        {/* Status dot */}
+                                        <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                                            style={{
+                                                border: `2px solid ${isFullyMoved ? '#f59e0b' : isPartial ? '#f59e0b' : 'rgba(147,181,157,0.4)'}`,
+                                                background: isFullyMoved ? '#f59e0b' : 'transparent',
+                                            }}>
+                                            {isPartial && (
+                                                <div className="w-2 h-2 rounded-full" style={{ background: '#f59e0b' }} />
+                                            )}
+                                            {isFullyMoved && (
+                                                <span className="text-[9px] font-bold" style={{ color: '#121413' }}>✓</span>
+                                            )}
+                                        </div>
+
+                                        {/* Name */}
+                                        <span className="flex-1 text-[14px]" style={{
+                                            color: isFullyMoved ? 'rgba(244,240,234,0.4)' : 'rgba(244,240,234,0.85)',
+                                            textDecoration: isFullyMoved ? 'line-through' : 'none',
+                                        }}>{item.name}</span>
+
+                                        {/* Qty indicator */}
+                                        <span className="text-[12px] font-mono tabular-nums shrink-0" style={{
+                                            color: isPartial ? '#f59e0b' : 'rgba(244,240,234,0.35)',
+                                        }}>
+                                            {isPartial ? `${item.moveQty}/${item.quantity}` : `x${item.quantity}`}
+                                        </span>
+
+                                        {/* Price */}
+                                        <span className="text-[14px] font-mono tabular-nums shrink-0 w-16 text-right" style={{
+                                            color: item.moveQty > 0 ? '#f59e0b' : 'rgba(244,240,234,0.4)',
+                                        }}>
+                                            ${(item.price * item.quantity).toFixed(2)}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Confirm button */}
+                        <div className="px-4 pb-4 pt-2 safe-bottom">
+                            <button
+                                onClick={handleConfirmSplit}
+                                disabled={!hasSplitItems || splitting}
+                                className="w-full py-4 rounded-xl text-sm font-bold press transition-all disabled:opacity-30"
+                                style={{
+                                    background: hasSplitItems ? 'linear-gradient(135deg, #92400e, #b45309)' : 'rgba(244,240,234,0.04)',
+                                    color: hasSplitItems ? '#fef3c7' : 'rgba(244,240,234,0.2)',
+                                    border: `1px solid ${hasSplitItems ? 'rgba(245,158,11,0.3)' : 'rgba(244,240,234,0.06)'}`,
+                                }}
+                            >
+                                {splitting ? (
+                                    <div className="w-5 h-5 border-2 rounded-full animate-spin mx-auto"
+                                        style={{ borderColor: 'rgba(254,243,199,0.2)', borderTopColor: '#fef3c7' }} />
+                                ) : (
+                                    <>
+                                        <Scissors className="w-4 h-4 inline mr-2" style={{ verticalAlign: '-2px' }} />
+                                        Confirmar Split · ${splitTotal.toFixed(2)}
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 }

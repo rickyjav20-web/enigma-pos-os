@@ -226,6 +226,106 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         return reply.send({ success: true, data: sales });
     });
 
+    // ── POST /sales/:id/split — split items into a new ticket ─────────────────
+    fastify.post('/sales/:id/split', async (request, reply) => {
+        const { id } = request.params as { id: string };
+        const tenantId = request.tenantId || 'enigma_hq';
+        const body = request.body as { items: { productId: string; quantity: number }[] };
+
+        if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
+            return reply.status(400).send({ error: 'Items to split are required' });
+        }
+
+        const original = await prisma.salesOrder.findUnique({
+            where: { id },
+            include: { items: true },
+        });
+        if (!original) return reply.status(404).send({ error: 'Ticket not found' });
+        if (original.status !== 'open') {
+            return reply.status(400).send({ error: 'Only open tickets can be split' });
+        }
+
+        // Validate each split item exists with sufficient quantity
+        for (const splitItem of body.items) {
+            const origItem = original.items.find(i => i.productId === splitItem.productId);
+            if (!origItem) {
+                return reply.status(400).send({ error: `Product ${splitItem.productId} not found in ticket` });
+            }
+            if (splitItem.quantity > origItem.quantity) {
+                return reply.status(400).send({ error: `Insufficient quantity for ${origItem.productNameSnapshot}` });
+            }
+        }
+
+        // Transaction: create new ticket + update original
+        const result = await prisma.$transaction(async (tx) => {
+            // Build split items with product info
+            const splitItemsData = await Promise.all(body.items.map(async (si) => {
+                const origItem = original.items.find(i => i.productId === si.productId)!;
+                return {
+                    productId: si.productId,
+                    quantity: si.quantity,
+                    unitPrice: origItem.unitPrice,
+                    totalPrice: origItem.unitPrice * si.quantity,
+                    productNameSnapshot: origItem.productNameSnapshot,
+                    kdsStation: origItem.kdsStation,
+                };
+            }));
+
+            const splitTotal = splitItemsData.reduce((s, i) => s + i.totalPrice, 0);
+
+            // Create the new split ticket
+            const baseName = original.ticketName || original.tableName || 'Ticket';
+            const newTicket = await tx.salesOrder.create({
+                data: {
+                    tenantId,
+                    sessionId: original.sessionId,
+                    totalAmount: splitTotal,
+                    paymentMethod: original.paymentMethod,
+                    status: 'open',
+                    tableId: original.tableId,
+                    tableName: original.tableName,
+                    ticketName: `${baseName} (2)`,
+                    employeeId: original.employeeId,
+                    notes: original.notes,
+                    items: { create: splitItemsData },
+                },
+                include: { items: true },
+            });
+
+            // Update original: reduce/remove items
+            for (const splitItem of body.items) {
+                const origItem = original.items.find(i => i.productId === splitItem.productId)!;
+                const remaining = origItem.quantity - splitItem.quantity;
+                if (remaining <= 0) {
+                    await tx.salesItem.delete({ where: { id: origItem.id } });
+                } else {
+                    await tx.salesItem.update({
+                        where: { id: origItem.id },
+                        data: {
+                            quantity: remaining,
+                            totalPrice: origItem.unitPrice * remaining,
+                        },
+                    });
+                }
+            }
+
+            // Recalculate original total
+            const updatedOriginal = await tx.salesOrder.update({
+                where: { id },
+                data: { totalAmount: original.totalAmount - splitTotal },
+                include: { items: true },
+            });
+
+            return { original: updatedOriginal, split: newTicket };
+        });
+
+        return reply.send({
+            success: true,
+            original: { id: result.original.id, totalAmount: result.original.totalAmount, items: result.original.items },
+            split: { id: result.split.id, ticketName: result.split.ticketName, totalAmount: result.split.totalAmount, items: result.split.items },
+        });
+    });
+
     // ── DELETE /sales/:id — void an open ticket ───────────────────────────────
     fastify.delete('/sales/:id', async (request, reply) => {
         const { id } = request.params as { id: string };
