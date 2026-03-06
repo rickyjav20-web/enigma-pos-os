@@ -172,15 +172,25 @@ export default async function registerRoutes(fastify: FastifyInstance) {
     // --- CLOSE REGISTER (one session at a time) ---
     const closeSchema = z.object({
         sessionId: z.string(),
+        pin: z.string().min(4).max(8),
         declaredCash: z.number().min(0),
         declaredCard: z.number().min(0),
         declaredTransfer: z.number().min(0),
-        declaredBreakdown: z.record(z.string(), z.any()).optional(), // { USD:{amount,rate,usdEquiv}, COP:{...} }
+        declaredBreakdown: z.record(z.string(), z.any()).optional(),
         notes: z.string().optional()
     });
 
     fastify.post('/register/close', async (request, reply) => {
-        const { sessionId, declaredCash, declaredCard, declaredTransfer, declaredBreakdown, notes } = closeSchema.parse(request.body);
+        const tenantId = getTenant(request);
+        const { sessionId, pin, declaredCash, declaredCard, declaredTransfer, declaredBreakdown, notes } = closeSchema.parse(request.body);
+
+        // Verify PIN belongs to an employee with OPS access
+        const closingEmployee = await prisma.employee.findFirst({
+            where: { tenantId, pinCode: pin, status: 'active' }
+        });
+        if (!closingEmployee) {
+            return reply.status(401).send({ error: 'PIN inválido' });
+        }
 
         // Security: Verify session exists and is open
         const existingSession = await prisma.registerSession.findUnique({
@@ -204,6 +214,10 @@ export default async function registerRoutes(fastify: FastifyInstance) {
 
         const difference = declaredCash - expectedCash;
 
+        const closedByNote = `Cerrado por: ${closingEmployee.fullName} (${closingEmployee.role})`;
+        const differenceNote = Math.abs(difference) > 0.01 ? `Diferencia: $${difference.toFixed(2)}` : '';
+        const finalNotes = [closedByNote, differenceNote, notes].filter(Boolean).join(' | ');
+
         const session = await prisma.registerSession.update({
             where: { id: sessionId },
             data: {
@@ -212,9 +226,7 @@ export default async function registerRoutes(fastify: FastifyInstance) {
                 declaredTransfer,
                 declaredBreakdown: declaredBreakdown ?? undefined,
                 expectedCash,
-                notes: notes || (Math.abs(difference) > 0.01
-                    ? `Diferencia: $${difference.toFixed(2)}. ${notes || ''}`
-                    : notes),
+                notes: finalNotes,
                 status: 'closed',
                 endedAt: new Date()
             }

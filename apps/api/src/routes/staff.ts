@@ -4,6 +4,25 @@ import prisma from '../lib/prisma';
 import { tenantMiddleware } from '../middleware/tenant';
 import { notifyClockIn, notifyClockOut } from '../services/whatsapp';
 
+// Simple rate limiter for PIN verification (5 attempts per IP per 15 min)
+const pinAttempts = new Map<string, { count: number; resetAt: number }>();
+function checkPinRate(ip: string): boolean {
+    const now = Date.now();
+    const entry = pinAttempts.get(ip);
+    if (!entry || now > entry.resetAt) {
+        pinAttempts.set(ip, { count: 1, resetAt: now + 15 * 60 * 1000 });
+        return true;
+    }
+    entry.count++;
+    return entry.count <= 5;
+}
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of pinAttempts) {
+        if (now > entry.resetAt) pinAttempts.delete(ip);
+    }
+}, 10 * 60 * 1000);
+
 export default async function staffRoutes(fastify: FastifyInstance) {
     // Register Tenant Middleware for all routes in this context
     fastify.addHook('preHandler', tenantMiddleware);
@@ -15,7 +34,11 @@ export default async function staffRoutes(fastify: FastifyInstance) {
         });
 
         try {
-            console.log(`[AUTH-DEBUG] verifying pin: ${(request.body as any)?.pin} for tenant: ${request.tenantId}`);
+            // Rate limiting
+            if (!checkPinRate(request.ip || 'unknown')) {
+                return reply.status(429).send({ error: 'Demasiados intentos. Espera 15 minutos.' });
+            }
+
             const { pin } = schema.parse(request.body);
 
             const employee = await prisma.employee.findFirst({
@@ -26,10 +49,8 @@ export default async function staffRoutes(fastify: FastifyInstance) {
                 },
             });
 
-            console.log(`[AUTH-DEBUG] Employee found? ${!!employee} (ID: ${employee?.id})`);
-
             if (!employee) {
-                return reply.status(401).send({ error: 'Invalid PIN' });
+                return reply.status(401).send({ error: 'PIN incorrecto' });
             }
 
             // Check for active shift

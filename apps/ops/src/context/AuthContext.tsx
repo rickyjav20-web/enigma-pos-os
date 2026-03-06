@@ -7,6 +7,7 @@ interface Employee {
     id: string;
     name: string;
     role: string;
+    pinCode: string;
 }
 
 interface RegisterSession {
@@ -124,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return `Acceso denegado. Tu rol "${empData.role}" no tiene permisos para la caja.`;
             }
 
-            setEmployee(empData);
+            setEmployee({ ...empData, pinCode: pin });
             // activeSession from login response may be legacy shape; normalize it
             if (activeSession?.physical) {
                 setSession(activeSession.physical);
@@ -170,6 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
                 await axios.post(`${API_URL}/register/close`, {
                     sessionId,
+                    pin: employee?.pinCode || '',
                     ...closeData
                 }, { headers: { 'x-tenant-id': TENANT_ID } });
             } catch (e: any) {

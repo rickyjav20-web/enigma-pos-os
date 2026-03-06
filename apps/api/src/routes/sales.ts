@@ -137,7 +137,20 @@ export default async function salesRoutes(fastify: FastifyInstance) {
             });
         }
 
-        const totalAmount = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+        // Server-side price verification: use DB prices, not client-provided ones
+        const verifiedItems = await Promise.all(items.map(async (item) => {
+            const product = await prisma.product.findUnique({ where: { id: item.productId } });
+            if (!product) throw new Error(`Product ${item.productId} not found`);
+            return {
+                productId: item.productId,
+                quantity: item.quantity,
+                price: product.price, // Use DB price, not client price
+                name: product.name,
+                kdsStation: product.kdsStation || null,
+            };
+        }));
+
+        const totalAmount = verifiedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
         const order = await prisma.salesOrder.create({
             data: {
@@ -152,41 +165,39 @@ export default async function salesRoutes(fastify: FastifyInstance) {
                 employeeId,
                 notes,
                 items: {
-                    create: await Promise.all(items.map(async (item) => {
-                        const product = await prisma.product.findUnique({ where: { id: item.productId } });
-                        return {
-                            productId: item.productId,
-                            quantity: item.quantity,
-                            unitPrice: item.price,
-                            totalPrice: item.price * item.quantity,
-                            productNameSnapshot: product?.name || 'Unknown Product',
-                            kdsStation: product?.kdsStation || null,
-                        };
+                    create: verifiedItems.map(item => ({
+                        productId: item.productId,
+                        quantity: item.quantity,
+                        unitPrice: item.price,
+                        totalPrice: item.price * item.quantity,
+                        productNameSnapshot: item.name,
+                        kdsStation: item.kdsStation,
                     })),
                 },
             },
             include: { items: true },
         });
 
-        // Completion side effects
+        // Completion side effects (atomic)
         if (status === 'completed') {
-            // Cash → physical register | transfer/card → electronic register
-            if (paymentMethod === 'cash' || paymentMethod === 'card' || paymentMethod === 'transfer') {
-                await prisma.cashTransaction.create({
-                    data: {
-                        sessionId: resolvedSessionId,
-                        amount: totalAmount,
-                        type: 'SALE',
-                        description: `Venta #${order.id.slice(0, 8)}`,
-                        referenceId: order.id,
-                    },
-                });
-            }
+            await prisma.$transaction(async (tx) => {
+                if (paymentMethod === 'cash' || paymentMethod === 'card' || paymentMethod === 'transfer') {
+                    await tx.cashTransaction.create({
+                        data: {
+                            sessionId: resolvedSessionId,
+                            amount: totalAmount,
+                            type: 'SALE',
+                            description: `Venta #${order.id.slice(0, 8)}`,
+                            referenceId: order.id,
+                        },
+                    });
+                }
+            });
 
-            await deductInventory(tenantId, items.map(i => ({ productId: i.productId, quantity: i.quantity })));
+            await deductInventory(tenantId, verifiedItems.map(i => ({ productId: i.productId, quantity: i.quantity })));
 
             if (employeeId) {
-                await trackGoals(tenantId, employeeId, items, totalAmount, resolvedSessionId);
+                await trackGoals(tenantId, employeeId, verifiedItems, totalAmount, resolvedSessionId);
             }
         }
 
@@ -355,6 +366,11 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         });
         if (!existing) return reply.status(404).send({ error: 'Ticket not found' });
 
+        // Lock completed sales — only allow transitioning open→completed, never modifying completed
+        if (existing.status === 'completed') {
+            return reply.status(400).send({ error: 'Completed sales cannot be modified' });
+        }
+
         const updateData: any = {};
         if (body.status) updateData.status = body.status;
         if (body.paymentMethod) updateData.paymentMethod = body.paymentMethod;
@@ -362,23 +378,25 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         if (body.tableName !== undefined) updateData.tableName = body.tableName;
         if (body.ticketName !== undefined) updateData.ticketName = body.ticketName;
         if (body.notes !== undefined) updateData.notes = body.notes;
-        if (body.totalAmount !== undefined) updateData.totalAmount = body.totalAmount;
         if (body.employeeId !== undefined) updateData.employeeId = body.employeeId;
 
-        // Replace items if provided
+        // Replace items if provided — use DB prices to prevent manipulation
         if (body.items && Array.isArray(body.items) && body.items.length > 0) {
             const itemsWithNames = await Promise.all(body.items.map(async (item: any) => {
                 const product = await prisma.product.findUnique({ where: { id: item.productId } });
+                const verifiedPrice = product?.price ?? item.price;
                 return {
                     salesOrderId: id,
                     productId: item.productId,
                     quantity: item.quantity,
-                    unitPrice: item.price,
-                    totalPrice: item.price * item.quantity,
+                    unitPrice: verifiedPrice,
+                    totalPrice: verifiedPrice * item.quantity,
                     productNameSnapshot: product?.name || 'Unknown Product',
                     kdsStation: product?.kdsStation || null,
                 };
             }));
+            // Recalculate total from verified prices
+            updateData.totalAmount = itemsWithNames.reduce((s, i) => s + i.totalPrice, 0);
             await prisma.salesItem.deleteMany({ where: { salesOrderId: id } });
             await prisma.salesItem.createMany({ data: itemsWithNames });
         }
@@ -391,12 +409,17 @@ export default async function salesRoutes(fastify: FastifyInstance) {
 
         // Completion side effects — only when transitioning open → completed
         if (body.status === 'completed' && existing.status === 'open') {
-            const itemsToProcess = (body.items && body.items.length > 0) ? body.items : existing.items.map((i: any) => ({
+            // Re-fetch updated order to get verified items/total
+            const finalOrder = await prisma.salesOrder.findUnique({
+                where: { id },
+                include: { items: true },
+            });
+            const itemsToProcess = (finalOrder?.items || existing.items).map((i: any) => ({
                 productId: i.productId,
                 quantity: i.quantity,
                 price: i.unitPrice,
             }));
-            const totalToRecord = body.totalAmount ?? existing.totalAmount;
+            const totalToRecord = finalOrder?.totalAmount ?? existing.totalAmount;
             const payMethod = body.paymentMethod || existing.paymentMethod;
             const empId = body.employeeId || existing.employeeId;
 
