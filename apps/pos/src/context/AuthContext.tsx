@@ -33,25 +33,38 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-/** Fetch any open register session for the tenant (not employee-specific) */
+/** Fetch the most recent open register session pair for the tenant.
+ *  Sessions are returned sorted by startedAt desc from the API.
+ *  We pick the newest PHYSICAL session and its linked ELECTRONIC partner. */
 async function fetchTenantSessions(): Promise<{
     physical: RegisterSession | null;
     electronic: RegisterSession | null;
 }> {
     try {
         const { data } = await api.get('/register/sessions?status=open');
-        const sessions: RegisterSession[] = Array.isArray(data) ? data : (data?.data || []);
+        const sessions: any[] = Array.isArray(data) ? data : (data?.data || []);
 
         if (sessions.length === 0) {
             return { physical: null, electronic: null };
         }
 
-        // Find the most recent physical and electronic sessions
-        const physical = sessions.find(s => s.registerType === 'PHYSICAL')
-            || sessions.find(s => !s.registerType || s.registerType !== 'ELECTRONIC') // fallback: any non-electronic
-            || sessions[0] // ultimate fallback: first open session
-            || null;
-        const electronic = sessions.find(s => s.registerType === 'ELECTRONIC') || null;
+        // API returns sessions sorted by startedAt desc — first match = most recent
+        const physical = sessions.find(s => s.registerType === 'PHYSICAL') || null;
+
+        // Find the linked electronic session (same pair opened together)
+        let electronic: any = null;
+        if (physical?.linkedSessionId) {
+            electronic = sessions.find(s => s.id === physical.linkedSessionId) || null;
+        }
+        // Fallback: newest electronic session
+        if (!electronic) {
+            electronic = sessions.find(s => s.registerType === 'ELECTRONIC') || null;
+        }
+
+        // Ultimate fallback: if no registerType field, just use the first session
+        if (!physical && !electronic && sessions.length > 0) {
+            return { physical: sessions[0], electronic: null };
+        }
 
         return { physical, electronic };
     } catch (err) {
@@ -62,8 +75,13 @@ async function fetchTenantSessions(): Promise<{
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [employee, setEmployee] = useState<Employee | null>(() => {
-        const saved = localStorage.getItem('wave_pos_employee');
-        return saved ? JSON.parse(saved) : null;
+        try {
+            const saved = localStorage.getItem('wave_pos_employee');
+            return saved ? JSON.parse(saved) : null;
+        } catch {
+            localStorage.removeItem('wave_pos_employee');
+            return null;
+        }
     });
     const [isLoading, setIsLoading] = useState(false);
     const [session, setSession] = useState<RegisterSession | null>(null);
@@ -96,11 +114,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, [employee, syncSession]);
 
-    // ─── Periodic sync every 30s to catch OPS opening/closing ───────────
+    // ─── Periodic sync every 15s to catch OPS opening/closing ───────────
     useEffect(() => {
         if (!employee) return;
-        const interval = setInterval(syncSession, 30_000);
+        const interval = setInterval(syncSession, 15_000);
         return () => clearInterval(interval);
+    }, [employee, syncSession]);
+
+    // ─── Re-sync when app regains focus (tab switch, phone unlock) ────
+    useEffect(() => {
+        if (!employee) return;
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') syncSession();
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => document.removeEventListener('visibilitychange', handleVisibility);
     }, [employee, syncSession]);
 
     const login = useCallback(async (pin: string): Promise<boolean | string> => {

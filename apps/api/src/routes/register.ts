@@ -90,7 +90,21 @@ export default async function registerRoutes(fastify: FastifyInstance) {
             return reply.status(403).send({ error: 'Employee not found or inactive' });
         }
 
-        // Check if already has any open session (prevent double-open)
+        // Auto-close stale sessions from previous days (any employee, tenant-wide)
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const staleSessions = await prisma.registerSession.findMany({
+            where: { tenantId, status: 'open', startedAt: { lt: todayStart } }
+        });
+        if (staleSessions.length > 0) {
+            await prisma.registerSession.updateMany({
+                where: { id: { in: staleSessions.map(s => s.id) } },
+                data: { status: 'closed', endedAt: new Date(), notes: 'Auto-cerrado: sesión del día anterior' }
+            });
+            console.log(`[Register] Auto-closed ${staleSessions.length} stale sessions from previous days`);
+        }
+
+        // Check if already has any open session today (prevent double-open)
         const existing = await prisma.registerSession.findFirst({
             where: { employeeId, status: 'open' }
         });
@@ -364,6 +378,7 @@ export default async function registerRoutes(fastify: FastifyInstance) {
                 id: s.id,
                 employee: s.employee,
                 registerType: s.registerType,
+                linkedSessionId: s.linkedSessionId,
                 startedAt: s.startedAt,
                 endedAt: s.endedAt,
                 status: s.status,
