@@ -273,12 +273,23 @@ export default async function registerRoutes(fastify: FastifyInstance) {
     });
 
     // --- GET CURRENT STATUS (returns { physical, electronic }) ---
+    // First checks employee's own sessions, then falls back to any open session in the tenant.
+    // This ensures all OPS users connect to the active register regardless of who opened it.
     fastify.get('/register/status/:employeeId', async (request, reply) => {
+        const tenantId = getTenant(request);
         const { employeeId } = request.params as { employeeId: string };
 
-        const openSessions = await prisma.registerSession.findMany({
+        // 1. Check employee's own sessions first
+        let openSessions = await prisma.registerSession.findMany({
             where: { employeeId, status: 'open' }
         });
+
+        // 2. Fallback: find any open session in the tenant (shared register)
+        if (openSessions.length === 0) {
+            openSessions = await prisma.registerSession.findMany({
+                where: { tenantId, status: 'open' }
+            });
+        }
 
         if (openSessions.length === 0) {
             return { physical: null, electronic: null, status: 'closed' };

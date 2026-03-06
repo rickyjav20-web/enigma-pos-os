@@ -143,10 +143,10 @@ export default function KdsPage() {
     const prevOrderIdsRef = useRef<Set<string>>(new Set());
     const initialLoadRef = useRef(true);
 
-    // ── Fetch done state ─────────────────────────────────────────────────────
+    // ── Fetch done state (last 2 hours only — no full-day history) ─────────
     const fetchDoneState = useCallback(async () => {
         try {
-            const from = `${new Date().toISOString().split('T')[0]}T00:00:00.000Z`;
+            const from = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
             const [orderRes, itemRes] = await Promise.all([
                 api.get('/kitchen/activity', { params: { action: 'ORDER_DONE', from } }),
                 api.get('/kitchen/activity', { params: { action: 'ITEM_DONE', from } }),
@@ -488,7 +488,7 @@ export default function KdsPage() {
                                     </span>
                                 </div>
                                 <div className="flex-1 overflow-y-auto space-y-1.5 px-1">
-                                    {doneOrders.slice(0, 20).map(order => (
+                                    {doneOrders.slice(0, 10).map(order => (
                                         <div key={order.id}
                                             className="rounded-xl px-3 py-2.5 flex items-center gap-2"
                                             style={{ background: 'rgba(147,181,157,0.04)', border: `1px solid ${COLORS.border}` }}>

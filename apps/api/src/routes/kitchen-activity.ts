@@ -13,8 +13,28 @@ export default async function kitchenActivityRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'employeeId and action are required' });
             }
 
-            // For ORDER_DONE: enrich metadata with prep time calculation
+            // For ITEM_DONE: enrich with per-item prep time
             let enrichedMetadata = metadata || null;
+            if (action === 'ITEM_DONE' && entityId && entityType === 'SalesItem') {
+                try {
+                    const item = await prisma.salesItem.findUnique({
+                        where: { id: entityId },
+                        include: { salesOrder: { select: { createdAt: true } } },
+                    });
+                    if (item?.salesOrder) {
+                        const prepMs = Date.now() - new Date(item.salesOrder.createdAt).getTime();
+                        enrichedMetadata = {
+                            ...(metadata || {}),
+                            orderCreatedAt: item.salesOrder.createdAt.toISOString(),
+                            itemPrepTimeMs: prepMs,
+                            itemPrepTimeMins: Math.round(prepMs / 60000),
+                            productId: item.productId,
+                        };
+                    }
+                } catch { /* non-critical */ }
+            }
+
+            // For ORDER_DONE: enrich metadata with prep time calculation
             if (action === 'ORDER_DONE' && entityId && entityType === 'SalesOrder') {
                 try {
                     const order = await prisma.salesOrder.findUnique({

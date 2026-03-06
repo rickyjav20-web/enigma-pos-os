@@ -1,4 +1,5 @@
 import prisma from './prisma';
+import { Prisma } from '@prisma/client';
 
 interface AuditEntry {
     tenantId: string;
@@ -23,10 +24,10 @@ export function logAudit(entry: AuditEntry): void {
             employeeId: entry.employeeId || null,
             employeeName: entry.employeeName || null,
             amount: entry.amount || null,
-            metadata: entry.metadata || null,
+            metadata: entry.metadata ? (entry.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
             ipAddress: entry.ipAddress || null,
         },
-    }).catch((err) => {
+    }).catch((err: any) => {
         console.warn('[AUDIT] Failed to log:', entry.action, err?.message || err);
     });
 }
