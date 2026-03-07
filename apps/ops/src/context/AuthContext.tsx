@@ -125,7 +125,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return `Acceso denegado. Tu rol "${empData.role}" no tiene permisos para la caja.`;
             }
 
-            setEmployee({ ...empData, pinCode: pin });
+            const empWithPin = { ...empData, pinCode: pin };
+            setEmployee(empWithPin);
             // activeSession from login response may be legacy shape; normalize it
             if (activeSession?.physical) {
                 setSession(activeSession.physical);
@@ -134,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setSession(activeSession || null);
                 setElectronicSession(null);
             }
-            localStorage.setItem('ops_employee', JSON.stringify(empData));
+            localStorage.setItem('ops_employee', JSON.stringify(empWithPin));
             return true;
         } catch (e) {
             console.error("Login failed", e);

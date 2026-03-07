@@ -190,7 +190,11 @@ export default async function registerRoutes(fastify: FastifyInstance) {
 
     fastify.post('/register/close', async (request, reply) => {
         const tenantId = getTenant(request);
-        const { sessionId, pin, declaredCash, declaredCard, declaredTransfer, declaredBreakdown, notes } = closeSchema.parse(request.body);
+        const parsed = closeSchema.safeParse(request.body);
+        if (!parsed.success) {
+            return reply.status(400).send({ error: 'Datos invalidos: ' + parsed.error.issues.map(i => i.message).join(', ') });
+        }
+        const { sessionId, pin, declaredCash, declaredCard, declaredTransfer, declaredBreakdown, notes } = parsed.data;
 
         // Verify PIN belongs to an employee with OPS access
         const closingEmployee = await prisma.employee.findFirst({
