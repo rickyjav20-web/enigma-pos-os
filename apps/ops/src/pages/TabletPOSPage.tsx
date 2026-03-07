@@ -1,37 +1,30 @@
 /**
- * TabletPOSPage — Tablet-optimized floor plan POS
- * Split layout: table grid (left) + live order panel (right)
- * Uses open-ticket model: POST /sales {status:'open'} → PUT /sales/:id to update → checkout
+ * TabletPOSPage - Full horizontal POS for tablet/desktop
+ * Layout: Product grid (left ~65%) + Cart sidebar (right ~35%)
+ * Mirrors all POS Mobile functionality in landscape orientation
  */
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useCartStore } from '../stores/cartStore';
 import {
-    ArrowLeft, RefreshCw, LayoutGrid, Users, Clock, Plus,
-    Minus, X, Check, Loader2, Search, ChevronRight, ShoppingBag,
-    ZapOff, Zap
+    Search, X, ChevronDown, Plus, Minus, Trash2,
+    MapPin, RefreshCw, Scissors, ArrowRightLeft, ArrowLeft,
+    Check, Loader2, ShoppingBag, DollarSign, Smartphone,
+    Building2, Wallet, CreditCard, Banknote, List,
+    LayoutGrid, FileText
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 const TH = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface OrderItem {
+interface Product {
     id: string;
-    productNameSnapshot: string;
-    quantity: number;
-    unitPrice: number;
-}
-
-interface OpenOrder {
-    id: string;
-    status: 'open' | 'completed';
-    totalAmount: number;
-    createdAt: string;
-    paymentMethod?: string;
-    items: OrderItem[];
-    tableName: string | null;
-    ticketName: string | null;
+    name: string;
+    price: number;
+    categoryId?: string;
+    category?: string;
+    isActive: boolean;
+    imageUrl?: string;
 }
 
 interface DiningTable {
@@ -39,365 +32,844 @@ interface DiningTable {
     name: string;
     zone: string | null;
     capacity: number | null;
-    sortOrder: number;
     isOccupied: boolean;
-    currentTicket: { id: string; totalAmount: number; createdAt: string } | null;
+    currentTicket: { id: string; ticketName: string; totalAmount: number } | null;
 }
 
-interface Product {
+interface OpenTicket {
     id: string;
-    name: string;
-    price: number;
-    category?: string;
+    ticketName: string | null;
+    tableName: string | null;
+    tableId: string | null;
+    totalAmount: number;
+    createdAt: string;
+    employeeId: string | null;
+    items: { productId: string; productNameSnapshot: string; quantity: number; unitPrice: number }[];
 }
 
-function timeElapsed(dateStr: string): string {
-    const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
-    if (mins < 1) return 'Ahora';
-    if (mins < 60) return `${mins}m`;
-    return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+type PayMethod = 'cash' | 'bolivares' | 'zelle' | 'binance' | 'bancolombia' | 'card';
+type ViewMode = 'grid' | 'list';
+
+const PAY_METHODS: { id: PayMethod; label: string; icon: typeof DollarSign }[] = [
+    { id: 'cash', label: 'Efectivo', icon: Banknote },
+    { id: 'bolivares', label: 'Bolivares', icon: Wallet },
+    { id: 'zelle', label: 'Zelle', icon: Smartphone },
+    { id: 'binance', label: 'Binance', icon: DollarSign },
+    { id: 'bancolombia', label: 'Bancolombia', icon: Building2 },
+    { id: 'card', label: 'Tarjeta', icon: CreditCard },
+];
+
+// Category color system
+const CAT_COLORS: Record<string, string> = {};
+const PALETTE = [
+    '#93B59D', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899',
+    '#06b6d4', '#84cc16', '#f97316', '#6366f1', '#14b8a6',
+    '#e879f9', '#facc15', '#fb7185', '#1C402E',
+];
+function getCatColor(cat: string): string {
+    if (!CAT_COLORS[cat]) {
+        let hash = 0;
+        for (let i = 0; i < cat.length; i++) hash = cat.charCodeAt(i) + ((hash << 5) - hash);
+        CAT_COLORS[cat] = PALETTE[Math.abs(hash) % PALETTE.length];
+    }
+    return CAT_COLORS[cat];
 }
 
-function urgencyColor(dateStr: string): string {
-    const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
-    if (mins < 15) return 'text-[#93B59D]';
-    if (mins < 30) return 'text-amber-400';
-    return 'text-red-400';
-}
-
-// ─── Main Component ────────────────────────────────────────────────────────────
 export default function TabletPOSPage() {
     const { session, employee } = useAuth();
+    const {
+        items, addItem, removeItem, updateQuantity,
+        ticketName, setTicketName,
+        total, itemCount, clearCart,
+        tableId, tableName, ticketId, loadTicket,
+    } = useCartStore();
+
+    // Product state
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loadingProducts, setLoadingProducts] = useState(true);
+    const [search, setSearch] = useState('');
+    const [activeCategory, setActiveCategory] = useState<string | null>(null);
+    const [showCatDropdown, setShowCatDropdown] = useState(false);
+    const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
     // Tables
     const [tables, setTables] = useState<DiningTable[]>([]);
-    const [loadingTables, setLoadingTables] = useState(true);
-    const [activeZone, setActiveZone] = useState('Todas');
-    const [refreshing, setRefreshing] = useState(false);
 
-    // Selected table + its open order
-    const [selectedTable, setSelectedTable] = useState<DiningTable | null>(null);
-    const [openOrder, setOpenOrder] = useState<OpenOrder | null>(null);
-    const [loadingOrder, setLoadingOrder] = useState(false);
+    // Open tickets
+    const [openTickets, setOpenTickets] = useState<OpenTicket[]>([]);
+    const [showTickets, setShowTickets] = useState(false);
+    const [loadingTickets, setLoadingTickets] = useState(false);
 
-    // Product picker
-    const [showProducts, setShowProducts] = useState(false);
-    const [products, setProducts] = useState<Product[]>([]);
-    const [productSearch, setProductSearch] = useState('');
-    const [loadingProducts, setLoadingProducts] = useState(false);
+    // Table selector
+    const [showTableSelector, setShowTableSelector] = useState(false);
+    const [tableSearch, setTableSearch] = useState('');
 
-    // Checkout
-    const [showCheckout, setShowCheckout] = useState(false);
-    const [payMethod, setPayMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
-    const [checkingOut, setCheckingOut] = useState(false);
-    const [checkoutDone, setCheckoutDone] = useState(false);
+    // Payment
+    const [showPayment, setShowPayment] = useState(false);
+    const [payMethod, setPayMethod] = useState<PayMethod>('cash');
+    const [paying, setPaying] = useState(false);
+    const [paySuccess, setPaySuccess] = useState(false);
 
-    // Auto-refresh interval
+    // Split
+    const [showSplit, setShowSplit] = useState(false);
+    const [splitQtys, setSplitQtys] = useState<Record<string, number>>({});
+    const [splitting, setSplitting] = useState(false);
+
+    // Saving
+    const [saving, setSaving] = useState(false);
+
+    // Ticket name editing
+    const [editingName, setEditingName] = useState(false);
+    const [draftName, setDraftName] = useState('');
+
+    // Flash feedback on add
+    const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+    const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // ── Fetch Tables ──────────────────────────────────────────────────────────
-    const fetchTables = useCallback(async (silent = false) => {
-        if (!silent) setLoadingTables(true);
-        else setRefreshing(true);
-        try {
-            const res = await fetch(`${API_URL}/tables`, { headers: TH });
-            if (!res.ok) throw new Error(`${res.status}`);
-            const data = await res.json();
-            const list: DiningTable[] = Array.isArray(data) ? data : (data.data || []);
-            setTables(list);
-            // Sync selected table occupancy
-            if (selectedTable) {
-                const updated = list.find(t => t.id === selectedTable.id);
-                if (updated) setSelectedTable(updated);
-            }
-        } catch { /* silent */ } finally {
-            setLoadingTables(false);
-            setRefreshing(false);
-        }
-    }, [selectedTable]);
+    const cartTotal = total();
+    const cartCount = itemCount();
+    const hasItems = cartCount > 0;
 
-    useEffect(() => {
-        fetchTables();
-        intervalRef.current = setInterval(() => fetchTables(true), 20000);
-        return () => { if (intervalRef.current !== null) clearInterval(intervalRef.current); };
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // ── Fetch Open Order for a table ─────────────────────────────────────────
-    const fetchOpenOrder = useCallback(async (tableId: string) => {
-        setLoadingOrder(true);
-        try {
-            const res = await fetch(`${API_URL}/sales?status=open&tableId=${tableId}&limit=1`, { headers: TH });
-            if (!res.ok) { setOpenOrder(null); return; }
-            const data = await res.json();
-            const list: OpenOrder[] = Array.isArray(data) ? data : (data.data || []);
-            setOpenOrder(list.length > 0 ? list[0] : null);
-        } catch { setOpenOrder(null); }
-        finally { setLoadingOrder(false); }
-    }, []);
-
-    const handleSelectTable = (table: DiningTable) => {
-        setSelectedTable(table);
-        setOpenOrder(null);
-        setShowProducts(false);
-        setShowCheckout(false);
-        setCheckoutDone(false);
-        fetchOpenOrder(table.id);
+    // Add product with visual flash
+    const handleAddProduct = (product: Product) => {
+        const cat = product.categoryId || product.category || 'General';
+        addItem({ id: product.id, name: product.name, price: product.price, category: cat });
+        setLastAddedId(product.id);
+        if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        flashTimeoutRef.current = setTimeout(() => setLastAddedId(null), 300);
     };
 
-    // ── Products ─────────────────────────────────────────────────────────────
-    const openProductPicker = async () => {
-        setShowProducts(true);
-        if (products.length > 0) return;
+    // Warn before leaving with unsaved items
+    useEffect(() => {
+        const handler = (e: BeforeUnloadEvent) => {
+            if (hasItems) { e.preventDefault(); }
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [hasItems]);
+
+    // --- Fetch products ---
+    const fetchProducts = useCallback(async () => {
         setLoadingProducts(true);
         try {
-            const res = await fetch(`${API_URL}/products?limit=200`, { headers: TH });
+            const res = await fetch(`${API_URL}/products?limit=500`, { headers: TH });
             const data = await res.json();
-            const list = Array.isArray(data) ? data : (data.data || data.products || []);
-            setProducts(list);
-        } catch { /* keep existing */ }
+            const list = Array.isArray(data) ? data : (data.data || []);
+            setProducts(list.filter((p: Product) => p.isActive));
+        } catch { /* silent */ }
         finally { setLoadingProducts(false); }
-    };
+    }, []);
 
-    // ── Add item to order ─────────────────────────────────────────────────────
-    const handleAddProduct = async (product: Product) => {
-        if (!selectedTable || !session) return;
-
+    // --- Fetch tables ---
+    const fetchTables = useCallback(async () => {
         try {
-            if (!openOrder) {
-                // Create new open order for this table
-                const res = await fetch(`${API_URL}/sales`, {
-                    method: 'POST',
-                    headers: TH,
+            const res = await fetch(`${API_URL}/tables`, { headers: TH });
+            const data = await res.json();
+            setTables(Array.isArray(data) ? data : (data.data || []));
+        } catch { /* silent */ }
+    }, []);
+
+    useEffect(() => {
+        fetchProducts();
+        fetchTables();
+        intervalRef.current = setInterval(() => fetchTables(), 30000);
+        return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // --- Fetch open tickets ---
+    const fetchOpenTickets = useCallback(async () => {
+        setLoadingTickets(true);
+        try {
+            const res = await fetch(`${API_URL}/sales?status=open`, { headers: TH });
+            const data = await res.json();
+            setOpenTickets(Array.isArray(data) ? data : (data.data || []));
+        } catch { /* silent */ }
+        finally { setLoadingTickets(false); }
+    }, []);
+
+    // --- Categories ---
+    const categories = useMemo(() => {
+        const cats = new Set<string>();
+        products.forEach(p => cats.add(p.categoryId || p.category || 'General'));
+        return Array.from(cats).sort();
+    }, [products]);
+
+    // --- Filtered products ---
+    const filtered = useMemo(() => {
+        let list = products;
+        if (search) {
+            const q = search.toLowerCase();
+            list = list.filter(p => p.name.toLowerCase().includes(q));
+        }
+        if (activeCategory) {
+            list = list.filter(p => (p.categoryId || p.category || 'General') === activeCategory);
+        }
+        const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u;
+        return list.sort((a, b) => {
+            const aE = emojiRegex.test(a.name);
+            const bE = emojiRegex.test(b.name);
+            if (aE !== bE) return aE ? 1 : -1;
+            return a.name.localeCompare(b.name);
+        });
+    }, [products, search, activeCategory]);
+
+    // --- Save ticket ---
+    const handleSave = async (saveTableId?: string, saveTableName?: string) => {
+        setSaving(true);
+        try {
+            const itemsPayload = items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price }));
+            const resolvedName = ticketName !== 'Ticket' ? ticketName : undefined;
+            if (ticketId) {
+                await fetch(`${API_URL}/sales/${ticketId}`, {
+                    method: 'PUT', headers: TH,
                     body: JSON.stringify({
-                        sessionId: session.id,
-                        tableId: selectedTable.id,
-                        tableName: selectedTable.name,
-                        employeeId: employee?.id,
                         status: 'open',
+                        tableId: saveTableId || tableId || undefined,
+                        tableName: saveTableName || tableName || undefined,
+                        totalAmount: cartTotal,
+                        items: itemsPayload,
+                        ...(resolvedName && { ticketName: resolvedName }),
+                    }),
+                });
+            } else {
+                await fetch(`${API_URL}/sales`, {
+                    method: 'POST', headers: TH,
+                    body: JSON.stringify({
+                        sessionId: session?.id || 'ops-tablet',
+                        items: itemsPayload,
                         paymentMethod: 'cash',
-                        items: [{ productId: product.id, quantity: 1, price: product.price }],
+                        status: 'open',
+                        employeeId: employee?.id || undefined,
+                        tableId: saveTableId || undefined,
+                        tableName: saveTableName || undefined,
+                        ticketName: resolvedName,
                     }),
                 });
-                if (!res.ok) return;
-                const data = await res.json();
-                setOpenOrder(data.order || data);
-            } else {
-                // Add to existing order
-                const existing = openOrder.items.find(i => i.productNameSnapshot === product.name);
-                const newItems = existing
-                    ? openOrder.items.map(i =>
-                        i.productNameSnapshot === product.name
-                            ? { ...i, quantity: i.quantity + 1 }
-                            : i
-                    )
-                    : [...openOrder.items, {
-                        id: `temp-${Date.now()}`,
-                        productNameSnapshot: product.name,
-                        quantity: 1,
-                        unitPrice: product.price,
-                    }];
-
-                const res = await fetch(`${API_URL}/sales/${openOrder.id}`, {
-                    method: 'PUT',
-                    headers: TH,
-                    body: JSON.stringify({
-                        items: newItems.map(i => ({
-                            productId: product.id, // fallback — server resolves by name
-                            productName: i.productNameSnapshot,
-                            quantity: i.quantity,
-                            price: i.unitPrice,
-                        })),
-                    }),
-                });
-                if (!res.ok) return;
-                const data = await res.json();
-                setOpenOrder(data.order || data);
             }
-            // Refresh order details
-            fetchOpenOrder(selectedTable.id);
-            fetchTables(true);
-        } catch { /* ignore */ }
+            setShowTableSelector(false);
+            setTableSearch('');
+            clearCart();
+        } catch {
+            alert('Error guardando el ticket');
+        } finally { setSaving(false); }
     };
 
-    // ── Remove item ───────────────────────────────────────────────────────────
-    const handleRemoveItem = async (item: OrderItem) => {
-        if (!openOrder || !selectedTable) return;
-        const newItems = openOrder.items
-            .map(i => i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i)
-            .filter(i => i.quantity > 0);
-
-        try {
-            if (newItems.length === 0) {
-                // Cancel the order
-                await fetch(`${API_URL}/sales/${openOrder.id}`, {
-                    method: 'PUT',
-                    headers: TH,
-                    body: JSON.stringify({ status: 'cancelled', items: [] }),
-                });
-                setOpenOrder(null);
-            } else {
-                const res = await fetch(`${API_URL}/sales/${openOrder.id}`, {
-                    method: 'PUT',
-                    headers: TH,
-                    body: JSON.stringify({
-                        items: newItems.map(i => ({
-                            productName: i.productNameSnapshot,
-                            quantity: i.quantity,
-                            price: i.unitPrice,
-                        })),
-                    }),
-                });
-                if (!res.ok) return;
-                const data = await res.json();
-                setOpenOrder(data.order || data);
-            }
-            fetchTables(true);
-        } catch { /* ignore */ }
+    // --- Void ticket ---
+    const handleVoid = async () => {
+        if (!ticketId) {
+            // No saved ticket — just clear cart (no server call needed)
+            if (!window.confirm('Vaciar el carrito? Los items no guardados se perderan.')) return;
+            clearCart();
+            return;
+        }
+        if (!window.confirm('Anular este ticket? Esta accion no se puede deshacer.')) return;
+        try { await fetch(`${API_URL}/sales/${ticketId}`, { method: 'DELETE', headers: TH }); }
+        catch { alert('Error anulando'); return; }
+        clearCart();
     };
 
-    // ── Checkout ──────────────────────────────────────────────────────────────
-    const handleCheckout = async () => {
-        if (!openOrder) return;
-        setCheckingOut(true);
+    // --- Sync ticket ---
+    const handleSync = async () => {
+        if (!ticketId) return;
         try {
-            const res = await fetch(`${API_URL}/sales/${openOrder.id}`, {
-                method: 'PUT',
-                headers: TH,
-                body: JSON.stringify({ status: 'completed', paymentMethod: payMethod }),
+            const res = await fetch(`${API_URL}/sales/${ticketId}`, { headers: TH });
+            const data = await res.json();
+            const order = data?.data || data;
+            loadTicket({
+                id: order.id,
+                name: order.ticketName || order.tableName || `Ticket #${order.id.slice(-4)}`,
+                tableId: order.tableId,
+                tableName: order.tableName,
+                items: (order.items || []).map((i: any) => ({
+                    productId: i.productId,
+                    name: i.productNameSnapshot,
+                    price: i.unitPrice,
+                    quantity: i.quantity,
+                })),
             });
-            if (!res.ok) throw new Error('checkout failed');
-            setCheckoutDone(true);
-            setOpenOrder(null);
-            setShowCheckout(false);
-            fetchTables(true);
-            // Auto-deselect table after 2s
-            setTimeout(() => {
-                setSelectedTable(null);
-                setCheckoutDone(false);
-            }, 2000);
-        } catch { /* show error? */ }
-        finally { setCheckingOut(false); }
+        } catch { alert('Error sincronizando'); }
     };
 
-    // ── Derived ───────────────────────────────────────────────────────────────
-    const zones = ['Todas', ...Array.from(new Set(tables.map(t => t.zone || 'General'))).sort()];
-    const visibleTables = activeZone === 'Todas'
-        ? tables
-        : tables.filter(t => (t.zone || 'General') === activeZone);
-    const orderTotal = openOrder?.items.reduce((s, i) => s + i.unitPrice * i.quantity, 0) ?? 0;
-    const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(productSearch.toLowerCase())
-    );
+    // --- Load a ticket into cart ---
+    const handleLoadTicket = (ticket: OpenTicket) => {
+        loadTicket({
+            id: ticket.id,
+            name: ticket.ticketName || ticket.tableName || `Ticket #${ticket.id.slice(-4)}`,
+            tableId: ticket.tableId || undefined,
+            tableName: ticket.tableName || undefined,
+            items: ticket.items.map(i => ({
+                productId: i.productId,
+                name: i.productNameSnapshot,
+                price: i.unitPrice,
+                quantity: i.quantity,
+            })),
+        });
+        setShowTickets(false);
+    };
 
-    return (
-        <div className="h-screen bg-[#121413] text-[#F4F0EA] flex flex-col overflow-hidden">
+    // --- Payment ---
+    const handlePay = async () => {
+        if (items.length === 0 || paying) return;
+        setPaying(true);
+        try {
+            const apiMethod = payMethod === 'bolivares' || payMethod === 'zelle' || payMethod === 'binance' || payMethod === 'bancolombia'
+                ? 'transfer' : payMethod === 'card' ? 'card' : 'cash';
 
-            {/* ── Top bar ────────────────────────────────────────────── */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.05] bg-[#0a0a0c]/80 backdrop-blur-xl shrink-0">
-                <Link to="/" className="p-2 bg-white/[0.05] rounded-xl hover:bg-white/10 transition-colors">
-                    <ArrowLeft className="w-4 h-4 text-[#F4F0EA]/50" />
-                </Link>
-                <div className="flex items-center gap-2">
-                    <LayoutGrid className="w-4 h-4 text-[#93B59D]" />
-                    <span className="text-sm font-bold">Salón — POS</span>
+            if (ticketId) {
+                await fetch(`${API_URL}/sales/${ticketId}`, {
+                    method: 'PUT', headers: TH,
+                    body: JSON.stringify({
+                        status: 'completed', paymentMethod: apiMethod,
+                        totalAmount: cartTotal, tableId: tableId || undefined,
+                        items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price })),
+                    }),
+                });
+            } else {
+                await fetch(`${API_URL}/sales`, {
+                    method: 'POST', headers: TH,
+                    body: JSON.stringify({
+                        items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price })),
+                        paymentMethod: apiMethod,
+                        employeeId: employee?.id || undefined,
+                        tableId: tableId || undefined,
+                        tableName: tableName || undefined,
+                        notes: `OPS-POS | ${payMethod} | ${ticketName}${tableName ? ` | ${tableName}` : ''} | ${employee?.name || ''}`,
+                        sessionId: session?.id || 'ops-tablet',
+                    }),
+                });
+            }
+            setPaySuccess(true);
+            setTimeout(() => {
+                clearCart();
+                setShowPayment(false);
+                setPaySuccess(false);
+                fetchTables();
+            }, 1500);
+        } catch {
+            alert('Error procesando el pago. Intenta de nuevo.');
+        } finally { setPaying(false); }
+    };
+
+    // --- Split ticket ---
+    const handleConfirmSplit = async () => {
+        if (!ticketId) return;
+        setSplitting(true);
+        try {
+            const splitPayload = items
+                .filter(i => (splitQtys[i.productId] || 0) > 0)
+                .map(i => ({ productId: i.productId, quantity: splitQtys[i.productId] }));
+
+            const res = await fetch(`${API_URL}/sales/${ticketId}/split`, {
+                method: 'POST', headers: TH,
+                body: JSON.stringify({ items: splitPayload }),
+            });
+            const data = await res.json();
+
+            const origItems = (data.original.items || []).map((i: any) => ({
+                productId: i.productId,
+                name: i.productNameSnapshot,
+                price: i.unitPrice,
+                quantity: i.quantity,
+            }));
+            loadTicket({
+                id: data.original.id,
+                name: ticketName,
+                tableId: tableId || undefined,
+                tableName: tableName || undefined,
+                items: origItems,
+            });
+            setShowSplit(false);
+            setSplitQtys({});
+        } catch {
+            alert('Error al dividir el ticket');
+        } finally { setSplitting(false); }
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // RENDER
+    // ═══════════════════════════════════════════════════════════════
+
+    // --- Payment overlay ---
+    if (showPayment) {
+        if (paySuccess) {
+            return (
+                <div className="h-full flex flex-col items-center justify-center animate-fade-in" style={{ background: '#121413' }}>
+                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'rgba(28,64,46,0.3)' }}>
+                        <Check className="w-10 h-10" style={{ color: '#93B59D' }} strokeWidth={3} />
+                    </div>
+                    <h2 className="text-2xl font-bold mb-2" style={{ color: '#F4F0EA' }}>Listo!</h2>
+                    <p className="font-mono text-3xl font-bold mb-2" style={{ color: '#93B59D' }}>${cartTotal.toFixed(2)}</p>
+                    <p className="text-sm" style={{ color: 'rgba(244,240,234,0.3)' }}>Venta registrada</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="h-full flex flex-col" style={{ background: '#121413' }}>
+                {/* Payment header */}
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05] shrink-0">
+                    <button onClick={() => setShowPayment(false)}
+                        className="p-2 rounded-xl" style={{ background: 'rgba(244,240,234,0.04)' }}>
+                        <ArrowLeft className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />
+                    </button>
+                    <div className="flex-1">
+                        <h1 className="text-lg font-bold" style={{ color: '#F4F0EA' }}>Cobrar</h1>
+                        <p className="text-xs" style={{ color: 'rgba(244,240,234,0.3)' }}>
+                            {ticketName}{tableName ? ` - ${tableName}` : ''}
+                        </p>
+                    </div>
                 </div>
 
-                {/* Zone pills */}
-                {zones.length > 2 && (
-                    <div className="flex gap-1.5 ml-2 overflow-x-auto scrollbar-none">
-                        {zones.map(z => (
-                            <button key={z} onClick={() => setActiveZone(z)}
-                                className={`px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition-all
-                                    ${activeZone === z
-                                        ? 'bg-[#93B59D] text-[#121413]'
-                                        : 'bg-white/[0.06] text-[#F4F0EA]/40 hover:bg-white/10'
-                                    }`}>
-                                {z}
-                            </button>
-                        ))}
-                    </div>
-                )}
+                <div className="flex-1 flex overflow-hidden">
+                    {/* Left: summary */}
+                    <div className="flex-1 p-8 flex flex-col items-center justify-center">
+                        <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(244,240,234,0.25)' }}>Total a cobrar</p>
+                        <p className="text-6xl font-bold font-mono tabular-nums tracking-tight mb-4" style={{ color: '#F4F0EA' }}>
+                            ${cartTotal.toFixed(2)}
+                        </p>
+                        <p className="text-sm mb-8" style={{ color: 'rgba(244,240,234,0.2)' }}>
+                            {cartCount} items
+                        </p>
 
-                <div className="ml-auto flex items-center gap-2">
-                    <span className="text-xs text-[#F4F0EA]/25">
-                        {tables.filter(t => t.isOccupied).length}/{tables.length} ocupadas
-                    </span>
-                    <button onClick={() => fetchTables(true)}
-                        className="p-2 bg-white/[0.05] rounded-xl hover:bg-white/10 transition-colors"
-                        disabled={refreshing}>
-                        <RefreshCw className={`w-3.5 h-3.5 text-[#F4F0EA]/35 ${refreshing ? 'animate-spin' : ''}`} />
-                    </button>
+                        {/* Items summary */}
+                        <div className="w-full max-w-sm rounded-xl p-4 space-y-1" style={{ background: 'rgba(244,240,234,0.03)', border: '1px solid rgba(244,240,234,0.06)' }}>
+                            {items.map(item => (
+                                <div key={item.productId} className="flex items-center justify-between text-sm py-1">
+                                    <span className="truncate flex-1" style={{ color: 'rgba(244,240,234,0.45)' }}>{item.name} x{item.quantity}</span>
+                                    <span className="font-mono ml-2 tabular-nums" style={{ color: 'rgba(244,240,234,0.6)' }}>${(item.price * item.quantity).toFixed(2)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Right: method selection */}
+                    <div className="w-[380px] border-l border-white/[0.05] p-6 flex flex-col">
+                        <p className="text-xs uppercase tracking-widest font-semibold mb-4" style={{ color: 'rgba(244,240,234,0.2)' }}>
+                            Metodo de Pago
+                        </p>
+                        <div className="grid grid-cols-2 gap-2 mb-6">
+                            {PAY_METHODS.map(m => {
+                                const Icon = m.icon;
+                                const active = payMethod === m.id;
+                                return (
+                                    <button key={m.id} onClick={() => setPayMethod(m.id)}
+                                        className="p-3.5 rounded-xl flex items-center gap-3 transition-all"
+                                        style={{
+                                            background: active ? 'rgba(28,64,46,0.15)' : 'rgba(244,240,234,0.03)',
+                                            border: `1px solid ${active ? 'rgba(147,181,157,0.2)' : 'rgba(244,240,234,0.06)'}`,
+                                        }}>
+                                        <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+                                            style={{ background: active ? 'rgba(28,64,46,0.3)' : 'rgba(244,240,234,0.04)' }}>
+                                            <Icon className="w-4 h-4" style={{ color: active ? '#93B59D' : 'rgba(244,240,234,0.4)' }} />
+                                        </div>
+                                        <span className="text-sm font-medium" style={{ color: active ? '#93B59D' : 'rgba(244,240,234,0.4)' }}>
+                                            {m.label}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div className="flex-1" />
+
+                        <button onClick={handlePay} disabled={paying || items.length === 0}
+                            className="w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
+                            style={{ background: 'linear-gradient(135deg, #1C402E, #255639)', color: '#F4F0EA', boxShadow: '0 8px 32px rgba(28,64,46,0.4)' }}>
+                            {paying ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Confirmar ${cartTotal.toFixed(2)}</>}
+                        </button>
+                    </div>
                 </div>
             </div>
+        );
+    }
 
-            {/* ── Body: floor plan + order panel ───────────────────── */}
-            <div className="flex-1 flex overflow-hidden">
+    // --- Split overlay ---
+    if (showSplit) {
+        const splitItems = items.map(item => ({ ...item, moveQty: splitQtys[item.productId] || 0 }));
+        const splitTotal = splitItems.reduce((s, i) => s + i.price * i.moveQty, 0);
+        const originalTotal = cartTotal - splitTotal;
+        const hasSplitItems = splitItems.some(i => i.moveQty > 0);
 
-                {/* LEFT: Table grid */}
-                <div className="flex-1 overflow-y-auto p-4">
-                    {loadingTables ? (
-                        <div className="flex items-center justify-center h-40">
-                            <Loader2 className="w-6 h-6 text-[#93B59D]/50 animate-spin" />
+        return (
+            <div className="h-full flex flex-col" style={{ background: '#121413' }}>
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05] shrink-0">
+                    <button onClick={() => { setShowSplit(false); setSplitQtys({}); }}
+                        className="p-2 rounded-xl" style={{ background: 'rgba(244,240,234,0.04)' }}>
+                        <ArrowLeft className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />
+                    </button>
+                    <Scissors className="w-4 h-4" style={{ color: '#f59e0b' }} />
+                    <h1 className="text-lg font-bold" style={{ color: '#F4F0EA' }}>Split Ticket</h1>
+                </div>
+
+                <div className="flex-1 flex overflow-hidden">
+                    {/* Left: items */}
+                    <div className="flex-1 overflow-y-auto">
+                        <div className="px-6 py-3 flex items-center gap-4 border-b border-white/[0.06]" style={{ background: 'rgba(244,240,234,0.02)' }}>
+                            <div className="flex-1">
+                                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(244,240,234,0.3)' }}>Original</p>
+                                <p className="text-xl font-bold font-mono" style={{ color: '#93B59D' }}>${originalTotal.toFixed(2)}</p>
+                            </div>
+                            <ArrowRightLeft className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.15)' }} />
+                            <div className="flex-1 text-right">
+                                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(244,240,234,0.3)' }}>Split</p>
+                                <p className="text-xl font-bold font-mono" style={{ color: hasSplitItems ? '#f59e0b' : 'rgba(244,240,234,0.15)' }}>${splitTotal.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <p className="px-6 py-2 text-xs" style={{ color: 'rgba(244,240,234,0.25)' }}>
+                            Toca items para moverlos al nuevo ticket. Toca de nuevo para ajustar cantidad.
+                        </p>
+                        {splitItems.map(item => {
+                            const isFullyMoved = item.moveQty === item.quantity;
+                            const isPartial = item.moveQty > 0 && !isFullyMoved;
+                            return (
+                                <button key={item.productId}
+                                    onClick={() => {
+                                        setSplitQtys(prev => {
+                                            const current = prev[item.productId] || 0;
+                                            const next = current >= item.quantity ? 0 : current + 1;
+                                            return { ...prev, [item.productId]: next };
+                                        });
+                                    }}
+                                    className="w-full flex items-center gap-3 px-6 py-4 text-left transition-all active:bg-white/5"
+                                    style={{
+                                        borderBottom: '1px solid rgba(244,240,234,0.04)',
+                                        background: isFullyMoved ? 'rgba(245,158,11,0.06)' : isPartial ? 'rgba(245,158,11,0.03)' : 'transparent',
+                                    }}>
+                                    <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                                        style={{
+                                            border: `2px solid ${isFullyMoved || isPartial ? '#f59e0b' : 'rgba(147,181,157,0.4)'}`,
+                                            background: isFullyMoved ? '#f59e0b' : 'transparent',
+                                        }}>
+                                        {isPartial && <div className="w-2 h-2 rounded-full" style={{ background: '#f59e0b' }} />}
+                                        {isFullyMoved && <span className="text-[9px] font-bold" style={{ color: '#121413' }}>&#10003;</span>}
+                                    </div>
+                                    <span className="flex-1 text-sm" style={{
+                                        color: isFullyMoved ? 'rgba(244,240,234,0.4)' : 'rgba(244,240,234,0.85)',
+                                        textDecoration: isFullyMoved ? 'line-through' : 'none',
+                                    }}>{item.name}</span>
+                                    <span className="text-xs font-mono shrink-0" style={{ color: isPartial ? '#f59e0b' : 'rgba(244,240,234,0.35)' }}>
+                                        {isPartial ? `${item.moveQty}/${item.quantity}` : `x${item.quantity}`}
+                                    </span>
+                                    <span className="text-sm font-mono w-16 text-right shrink-0" style={{ color: item.moveQty > 0 ? '#f59e0b' : 'rgba(244,240,234,0.4)' }}>
+                                        ${(item.price * item.quantity).toFixed(2)}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Right: confirm */}
+                    <div className="w-[320px] border-l border-white/[0.05] p-6 flex flex-col items-center justify-center">
+                        <button onClick={handleConfirmSplit} disabled={!hasSplitItems || splitting}
+                            className="w-full py-4 rounded-xl text-sm font-bold transition-all disabled:opacity-30"
+                            style={{
+                                background: hasSplitItems ? 'linear-gradient(135deg, #92400e, #b45309)' : 'rgba(244,240,234,0.04)',
+                                color: hasSplitItems ? '#fef3c7' : 'rgba(244,240,234,0.2)',
+                                border: `1px solid ${hasSplitItems ? 'rgba(245,158,11,0.3)' : 'rgba(244,240,234,0.06)'}`,
+                            }}>
+                            {splitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (
+                                <><Scissors className="w-4 h-4 inline mr-2" style={{ verticalAlign: '-2px' }} />Confirmar Split - ${splitTotal.toFixed(2)}</>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // --- Table selector overlay ---
+    if (showTableSelector) {
+        const available = tables.filter(t =>
+            (!t.isOccupied || t.currentTicket?.id === ticketId) &&
+            (!tableSearch || t.name.toLowerCase().includes(tableSearch.toLowerCase()))
+        );
+
+        return (
+            <div className="h-full flex flex-col" style={{ background: '#121413' }}>
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05] shrink-0">
+                    <button onClick={() => { setShowTableSelector(false); setTableSearch(''); }}
+                        className="p-2 rounded-xl" style={{ background: 'rgba(244,240,234,0.04)' }}>
+                        <X className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />
+                    </button>
+                    <h1 className="text-lg font-bold" style={{ color: '#F4F0EA' }}>Asignar Mesa</h1>
+                </div>
+                <div className="px-6 py-3 shrink-0">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'rgba(244,240,234,0.15)' }} />
+                        <input type="text" placeholder="Buscar mesa..." value={tableSearch}
+                            onChange={e => setTableSearch(e.target.value)}
+                            className="w-full rounded-xl pl-9 py-2.5 text-sm focus:outline-none"
+                            style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)', color: '#F4F0EA' }} />
+                    </div>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                    {/* Custom ticket option */}
+                    {!tableSearch && (
+                        <button onClick={() => handleSave(undefined, undefined)}
+                            disabled={saving}
+                            className="w-full px-6 py-4 text-left text-sm font-semibold tracking-wide"
+                            style={{ borderBottom: '1px solid rgba(244,240,234,0.04)', color: '#93B59D' }}>
+                            {saving ? 'Guardando...' : 'TICKET SIN MESA'}
+                        </button>
+                    )}
+                    {available.map(t => (
+                        <button key={t.id} onClick={() => handleSave(t.id, t.name)}
+                            disabled={saving}
+                            className="w-full px-6 py-4 text-left text-base flex items-center justify-between"
+                            style={{ borderBottom: '1px solid rgba(244,240,234,0.04)', color: saving ? 'rgba(244,240,234,0.3)' : '#F4F0EA' }}>
+                            <span>{t.name}</span>
+                            {t.zone && <span className="text-xs" style={{ color: 'rgba(244,240,234,0.2)' }}>{t.zone}</span>}
+                        </button>
+                    ))}
+                    {available.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-12" style={{ color: 'rgba(244,240,234,0.25)' }}>
+                            <p className="text-sm">{tableSearch ? `No se encontro "${tableSearch}"` : 'No hay mesas disponibles'}</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // --- Open tickets overlay ---
+    if (showTickets) {
+        return (
+            <div className="h-full flex flex-col" style={{ background: '#121413' }}>
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05] shrink-0">
+                    <button onClick={() => setShowTickets(false)}
+                        className="p-2 rounded-xl" style={{ background: 'rgba(244,240,234,0.04)' }}>
+                        <ArrowLeft className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />
+                    </button>
+                    <h1 className="text-lg font-bold flex-1" style={{ color: '#F4F0EA' }}>Tickets Abiertos</h1>
+                    <button onClick={fetchOpenTickets} className="p-2 rounded-xl" style={{ background: 'rgba(244,240,234,0.04)' }}>
+                        <RefreshCw className={`w-4 h-4 ${loadingTickets ? 'animate-spin' : ''}`} style={{ color: 'rgba(244,240,234,0.4)' }} />
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                    {loadingTickets && openTickets.length === 0 ? (
+                        <div className="flex items-center justify-center py-20">
+                            <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'rgba(147,181,157,0.4)' }} />
+                        </div>
+                    ) : openTickets.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20" style={{ color: 'rgba(244,240,234,0.25)' }}>
+                            <FileText className="w-10 h-10 opacity-20 mb-3" />
+                            <p className="text-sm">No hay tickets abiertos</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-                            {visibleTables.map(table => {
-                                const isSelected = selectedTable?.id === table.id;
-                                const occupied = table.isOccupied;
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+                            {openTickets.map(t => {
+                                const elapsed = Math.floor((Date.now() - new Date(t.createdAt).getTime()) / 60000);
+                                const timeStr = elapsed < 60 ? `${elapsed}m` : `${Math.floor(elapsed / 60)}h ${elapsed % 60}m`;
                                 return (
-                                    <button
-                                        key={table.id}
-                                        onClick={() => handleSelectTable(table)}
-                                        className={`
-                                            relative p-4 rounded-2xl border flex flex-col gap-2
-                                            transition-all duration-200 active:scale-[0.96] touch-manipulation
-                                            ${isSelected
-                                                ? 'bg-[#1C402E]/50 border-[#93B59D]/60 shadow-[0_0_16px_rgba(147,181,157,0.15)]'
-                                                : occupied
-                                                    ? 'bg-amber-500/8 border-amber-500/25 hover:border-amber-400/45'
-                                                    : 'bg-[#222524]/70 border-white/[0.06] hover:border-[#93B59D]/30'
-                                            }
-                                        `}
-                                    >
-                                        {/* Status dot */}
-                                        <div className={`
-                                            absolute top-3 right-3 w-2 h-2 rounded-full
-                                            ${occupied
-                                                ? 'bg-amber-400 animate-pulse shadow-[0_0_6px_rgba(251,191,36,0.6)]'
-                                                : isSelected ? 'bg-[#93B59D]' : 'bg-[#93B59D]/30'
-                                            }
-                                        `} />
-
-                                        <p className={`text-sm font-bold leading-none pr-4 ${isSelected ? 'text-[#93B59D]' : 'text-[#F4F0EA]'}`}>
-                                            {table.name}
+                                    <button key={t.id} onClick={() => handleLoadTicket(t)}
+                                        className="p-4 rounded-xl text-left transition-all active:scale-[0.97]"
+                                        style={{ background: 'rgba(244,240,234,0.03)', border: '1px solid rgba(244,240,234,0.06)' }}>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-bold truncate" style={{ color: '#F4F0EA' }}>
+                                                {t.ticketName || t.tableName || `#${t.id.slice(-4)}`}
+                                            </span>
+                                            <span className="text-xs font-mono" style={{ color: '#93B59D' }}>${t.totalAmount.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {t.tableName && (
+                                                <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(147,181,157,0.1)', color: '#93B59D' }}>
+                                                    {t.tableName}
+                                                </span>
+                                            )}
+                                            <span className="text-[10px]" style={{ color: 'rgba(244,240,234,0.25)' }}>{timeStr}</span>
+                                        </div>
+                                        <p className="text-[10px] mt-1.5" style={{ color: 'rgba(244,240,234,0.2)' }}>
+                                            {t.items.length} item{t.items.length !== 1 ? 's' : ''}
                                         </p>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
-                                        {table.zone && (
-                                            <p className="text-[9px] text-[#F4F0EA]/25 uppercase tracking-widest">{table.zone}</p>
-                                        )}
+    // ═══════════════════════════════════════════════════════════════
+    // MAIN LAYOUT: Product grid (left) + Cart sidebar (right)
+    // ═══════════════════════════════════════════════════════════════
+    return (
+        <div className="h-full flex flex-col overflow-hidden">
 
-                                        {table.capacity && (
-                                            <div className="flex items-center gap-1">
-                                                <Users className="w-3 h-3 text-[#F4F0EA]/20" />
-                                                <span className="text-[10px] text-[#F4F0EA]/25">{table.capacity}</span>
-                                            </div>
-                                        )}
+            {/* ── Top toolbar ───────────────────────────────────────── */}
+            <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/[0.05] shrink-0" style={{ background: '#0e0e10' }}>
+                {/* Category dropdown */}
+                <div className="relative">
+                    <button onClick={() => setShowCatDropdown(!showCatDropdown)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+                        style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)' }}>
+                        {activeCategory && <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getCatColor(activeCategory) }} />}
+                        <span style={{ color: 'rgba(244,240,234,0.6)' }} className="whitespace-nowrap max-w-[120px] truncate">
+                            {activeCategory || 'Todas'}
+                        </span>
+                        <ChevronDown className="w-3.5 h-3.5" style={{ color: 'rgba(244,240,234,0.25)' }} />
+                    </button>
+                    {showCatDropdown && (
+                        <>
+                            <div className="fixed inset-0 z-40" onClick={() => setShowCatDropdown(false)} />
+                            <div className="absolute top-full left-0 mt-1 w-56 rounded-xl z-50 max-h-64 overflow-y-auto shadow-2xl"
+                                style={{ background: '#222524', border: '1px solid rgba(244,240,234,0.06)' }}>
+                                <button onClick={() => { setActiveCategory(null); setSearch(''); setShowCatDropdown(false); }}
+                                    className="w-full text-left px-4 py-3 text-sm flex items-center gap-2"
+                                    style={{ color: !activeCategory ? '#93B59D' : 'rgba(244,240,234,0.5)', background: !activeCategory ? 'rgba(147,181,157,0.08)' : 'transparent' }}>
+                                    Todas las categorias
+                                </button>
+                                {categories.map(cat => (
+                                    <button key={cat} onClick={() => { setActiveCategory(cat); setSearch(''); setShowCatDropdown(false); }}
+                                        className="w-full text-left px-4 py-3 text-sm flex items-center gap-2.5"
+                                        style={{ color: activeCategory === cat ? '#93B59D' : 'rgba(244,240,234,0.5)', background: activeCategory === cat ? 'rgba(147,181,157,0.08)' : 'transparent' }}>
+                                        <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: getCatColor(cat) }} />
+                                        {cat}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
 
-                                        {occupied && table.currentTicket ? (
-                                            <div className="space-y-0.5">
-                                                <p className={`text-xs font-bold font-mono ${urgencyColor(table.currentTicket.createdAt)}`}>
-                                                    ${table.currentTicket.totalAmount.toFixed(2)}
-                                                </p>
-                                                <div className="flex items-center gap-1">
-                                                    <Clock className="w-2.5 h-2.5 text-[#F4F0EA]/25" />
-                                                    <span className={`text-[10px] ${urgencyColor(table.currentTicket.createdAt)}`}>
-                                                        {timeElapsed(table.currentTicket.createdAt)}
-                                                    </span>
-                                                </div>
+                {/* Search */}
+                <div className="flex-1 relative max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'rgba(244,240,234,0.15)' }} />
+                    <input type="text" placeholder="Buscar productos..." value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        className="w-full rounded-lg pl-9 pr-8 py-2 text-sm focus:outline-none"
+                        style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)', color: '#F4F0EA' }} />
+                    {search && (
+                        <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                            <X className="w-3.5 h-3.5" style={{ color: 'rgba(244,240,234,0.3)' }} />
+                        </button>
+                    )}
+                </div>
+
+                {/* View mode toggle */}
+                <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid rgba(244,240,234,0.06)' }}>
+                    <button onClick={() => setViewMode('grid')}
+                        className="px-2.5 py-2"
+                        style={{ background: viewMode === 'grid' ? 'rgba(147,181,157,0.12)' : 'rgba(244,240,234,0.02)' }}>
+                        <LayoutGrid className="w-4 h-4" style={{ color: viewMode === 'grid' ? '#93B59D' : 'rgba(244,240,234,0.25)' }} />
+                    </button>
+                    <button onClick={() => setViewMode('list')}
+                        className="px-2.5 py-2"
+                        style={{ background: viewMode === 'list' ? 'rgba(147,181,157,0.12)' : 'rgba(244,240,234,0.02)' }}>
+                        <List className="w-4 h-4" style={{ color: viewMode === 'list' ? '#93B59D' : 'rgba(244,240,234,0.25)' }} />
+                    </button>
+                </div>
+
+                {/* Open tickets */}
+                <button onClick={() => { fetchOpenTickets(); setShowTickets(true); }}
+                    className="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5"
+                    style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)', color: 'rgba(244,240,234,0.5)' }}>
+                    <FileText className="w-3.5 h-3.5" />
+                    Tickets
+                </button>
+
+                {/* Product count */}
+                <span className="text-xs font-mono" style={{ color: 'rgba(244,240,234,0.2)' }}>
+                    {filtered.length}
+                </span>
+            </div>
+
+            {/* ── Body: products + cart ─────────────────────────────── */}
+            <div className="flex-1 flex overflow-hidden">
+
+                {/* LEFT: Product grid/list */}
+                <div className="flex-1 overflow-y-auto p-3">
+                    {loadingProducts ? (
+                        <div className="flex items-center justify-center h-40">
+                            <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'rgba(147,181,157,0.4)' }} />
+                        </div>
+                    ) : filtered.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-40" style={{ color: 'rgba(244,240,234,0.25)' }}>
+                            <Search className="w-8 h-8 mb-2 opacity-30" />
+                            <p className="text-sm">No se encontraron productos</p>
+                        </div>
+                    ) : viewMode === 'grid' ? (
+                        /* ── GRID VIEW ── */
+                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+                            {filtered.map(product => {
+                                const inCart = items.find(i => i.productId === product.id);
+                                const cat = product.categoryId || product.category || 'General';
+                                const catColor = getCatColor(cat);
+                                return (
+                                    <button key={product.id}
+                                        onClick={() => handleAddProduct(product)}
+                                        className="relative p-3 rounded-xl text-left transition-all active:scale-[0.96]"
+                                        style={{
+                                            background: inCart ? 'rgba(147,181,157,0.08)' : 'rgba(244,240,234,0.03)',
+                                            border: `1px solid ${inCart ? 'rgba(147,181,157,0.2)' : 'rgba(244,240,234,0.06)'}`,
+                                        }}>
+                                        {/* Image placeholder / category color */}
+                                        {product.imageUrl ? (
+                                            <div className="w-full aspect-square rounded-lg mb-2 overflow-hidden bg-black/20">
+                                                <img src={product.imageUrl} alt={product.name}
+                                                    className="w-full h-full object-cover" loading="lazy" />
                                             </div>
                                         ) : (
-                                            <span className="text-[10px] text-[#93B59D]/60">Libre</span>
+                                            <div className="w-full aspect-[4/3] rounded-lg mb-2 flex items-center justify-center"
+                                                style={{ background: `${catColor}15`, border: `1px solid ${catColor}20` }}>
+                                                <span className="text-2xl opacity-30">
+                                                    {product.name.charAt(0).toUpperCase()}
+                                                </span>
+                                            </div>
                                         )}
+                                        <p className="text-xs font-semibold leading-tight line-clamp-2 mb-1" style={{ color: 'rgba(244,240,234,0.85)' }}>
+                                            {product.name}
+                                        </p>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] uppercase tracking-wider" style={{ color: catColor, opacity: 0.6 }}>
+                                                {cat.length > 10 ? cat.slice(0, 10) + '..' : cat}
+                                            </span>
+                                            <span className="text-sm font-bold font-mono" style={{ color: '#93B59D' }}>
+                                                ${product.price.toFixed(2)}
+                                            </span>
+                                        </div>
+                                        {inCart && (
+                                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center"
+                                                style={{ background: '#1C402E', color: '#93B59D', boxShadow: '0 2px 8px rgba(28,64,46,0.3)' }}>
+                                                {inCart.quantity}
+                                            </div>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        /* ── LIST VIEW ── */
+                        <div>
+                            {filtered.map(product => {
+                                const inCart = items.find(i => i.productId === product.id);
+                                const cat = product.categoryId || product.category || 'General';
+                                const catColor = getCatColor(cat);
+                                return (
+                                    <button key={product.id}
+                                        onClick={() => handleAddProduct(product)}
+                                        className="w-full flex items-center gap-3.5 px-4 py-3 text-left transition-all"
+                                        style={{
+                                            borderBottom: '1px solid rgba(244,240,234,0.04)',
+                                            background: inCart ? 'rgba(147,181,157,0.05)' : 'transparent',
+                                        }}>
+                                        <div className="w-10 h-10 rounded-lg shrink-0" style={{ backgroundColor: catColor }} />
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-sm leading-tight block truncate" style={{ color: 'rgba(244,240,234,0.9)' }}>{product.name}</span>
+                                            <span className="text-[10px]" style={{ color: 'rgba(244,240,234,0.25)' }}>{cat}</span>
+                                        </div>
+                                        {inCart && (
+                                            <span className="shrink-0 w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center"
+                                                style={{ background: '#1C402E', color: '#93B59D' }}>
+                                                {inCart.quantity}
+                                            </span>
+                                        )}
+                                        <span className="text-sm shrink-0 font-mono tabular-nums" style={{ color: 'rgba(244,240,234,0.4)' }}>
+                                            ${product.price.toFixed(2)}
+                                        </span>
                                     </button>
                                 );
                             })}
@@ -405,249 +877,163 @@ export default function TabletPOSPage() {
                     )}
                 </div>
 
-                {/* RIGHT: Order panel */}
-                <div className={`
-                    w-[300px] shrink-0 border-l border-white/[0.05] bg-[#0e0e10] flex flex-col
-                    transition-all duration-300
-                    ${selectedTable ? 'translate-x-0' : 'translate-x-full'}
-                `}>
-                    {!selectedTable ? (
-                        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-[#F4F0EA]/15 p-8 text-center">
-                            <LayoutGrid className="w-10 h-10 opacity-30" />
-                            <p className="text-sm">Selecciona una mesa para ver o gestionar su pedido</p>
-                        </div>
-                    ) : (
-                        <>
-                            {/* Panel header */}
-                            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05] shrink-0">
-                                <div>
-                                    <p className="text-sm font-bold text-[#F4F0EA]">{selectedTable.name}</p>
-                                    <p className="text-[11px] text-[#F4F0EA]/35">
-                                        {selectedTable.zone || 'General'}
-                                        {selectedTable.capacity ? ` · ${selectedTable.capacity} pax` : ''}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => setSelectedTable(null)}
-                                    className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[#F4F0EA]/30 hover:text-[#F4F0EA]"
-                                >
-                                    <X className="w-3.5 h-3.5" />
-                                </button>
+                {/* RIGHT: Cart sidebar */}
+                <div className="w-[340px] lg:w-[380px] shrink-0 border-l border-white/[0.05] flex flex-col" style={{ background: '#0e0e10' }}>
+
+                    {/* Cart header */}
+                    <div className="px-4 py-3 border-b border-white/[0.05] shrink-0">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                                {editingName ? (
+                                    <input type="text" autoFocus value={draftName}
+                                        onChange={e => setDraftName(e.target.value)}
+                                        onBlur={() => { if (draftName.trim()) setTicketName(draftName.trim()); setEditingName(false); }}
+                                        onKeyDown={e => { if (e.key === 'Enter') { if (draftName.trim()) setTicketName(draftName.trim()); setEditingName(false); } }}
+                                        className="text-sm font-bold bg-transparent focus:outline-none flex-1 min-w-0"
+                                        style={{ color: '#F4F0EA', borderBottom: '1px solid #93B59D' }} />
+                                ) : (
+                                    <button onClick={() => { setDraftName(ticketName); setEditingName(true); }}
+                                        className="text-sm font-bold truncate" style={{ color: '#F4F0EA' }}>
+                                        {ticketName}
+                                    </button>
+                                )}
+                                {cartCount > 0 && (
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0"
+                                        style={{ background: 'rgba(147,181,157,0.12)', color: '#93B59D' }}>
+                                        {cartCount}
+                                    </span>
+                                )}
                             </div>
 
-                            {/* Checkout success overlay */}
-                            {checkoutDone && (
-                                <div className="flex-1 flex flex-col items-center justify-center gap-3 animate-fade-in">
-                                    <div className="w-16 h-16 rounded-full bg-[#1C402E]/50 border border-[#93B59D]/30 flex items-center justify-center">
-                                        <Check className="w-8 h-8 text-[#93B59D]" />
-                                    </div>
-                                    <p className="font-bold text-[#93B59D]">¡Cobrado!</p>
-                                    <p className="text-xs text-[#F4F0EA]/30">{selectedTable.name} ahora libre</p>
-                                </div>
-                            )}
-
-                            {/* Order loading */}
-                            {!checkoutDone && loadingOrder && (
-                                <div className="flex-1 flex items-center justify-center">
-                                    <Loader2 className="w-5 h-5 text-[#93B59D]/40 animate-spin" />
-                                </div>
-                            )}
-
-                            {/* No order yet */}
-                            {!checkoutDone && !loadingOrder && !openOrder && (
-                                <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
-                                    <ShoppingBag className="w-8 h-8 text-[#F4F0EA]/15" />
-                                    <p className="text-sm text-[#F4F0EA]/40">Mesa libre</p>
-                                    <p className="text-xs text-[#F4F0EA]/20">Agrega productos para abrir un pedido</p>
-                                    <button
-                                        onClick={openProductPicker}
-                                        className="mt-2 flex items-center gap-2 px-4 py-2.5 bg-[#1C402E]/50 border border-[#93B59D]/30
-                                            rounded-xl text-sm font-bold text-[#93B59D] hover:bg-[#1C402E]/70 transition-all"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        Agregar productos
+                            {/* Cart actions */}
+                            <div className="flex items-center gap-1 shrink-0 ml-2">
+                                {ticketId && (
+                                    <button onClick={handleSync} title="Sincronizar"
+                                        className="p-1.5 rounded-lg hover:bg-white/[0.05]" style={{ color: 'rgba(244,240,234,0.3)' }}>
+                                        <RefreshCw className="w-3.5 h-3.5" />
                                     </button>
-                                </div>
-                            )}
-
-                            {/* Open order items */}
-                            {!checkoutDone && !loadingOrder && openOrder && !showCheckout && (
-                                <>
-                                    {/* Order meta */}
-                                    <div className="px-4 py-2 border-b border-white/[0.04] flex items-center justify-between shrink-0">
-                                        <div className="flex items-center gap-1.5">
-                                            <Zap className="w-3.5 h-3.5 text-amber-400" />
-                                            <span className="text-[11px] text-amber-400 font-semibold">
-                                                {timeElapsed(openOrder.createdAt)} · Ticket abierto
-                                            </span>
-                                        </div>
-                                        <span className="text-[11px] font-mono font-bold text-[#F4F0EA]/60">
-                                            ${orderTotal.toFixed(2)}
-                                        </span>
-                                    </div>
-
-                                    {/* Items */}
-                                    <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
-                                        {openOrder.items.map(item => (
-                                            <div key={item.id}
-                                                className="flex items-center gap-2 bg-white/[0.03] rounded-xl px-3 py-2.5">
-                                                <div className="w-6 h-6 rounded-lg bg-white/[0.06] flex items-center justify-center text-xs font-bold text-[#F4F0EA]/70 shrink-0">
-                                                    {item.quantity}
-                                                </div>
-                                                <p className="flex-1 text-xs text-[#F4F0EA]/80 leading-tight line-clamp-2">
-                                                    {item.productNameSnapshot}
-                                                </p>
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                    <span className="text-[10px] text-[#F4F0EA]/40 font-mono">
-                                                        ${(item.unitPrice * item.quantity).toFixed(2)}
-                                                    </span>
-                                                    <button onClick={() => handleRemoveItem(item)}
-                                                        className="p-1 rounded-lg hover:bg-red-500/15 text-[#F4F0EA]/20 hover:text-red-400 transition-colors">
-                                                        <Minus className="w-3 h-3" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Actions */}
-                                    <div className="p-3 border-t border-white/[0.05] space-y-2 shrink-0 bg-black/20">
-                                        <button onClick={openProductPicker}
-                                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
-                                                bg-white/[0.04] border border-white/[0.08] text-xs font-bold text-[#F4F0EA]/50
-                                                hover:bg-[#1C402E]/30 hover:border-[#93B59D]/30 hover:text-[#93B59D] transition-all">
-                                            <Plus className="w-3.5 h-3.5" />
-                                            Agregar más
-                                        </button>
-                                        <button onClick={() => setShowCheckout(true)}
-                                            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500
-                                                text-white text-sm font-bold flex items-center justify-center gap-2 transition-all">
-                                            <ChevronRight className="w-4 h-4" />
-                                            Cobrar — ${orderTotal.toFixed(2)}
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Checkout panel */}
-                            {!checkoutDone && showCheckout && (
-                                <div className="flex-1 flex flex-col p-4 space-y-4 animate-fade-in">
-                                    <div className="text-center">
-                                        <p className="text-[#F4F0EA]/40 text-xs uppercase tracking-widest mb-1">Total a cobrar</p>
-                                        <p className="text-4xl font-bold font-mono text-emerald-400">${orderTotal.toFixed(2)}</p>
-                                        <p className="text-xs text-[#F4F0EA]/25 mt-1">{selectedTable.name}</p>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-[10px] text-[#F4F0EA]/30 uppercase tracking-widest mb-2">Método de pago</p>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {(['cash', 'card', 'transfer'] as const).map(m => (
-                                                <button key={m} onClick={() => setPayMethod(m)}
-                                                    className={`py-3 rounded-xl text-xs font-bold uppercase transition-all
-                                                        ${payMethod === m
-                                                            ? 'bg-enigma-purple text-white shadow-[0_0_12px_rgba(139,92,246,0.3)]'
-                                                            : 'bg-white/[0.04] text-[#F4F0EA]/40 hover:bg-white/[0.08]'
-                                                        }`}>
-                                                    {m === 'cash' ? 'Efectivo' : m === 'card' ? 'Tarjeta' : 'Transfer.'}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex-1" />
-
-                                    <button onClick={handleCheckout} disabled={checkingOut}
-                                        className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50
-                                            text-white font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.97]">
-                                        {checkingOut
-                                            ? <Loader2 className="w-5 h-5 animate-spin" />
-                                            : <><Check className="w-5 h-5" /> Confirmar Cobro</>
+                                )}
+                                {hasItems && (
+                                    <button onClick={() => {
+                                        if (!ticketId && hasItems) {
+                                            if (!window.confirm('Tienes items sin guardar. Descartar?')) return;
                                         }
+                                        clearCart();
+                                    }} title="Nuevo ticket"
+                                        className="p-1.5 rounded-lg hover:bg-white/[0.05]" style={{ color: 'rgba(244,240,234,0.3)' }}>
+                                        <Plus className="w-3.5 h-3.5" />
                                     </button>
-                                    <button onClick={() => setShowCheckout(false)}
-                                        className="w-full text-xs text-[#F4F0EA]/25 hover:text-[#F4F0EA]/50 py-2 transition-colors">
-                                        Volver al pedido
+                                )}
+                            </div>
+                        </div>
+                        {tableName && (
+                            <div className="flex items-center gap-1 mt-1">
+                                <MapPin className="w-3 h-3" style={{ color: '#93B59D' }} />
+                                <span className="text-[11px]" style={{ color: '#93B59D' }}>{tableName}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Cart items */}
+                    <div className="flex-1 overflow-y-auto">
+                        {!hasItems ? (
+                            <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
+                                <ShoppingBag className="w-10 h-10 opacity-10" style={{ color: '#F4F0EA' }} />
+                                <p className="text-sm" style={{ color: 'rgba(244,240,234,0.25)' }}>Carrito vacio</p>
+                                <p className="text-xs" style={{ color: 'rgba(244,240,234,0.15)' }}>Selecciona productos de la izquierda</p>
+                            </div>
+                        ) : (
+                            <div>
+                                {items.map(item => (
+                                    <div key={item.productId}
+                                        className={`flex items-center gap-2 px-4 py-3 transition-colors duration-300 ${lastAddedId === item.productId ? 'bg-[#1C402E]/30' : ''}`}
+                                        style={{ borderBottom: '1px solid rgba(244,240,234,0.04)' }}>
+                                        {/* Qty controls */}
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <button onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                                                className="w-7 h-7 rounded-lg flex items-center justify-center"
+                                                style={{ background: 'rgba(244,240,234,0.06)', color: '#F4F0EA' }}>
+                                                <Minus className="w-3 h-3" />
+                                            </button>
+                                            <span className="w-5 text-center font-bold text-sm" style={{ color: '#F4F0EA' }}>
+                                                {item.quantity}
+                                            </span>
+                                            <button onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                                                className="w-7 h-7 rounded-lg flex items-center justify-center"
+                                                style={{ background: 'rgba(244,240,234,0.06)', color: '#93B59D' }}>
+                                                <Plus className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                        {/* Name */}
+                                        <span className="flex-1 text-sm truncate" style={{ color: 'rgba(244,240,234,0.85)' }}>
+                                            {item.name}
+                                        </span>
+                                        {/* Price */}
+                                        <span className="font-mono text-sm tabular-nums shrink-0" style={{ color: 'rgba(244,240,234,0.5)' }}>
+                                            ${(item.price * item.quantity).toFixed(2)}
+                                        </span>
+                                        {/* Remove */}
+                                        <button onClick={() => removeItem(item.productId)}
+                                            className="p-1 shrink-0" style={{ color: 'rgba(239,68,68,0.4)' }}>
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Cart footer */}
+                    {hasItems && (
+                        <div className="border-t border-white/[0.05] p-3 space-y-2 shrink-0" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                            {/* Total */}
+                            <div className="flex items-center justify-between px-1">
+                                <span className="text-sm font-bold" style={{ color: '#F4F0EA' }}>Total</span>
+                                <span className="text-xl font-bold font-mono tabular-nums" style={{ color: '#F4F0EA' }}>
+                                    ${cartTotal.toFixed(2)}
+                                </span>
+                            </div>
+
+                            {/* Action row */}
+                            <div className="flex gap-2">
+                                {/* More actions */}
+                                {ticketId && items.length > 1 && (
+                                    <button onClick={() => { setSplitQtys({}); setShowSplit(true); }}
+                                        className="p-2.5 rounded-xl" title="Split"
+                                        style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)' }}>
+                                        <Scissors className="w-4 h-4" style={{ color: '#f59e0b' }} />
                                     </button>
-                                </div>
-                            )}
-                        </>
+                                )}
+                                {ticketId && (
+                                    <button onClick={handleVoid}
+                                        className="p-2.5 rounded-xl" title="Anular"
+                                        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
+                                        <Trash2 className="w-4 h-4" style={{ color: '#ef4444' }} />
+                                    </button>
+                                )}
+
+                                {/* Save/update */}
+                                <button onClick={() => {
+                                    if (ticketId) handleSave(tableId || undefined, tableName || undefined);
+                                    else { setTableSearch(''); setShowTableSelector(true); }
+                                }}
+                                    disabled={saving}
+                                    className="flex-1 py-3 rounded-xl text-sm font-semibold uppercase tracking-wider"
+                                    style={{ background: 'rgba(244,240,234,0.04)', border: '1px solid rgba(244,240,234,0.06)', color: 'rgba(244,240,234,0.5)' }}>
+                                    {saving ? '...' : (ticketId ? 'Guardar' : 'Asignar')}
+                                </button>
+
+                                {/* Charge */}
+                                <button onClick={() => setShowPayment(true)}
+                                    className="flex-[1.5] py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+                                    style={{ background: 'linear-gradient(135deg, #1C402E, #255639)', color: '#93B59D', boxShadow: '0 4px 16px rgba(28,64,46,0.3)' }}>
+                                    Cobrar ${cartTotal.toFixed(2)}
+                                </button>
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>
-
-            {/* ── Product Picker Modal ─────────────────────────────── */}
-            {showProducts && (
-                <div
-                    className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col justify-end"
-                    onClick={e => { if (e.target === e.currentTarget) setShowProducts(false); }}
-                >
-                    <div className="bg-[#121413] border-t border-white/[0.08] rounded-t-3xl max-h-[65vh] flex flex-col">
-                        {/* Header */}
-                        <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
-                            <div>
-                                <p className="text-sm font-bold">Agregar productos</p>
-                                <p className="text-[11px] text-[#F4F0EA]/30">
-                                    {selectedTable?.name} {openOrder ? `· ${openOrder.items.length} ítem(s)` : '· pedido nuevo'}
-                                </p>
-                            </div>
-                            <button onClick={() => setShowProducts(false)}
-                                className="p-2 rounded-xl bg-white/[0.05] text-[#F4F0EA]/40 hover:text-[#F4F0EA]">
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        {/* Search */}
-                        <div className="px-4 pb-3 shrink-0">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#F4F0EA]/25" />
-                                <input
-                                    autoFocus
-                                    value={productSearch}
-                                    onChange={e => setProductSearch(e.target.value)}
-                                    placeholder="Buscar platos..."
-                                    className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl
-                                        pl-9 pr-4 py-2.5 text-sm text-[#F4F0EA] focus:outline-none focus:border-[#93B59D]/40"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Products grid */}
-                        <div className="flex-1 overflow-y-auto px-4 pb-8">
-                            {loadingProducts ? (
-                                <div className="flex items-center justify-center py-10">
-                                    <Loader2 className="w-5 h-5 text-[#93B59D]/40 animate-spin" />
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    {filteredProducts.map(p => (
-                                        <button key={p.id}
-                                            onClick={() => handleAddProduct(p)}
-                                            className="p-3 rounded-xl bg-[#222524]/80 border border-white/[0.06]
-                                                hover:border-[#93B59D]/30 hover:bg-[#222524] text-left
-                                                transition-all active:scale-[0.95]">
-                                            <p className="text-xs font-semibold text-[#F4F0EA] leading-tight line-clamp-2 mb-1.5">
-                                                {p.name}
-                                            </p>
-                                            <p className="text-[10px] text-[#F4F0EA]/30 uppercase tracking-wider mb-1">
-                                                {p.category || 'General'}
-                                            </p>
-                                            <p className="text-sm font-bold font-mono text-emerald-400">
-                                                ${p.price.toFixed(2)}
-                                            </p>
-                                        </button>
-                                    ))}
-                                    {filteredProducts.length === 0 && (
-                                        <div className="col-span-2 py-12 text-center">
-                                            <ZapOff className="w-8 h-8 text-[#F4F0EA]/10 mx-auto mb-2" />
-                                            <p className="text-xs text-[#F4F0EA]/25">Sin resultados</p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
