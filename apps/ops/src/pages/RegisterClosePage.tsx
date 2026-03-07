@@ -2,11 +2,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCurrencies } from '../hooks/useCurrencies';
-import { Loader2, CheckCircle, Calculator, Wallet, Smartphone, ArrowRight } from 'lucide-react';
+import { Loader2, CheckCircle, Calculator, Wallet, Smartphone, ArrowRight, Delete, Lock } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
-type Step = 'physical' | 'electronic' | 'review';
+type Step = 'physical' | 'electronic' | 'review' | 'pin';
 
 export default function RegisterClosePage() {
     const { session, electronicSession, closeRegister } = useAuth();
@@ -29,6 +29,9 @@ export default function RegisterClosePage() {
     // Notes
     const [notes, setNotes] = useState('');
 
+    // PIN pad
+    const [closePin, setClosePin] = useState('');
+
     const copRate = getRate('COP');
     const vesRate = getRate('VES');
 
@@ -47,10 +50,15 @@ export default function RegisterClosePage() {
     }, [session, electronicSession]);
 
     const handleConfirmClose = async () => {
+        if (closePin.length < 4) {
+            setError('Ingresa tu PIN de al menos 4 digitos');
+            return;
+        }
         setIsLoading(true);
         setError(null);
         try {
             await closeRegister({
+                pin: closePin,
                 physical: {
                     declaredCash: Math.round(physTotalUSD * 100) / 100,
                     declaredCard: 0,
@@ -71,16 +79,21 @@ export default function RegisterClosePage() {
                     notes
                 }
             });
-            // closeRegister calls logout() which triggers LockScreen — show brief success first
             setDone(true);
         } catch (err: any) {
             const msg = err?.message || 'Error al cerrar la caja. Intenta de nuevo.';
             setError(msg);
+            setClosePin('');
             console.error('[RegisterClose] Error:', err);
         } finally {
             setIsLoading(false);
         }
     };
+
+    const handlePinDigit = (d: string) => {
+        if (closePin.length < 8) setClosePin(prev => prev + d);
+    };
+    const handlePinDelete = () => setClosePin(prev => prev.slice(0, -1));
 
     const fmt = (n: number) => `$${n.toFixed(2)}`;
 
@@ -107,17 +120,18 @@ export default function RegisterClosePage() {
                 <div className="text-center space-y-2">
                     <h1 className="text-3xl font-bold text-white">Cierre de Turno</h1>
                     <p className="text-white/50 text-sm">
-                        {step === 'physical' && 'Paso 1 de 3 — Caja Fisica'}
-                        {step === 'electronic' && 'Paso 2 de 3 — Caja Electronica'}
-                        {step === 'review' && 'Paso 3 de 3 — Auditoria Final'}
+                        {step === 'physical' && 'Paso 1 de 4 — Caja Fisica'}
+                        {step === 'electronic' && 'Paso 2 de 4 — Caja Electronica'}
+                        {step === 'review' && 'Paso 3 de 4 — Auditoria Final'}
+                        {step === 'pin' && 'Paso 4 de 4 — Firma de Cierre'}
                     </p>
 
                     {/* Step indicator */}
                     <div className="flex items-center justify-center gap-2 pt-1">
-                        {(['physical', 'electronic', 'review'] as Step[]).map((s, i) => (
+                        {(['physical', 'electronic', 'review', 'pin'] as Step[]).map((s, i) => (
                             <div key={s} className="flex items-center gap-2">
                                 <div className={`w-2 h-2 rounded-full transition-all ${step === s ? 'bg-enigma-purple w-6' : (
-                                    ['physical', 'electronic', 'review'].indexOf(step) > i
+                                    ['physical', 'electronic', 'review', 'pin'].indexOf(step) > i
                                         ? 'bg-enigma-purple/60' : 'bg-white/20'
                                 )}`} />
                             </div>
@@ -291,10 +305,73 @@ export default function RegisterClosePage() {
                                 className="py-4 rounded-2xl bg-white/5 font-medium hover:bg-white/10 transition-colors">
                                 Recontar
                             </button>
-                            <button onClick={handleConfirmClose} disabled={isLoading}
+                            <button onClick={() => { setStep('pin'); setError(null); setClosePin(''); }}
+                                className="py-4 rounded-2xl bg-enigma-purple font-bold shadow-lg shadow-enigma-purple/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                                <Lock className="w-5 h-5" />
+                                Confirmar Cierre
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* PASO 4: PIN PAD */}
+                {step === 'pin' && (
+                    <div className="space-y-5 animate-fade-in">
+                        <div className="flex items-center gap-2 px-1">
+                            <Lock className="w-4 h-4 text-enigma-purple" />
+                            <span className="text-sm font-medium text-purple-300">Firma de Cierre — Ingresa tu PIN</span>
+                        </div>
+
+                        <div className="bg-enigma-gray/50 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-2xl space-y-5">
+                            {/* PIN dots */}
+                            <div className="flex justify-center gap-3 py-4">
+                                {[0, 1, 2, 3].map(i => (
+                                    <div key={i}
+                                        className={`w-4 h-4 rounded-full transition-all ${i < closePin.length ? 'bg-enigma-purple scale-110' : 'bg-white/15'}`} />
+                                ))}
+                                {closePin.length > 4 && Array.from({ length: closePin.length - 4 }).map((_, i) => (
+                                    <div key={`extra-${i}`} className="w-4 h-4 rounded-full bg-enigma-purple scale-110 transition-all" />
+                                ))}
+                            </div>
+
+                            {/* Keypad */}
+                            <div className="grid grid-cols-3 gap-3">
+                                {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'].map((key) => {
+                                    if (key === '') return <div key="empty" />;
+                                    if (key === 'del') {
+                                        return (
+                                            <button key="del" onClick={handlePinDelete}
+                                                className="py-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all flex items-center justify-center">
+                                                <Delete className="w-5 h-5 text-white/50" />
+                                            </button>
+                                        );
+                                    }
+                                    return (
+                                        <button key={key} onClick={() => handlePinDigit(key)}
+                                            className="py-4 rounded-2xl bg-white/5 hover:bg-white/10 active:bg-white/20 transition-all text-xl font-bold text-white">
+                                            {key}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {error && (
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-sm text-red-400">
+                                <p className="font-semibold mb-1">Error al cerrar la caja</p>
+                                <p className="text-red-300/80 font-mono text-xs">{error}</p>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => { setStep('review'); setError(null); setClosePin(''); }}
+                                className="py-4 rounded-2xl bg-white/5 font-medium hover:bg-white/10 transition-colors">
+                                Atras
+                            </button>
+                            <button onClick={handleConfirmClose} disabled={isLoading || closePin.length < 4}
                                 className="py-4 rounded-2xl bg-enigma-purple font-bold shadow-lg shadow-enigma-purple/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:scale-100">
                                 {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
-                                {isLoading ? 'Cerrando...' : 'Confirmar Cierre'}
+                                {isLoading ? 'Cerrando...' : 'Cerrar Turno'}
                             </button>
                         </div>
                     </div>

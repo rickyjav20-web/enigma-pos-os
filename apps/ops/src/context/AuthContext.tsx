@@ -164,15 +164,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const closeRegister = async (data: any) => {
-        // data can be: { physical: {...closeData}, electronic: {...closeData} }
+        // data can be: { pin, physical: {...closeData}, electronic: {...closeData} }
         // or legacy: { sessionId, declaredCash, ... }
         const errors: string[] = [];
+        const pin = data.pin || employee?.pinCode || '';
 
         const closeSession = async (sessionId: string, closeData: any) => {
             try {
                 await axios.post(`${API_URL}/register/close`, {
                     sessionId,
-                    pin: employee?.pinCode || '',
+                    pin,
                     ...closeData
                 }, { headers: { 'x-tenant-id': TENANT_ID } });
             } catch (e: any) {

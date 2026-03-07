@@ -11,7 +11,7 @@ import {
     MapPin, RefreshCw, Scissors, ArrowRightLeft, ArrowLeft,
     Check, Loader2, ShoppingBag, DollarSign, Smartphone,
     Building2, Wallet, CreditCard, Banknote, List,
-    LayoutGrid, FileText
+    LayoutGrid, FileText, Menu, AlertTriangle, Clock
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
@@ -75,6 +75,54 @@ function getCatColor(cat: string): string {
     return CAT_COLORS[cat];
 }
 
+// ── Confirm Modal (replaces window.confirm) ────────────────────────
+function ConfirmModal({ title, message, confirmLabel, confirmColor, onConfirm, onCancel }: {
+    title: string; message: string; confirmLabel?: string; confirmColor?: string;
+    onConfirm: () => void; onCancel: () => void;
+}) {
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+            <div className="fixed inset-0 bg-black/70" onClick={onCancel} />
+            <div className="relative z-10 w-[360px] rounded-2xl p-6" style={{ background: '#1a1d1b', border: '1px solid rgba(244,240,234,0.08)' }}>
+                <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.1)' }}>
+                        <AlertTriangle className="w-5 h-5" style={{ color: '#ef4444' }} />
+                    </div>
+                    <h3 className="text-base font-bold" style={{ color: '#F4F0EA' }}>{title}</h3>
+                </div>
+                <p className="text-sm mb-6 ml-[52px]" style={{ color: 'rgba(244,240,234,0.5)' }}>{message}</p>
+                <div className="flex gap-2 justify-end">
+                    <button onClick={onCancel}
+                        className="px-5 py-2.5 rounded-xl text-sm font-medium"
+                        style={{ background: 'rgba(244,240,234,0.06)', color: 'rgba(244,240,234,0.6)' }}>
+                        Cancelar
+                    </button>
+                    <button onClick={onConfirm}
+                        className="px-5 py-2.5 rounded-xl text-sm font-bold"
+                        style={{ background: confirmColor || 'rgba(239,68,68,0.15)', color: confirmColor ? '#F4F0EA' : '#ef4444', border: `1px solid ${confirmColor || 'rgba(239,68,68,0.2)'}` }}>
+                        {confirmLabel || 'Confirmar'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Toast notification (replaces alert) ─────────────────────────────
+function Toast({ message, type, onClose }: { message: string; type: 'error' | 'success' | 'info'; onClose: () => void }) {
+    useEffect(() => {
+        const t = setTimeout(onClose, 3000);
+        return () => clearTimeout(t);
+    }, [onClose]);
+    const colors = { error: { bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.2)', text: '#ef4444' }, success: { bg: 'rgba(147,181,157,0.12)', border: 'rgba(147,181,157,0.2)', text: '#93B59D' }, info: { bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.2)', text: '#3b82f6' } };
+    const c = colors[type];
+    return (
+        <div className="fixed top-4 right-4 z-[200] animate-slide-down" style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: '0.75rem', padding: '0.75rem 1.25rem' }}>
+            <p className="text-sm font-medium" style={{ color: c.text }}>{message}</p>
+        </div>
+    );
+}
+
 export default function TabletPOSPage() {
     const { session, employee } = useAuth();
     const {
@@ -90,7 +138,7 @@ export default function TabletPOSPage() {
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
     const [showCatDropdown, setShowCatDropdown] = useState(false);
-    const [viewMode, setViewMode] = useState<ViewMode>('grid');
+    const [viewMode, setViewMode] = useState<ViewMode>(() => (localStorage.getItem('ops_pos_viewMode') as ViewMode) || 'grid');
 
     // Tables
     const [tables, setTables] = useState<DiningTable[]>([]);
@@ -122,6 +170,16 @@ export default function TabletPOSPage() {
     const [editingName, setEditingName] = useState(false);
     const [draftName, setDraftName] = useState('');
 
+    // Side menu
+    const [showSideMenu, setShowSideMenu] = useState(false);
+
+    // Confirm modal
+    const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; confirmLabel?: string; confirmColor?: string; onConfirm: () => void } | null>(null);
+
+    // Toast
+    const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
+    const showToast = useCallback((message: string, type: 'error' | 'success' | 'info' = 'error') => setToast({ message, type }), []);
+
     // Flash feedback on add
     const [lastAddedId, setLastAddedId] = useState<string | null>(null);
     const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -131,6 +189,12 @@ export default function TabletPOSPage() {
     const cartTotal = total();
     const cartCount = itemCount();
     const hasItems = cartCount > 0;
+
+    // Persist viewMode
+    const handleSetViewMode = (mode: ViewMode) => {
+        setViewMode(mode);
+        localStorage.setItem('ops_pos_viewMode', mode);
+    };
 
     // Add product with visual flash
     const handleAddProduct = (product: Product) => {
@@ -252,22 +316,32 @@ export default function TabletPOSPage() {
             setTableSearch('');
             clearCart();
         } catch {
-            alert('Error guardando el ticket');
+            showToast('Error guardando el ticket');
         } finally { setSaving(false); }
     };
 
     // --- Void ticket ---
-    const handleVoid = async () => {
+    const handleVoid = () => {
         if (!ticketId) {
-            // No saved ticket — just clear cart (no server call needed)
-            if (!window.confirm('Vaciar el carrito? Los items no guardados se perderan.')) return;
-            clearCart();
+            setConfirmModal({
+                title: 'Vaciar Carrito',
+                message: 'Los items no guardados se perderan.',
+                confirmLabel: 'Vaciar',
+                onConfirm: () => { clearCart(); setConfirmModal(null); },
+            });
             return;
         }
-        if (!window.confirm('Anular este ticket? Esta accion no se puede deshacer.')) return;
-        try { await fetch(`${API_URL}/sales/${ticketId}`, { method: 'DELETE', headers: TH }); }
-        catch { alert('Error anulando'); return; }
-        clearCart();
+        setConfirmModal({
+            title: 'Anular Ticket',
+            message: 'Esta accion no se puede deshacer. El ticket sera eliminado.',
+            confirmLabel: 'Anular',
+            onConfirm: async () => {
+                setConfirmModal(null);
+                try { await fetch(`${API_URL}/sales/${ticketId}`, { method: 'DELETE', headers: TH }); }
+                catch { showToast('Error anulando'); return; }
+                clearCart();
+            },
+        });
     };
 
     // --- Sync ticket ---
@@ -289,7 +363,7 @@ export default function TabletPOSPage() {
                     quantity: i.quantity,
                 })),
             });
-        } catch { alert('Error sincronizando'); }
+        } catch { showToast('Error sincronizando'); }
     };
 
     // --- Load a ticket into cart ---
@@ -348,7 +422,7 @@ export default function TabletPOSPage() {
                 fetchTables();
             }, 1500);
         } catch {
-            alert('Error procesando el pago. Intenta de nuevo.');
+            showToast('Error procesando el pago. Intenta de nuevo.');
         } finally { setPaying(false); }
     };
 
@@ -383,7 +457,7 @@ export default function TabletPOSPage() {
             setShowSplit(false);
             setSplitQtys({});
         } catch {
-            alert('Error al dividir el ticket');
+            showToast('Error al dividir el ticket');
         } finally { setSplitting(false); }
     };
 
@@ -642,7 +716,11 @@ export default function TabletPOSPage() {
                         className="p-2 rounded-xl" style={{ background: 'rgba(244,240,234,0.04)' }}>
                         <ArrowLeft className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />
                     </button>
+                    <FileText className="w-4 h-4" style={{ color: '#93B59D' }} />
                     <h1 className="text-lg font-bold flex-1" style={{ color: '#F4F0EA' }}>Tickets Abiertos</h1>
+                    <span className="text-xs font-mono px-2 py-1 rounded-lg" style={{ background: 'rgba(147,181,157,0.1)', color: '#93B59D' }}>
+                        {openTickets.length}
+                    </span>
                     <button onClick={fetchOpenTickets} className="p-2 rounded-xl" style={{ background: 'rgba(244,240,234,0.04)' }}>
                         <RefreshCw className={`w-4 h-4 ${loadingTickets ? 'animate-spin' : ''}`} style={{ color: 'rgba(244,240,234,0.4)' }} />
                     </button>
@@ -658,31 +736,51 @@ export default function TabletPOSPage() {
                             <p className="text-sm">No hay tickets abiertos</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 p-5">
                             {openTickets.map(t => {
                                 const elapsed = Math.floor((Date.now() - new Date(t.createdAt).getTime()) / 60000);
                                 const timeStr = elapsed < 60 ? `${elapsed}m` : `${Math.floor(elapsed / 60)}h ${elapsed % 60}m`;
+                                const isOld = elapsed > 60;
+                                const statusColor = t.tableId
+                                    ? (isOld ? '#f59e0b' : '#93B59D')
+                                    : (isOld ? '#ef4444' : '#3b82f6');
+                                const itemTotal = t.items.reduce((s, i) => s + i.quantity, 0);
                                 return (
                                     <button key={t.id} onClick={() => handleLoadTicket(t)}
-                                        className="p-4 rounded-xl text-left transition-all active:scale-[0.97]"
-                                        style={{ background: 'rgba(244,240,234,0.03)', border: '1px solid rgba(244,240,234,0.06)' }}>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm font-bold truncate" style={{ color: '#F4F0EA' }}>
+                                        className="p-4 rounded-2xl text-left transition-all active:scale-[0.97] hover:brightness-110"
+                                        style={{
+                                            background: 'rgba(244,240,234,0.03)',
+                                            border: `1px solid ${statusColor}25`,
+                                            boxShadow: `0 0 0 0 ${statusColor}00, inset 0 1px 0 ${statusColor}10`,
+                                        }}>
+                                        {/* Status dot + name */}
+                                        <div className="flex items-center gap-2.5 mb-3">
+                                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: statusColor, boxShadow: `0 0 8px ${statusColor}40` }} />
+                                            <span className="text-sm font-bold truncate flex-1" style={{ color: '#F4F0EA' }}>
                                                 {t.ticketName || t.tableName || `#${t.id.slice(-4)}`}
                                             </span>
-                                            <span className="text-xs font-mono" style={{ color: '#93B59D' }}>${t.totalAmount.toFixed(2)}</span>
                                         </div>
-                                        <div className="flex items-center gap-2">
+
+                                        {/* Amount */}
+                                        <p className="text-2xl font-bold font-mono tabular-nums mb-3" style={{ color: '#F4F0EA' }}>
+                                            ${t.totalAmount.toFixed(2)}
+                                        </p>
+
+                                        {/* Meta info */}
+                                        <div className="flex items-center gap-2 flex-wrap">
                                             {t.tableName && (
-                                                <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(147,181,157,0.1)', color: '#93B59D' }}>
+                                                <span className="text-[10px] px-2 py-0.5 rounded-md font-semibold" style={{ background: `${statusColor}15`, color: statusColor }}>
                                                     {t.tableName}
                                                 </span>
                                             )}
-                                            <span className="text-[10px]" style={{ color: 'rgba(244,240,234,0.25)' }}>{timeStr}</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1" style={{ background: 'rgba(244,240,234,0.04)', color: isOld ? '#f59e0b' : 'rgba(244,240,234,0.35)' }}>
+                                                <Clock className="w-2.5 h-2.5" />
+                                                {timeStr}
+                                            </span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: 'rgba(244,240,234,0.04)', color: 'rgba(244,240,234,0.3)' }}>
+                                                {itemTotal} item{itemTotal !== 1 ? 's' : ''}
+                                            </span>
                                         </div>
-                                        <p className="text-[10px] mt-1.5" style={{ color: 'rgba(244,240,234,0.2)' }}>
-                                            {t.items.length} item{t.items.length !== 1 ? 's' : ''}
-                                        </p>
                                     </button>
                                 );
                             })}
@@ -701,6 +799,13 @@ export default function TabletPOSPage() {
 
             {/* ── Top toolbar ───────────────────────────────────────── */}
             <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/[0.05] shrink-0" style={{ background: '#0e0e10' }}>
+                {/* Hamburger menu */}
+                <button onClick={() => setShowSideMenu(true)}
+                    className="p-2 rounded-lg"
+                    style={{ background: 'rgba(244,240,234,0.04)' }}>
+                    <Menu className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.5)' }} />
+                </button>
+
                 {/* Category dropdown */}
                 <div className="relative">
                     <button onClick={() => setShowCatDropdown(!showCatDropdown)}
@@ -751,12 +856,12 @@ export default function TabletPOSPage() {
 
                 {/* View mode toggle */}
                 <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid rgba(244,240,234,0.06)' }}>
-                    <button onClick={() => setViewMode('grid')}
+                    <button onClick={() => handleSetViewMode('grid')}
                         className="px-2.5 py-2"
                         style={{ background: viewMode === 'grid' ? 'rgba(147,181,157,0.12)' : 'rgba(244,240,234,0.02)' }}>
                         <LayoutGrid className="w-4 h-4" style={{ color: viewMode === 'grid' ? '#93B59D' : 'rgba(244,240,234,0.25)' }} />
                     </button>
-                    <button onClick={() => setViewMode('list')}
+                    <button onClick={() => handleSetViewMode('list')}
                         className="px-2.5 py-2"
                         style={{ background: viewMode === 'list' ? 'rgba(147,181,157,0.12)' : 'rgba(244,240,234,0.02)' }}>
                         <List className="w-4 h-4" style={{ color: viewMode === 'list' ? '#93B59D' : 'rgba(244,240,234,0.25)' }} />
@@ -916,7 +1021,13 @@ export default function TabletPOSPage() {
                                 {hasItems && (
                                     <button onClick={() => {
                                         if (!ticketId && hasItems) {
-                                            if (!window.confirm('Tienes items sin guardar. Descartar?')) return;
+                                            setConfirmModal({
+                                                title: 'Nuevo Ticket',
+                                                message: 'Tienes items sin guardar. Descartar?',
+                                                confirmLabel: 'Descartar',
+                                                onConfirm: () => { clearCart(); setConfirmModal(null); },
+                                            });
+                                            return;
                                         }
                                         clearCart();
                                     }} title="Nuevo ticket"
@@ -1034,6 +1145,81 @@ export default function TabletPOSPage() {
                     )}
                 </div>
             </div>
+
+            {/* ── Side Menu (hamburger) ─────────────────────────────── */}
+            {showSideMenu && (
+                <>
+                    <div className="fixed inset-0 bg-black/70 z-50" onClick={() => setShowSideMenu(false)} />
+                    <div className="fixed left-0 top-0 bottom-0 w-72 z-50 flex flex-col" style={{ background: '#1a1d1b', animation: 'slideRight 0.2s ease-out' }}>
+                        {/* User info */}
+                        <div className="p-5 pb-4 shrink-0" style={{ borderBottom: '1px solid rgba(244,240,234,0.06)' }}>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: '#1C402E' }}>
+                                    <span className="font-bold text-lg" style={{ color: '#93B59D' }}>
+                                        {(employee?.name || 'S')[0].toUpperCase()}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-sm" style={{ color: '#F4F0EA' }}>{employee?.name || 'Staff'}</p>
+                                    <p className="text-xs" style={{ color: 'rgba(244,240,234,0.4)' }}>{employee?.role || 'Employee'}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Nav items */}
+                        <nav className="py-2 flex-1">
+                            {[
+                                { label: 'Ventas', icon: ShoppingBag, active: true, action: () => setShowSideMenu(false) },
+                                { label: 'Tickets Abiertos', icon: FileText, active: false, action: () => { setShowSideMenu(false); fetchOpenTickets(); setShowTickets(true); } },
+                                { label: 'Nuevo Ticket', icon: Plus, active: false, action: () => {
+                                    if (!ticketId && hasItems) {
+                                        setConfirmModal({
+                                            title: 'Nuevo Ticket',
+                                            message: 'Tienes items sin guardar. Descartar?',
+                                            confirmLabel: 'Descartar',
+                                            onConfirm: () => { clearCart(); setConfirmModal(null); setShowSideMenu(false); },
+                                        });
+                                    } else {
+                                        clearCart();
+                                        setShowSideMenu(false);
+                                    }
+                                }},
+                            ].map((item, i) => {
+                                const Icon = item.icon;
+                                return (
+                                    <button key={i} onClick={item.action}
+                                        className="w-full flex items-center gap-3 px-5 py-3.5 text-sm transition-colors"
+                                        style={{ color: item.active ? '#93B59D' : 'rgba(244,240,234,0.6)', background: item.active ? 'rgba(147,181,157,0.08)' : 'transparent' }}>
+                                        <Icon className="w-5 h-5" />
+                                        {item.label}
+                                    </button>
+                                );
+                            })}
+                        </nav>
+
+                        {/* Session info */}
+                        <div className="p-4 shrink-0" style={{ borderTop: '1px solid rgba(244,240,234,0.06)' }}>
+                            <p className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'rgba(244,240,234,0.2)' }}>Session</p>
+                            <p className="text-xs" style={{ color: 'rgba(244,240,234,0.4)' }}>#{session?.id?.slice(-6) || '---'}</p>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* ── Confirm Modal ─────────────────────────────────────── */}
+            {confirmModal && (
+                <ConfirmModal
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    confirmLabel={confirmModal.confirmLabel}
+                    confirmColor={confirmModal.confirmColor}
+                    onConfirm={confirmModal.onConfirm}
+                    onCancel={() => setConfirmModal(null)}
+                />
+            )}
+
+            {/* ── Toast ─────────────────────────────────────────────── */}
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         </div>
     );
 }

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Home, ShoppingCart, Package, Building2, LogOut, LayoutGrid, Monitor } from 'lucide-react';
+import { Home, ShoppingCart, Package, Building2, LogOut, LayoutGrid, Monitor, AlertTriangle } from 'lucide-react';
 
 // Error Boundary to catch silent crashes
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -71,52 +71,81 @@ function TopModeTabs() {
     const navigate = useNavigate();
     const cartItemCount = useCartStore(s => s.itemCount());
     const cartTicketId = useCartStore(s => s.ticketId);
+    const [pendingNav, setPendingNav] = useState<string | null>(null);
 
     const activeMode = MODE_TABS.find(t =>
         t.matchPaths.some(p => p === '/' ? location.pathname === '/' : location.pathname.startsWith(p))
     ) || MODE_TABS[0];
 
     const handleTabClick = (e: React.MouseEvent, tab: typeof MODE_TABS[0]) => {
-        // If leaving POS with unsaved cart items, confirm
         if (location.pathname === '/pos' && tab.path !== '/pos' && cartItemCount > 0 && !cartTicketId) {
             e.preventDefault();
-            if (window.confirm('Tienes items sin guardar en el carrito. Salir de todos modos?')) {
-                navigate(tab.path);
-            }
+            setPendingNav(tab.path);
         }
     };
 
     return (
-        <div className="flex items-center gap-1 px-3 py-2 border-b border-white/[0.05] shrink-0" style={{ background: '#0a0a0c' }}>
-            {MODE_TABS.map(tab => {
-                const Icon = tab.icon;
-                const isActive = tab === activeMode;
-                return (
-                    <NavLink key={tab.path} to={tab.path}
-                        onClick={(e) => handleTabClick(e, tab)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                            isActive
-                                ? 'text-[#93B59D]'
-                                : 'text-[#F4F0EA]/30 hover:text-[#F4F0EA]/60'
-                        }`}
-                        style={{
-                            background: isActive ? 'rgba(147,181,157,0.1)' : 'transparent',
-                            border: isActive ? '1px solid rgba(147,181,157,0.15)' : '1px solid transparent',
-                        }}>
-                        <Icon className="w-4 h-4" />
-                        {tab.label}
-                        {tab.path === '/pos' && cartItemCount > 0 && !isActive && (
-                            <span className="w-2 h-2 rounded-full bg-[#93B59D] animate-pulse" />
-                        )}
-                    </NavLink>
-                );
-            })}
+        <>
+            <div className="flex items-center gap-1 px-3 py-2 border-b border-white/[0.05] shrink-0" style={{ background: '#0a0a0c' }}>
+                {MODE_TABS.map(tab => {
+                    const Icon = tab.icon;
+                    const isActive = tab === activeMode;
+                    return (
+                        <NavLink key={tab.path} to={tab.path}
+                            onClick={(e) => handleTabClick(e, tab)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                                isActive
+                                    ? 'text-[#93B59D]'
+                                    : 'text-[#F4F0EA]/30 hover:text-[#F4F0EA]/60'
+                            }`}
+                            style={{
+                                background: isActive ? 'rgba(147,181,157,0.1)' : 'transparent',
+                                border: isActive ? '1px solid rgba(147,181,157,0.15)' : '1px solid transparent',
+                            }}>
+                            <Icon className="w-4 h-4" />
+                            {tab.label}
+                            {tab.path === '/pos' && cartItemCount > 0 && !isActive && (
+                                <span className="w-2 h-2 rounded-full bg-[#93B59D] animate-pulse" />
+                            )}
+                        </NavLink>
+                    );
+                })}
 
-            {/* Right side: employee name */}
-            <div className="ml-auto flex items-center gap-3">
-                <span className="text-xs" style={{ color: 'rgba(244,240,234,0.25)' }}>Enigma Ops</span>
+                <div className="ml-auto flex items-center gap-3">
+                    <span className="text-xs" style={{ color: 'rgba(244,240,234,0.25)' }}>Enigma Ops</span>
+                </div>
             </div>
-        </div>
+
+            {/* Navigation confirm modal */}
+            {pendingNav && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center">
+                    <div className="fixed inset-0 bg-black/70" onClick={() => setPendingNav(null)} />
+                    <div className="relative z-10 w-[360px] rounded-2xl p-6" style={{ background: '#1a1d1b', border: '1px solid rgba(244,240,234,0.08)' }}>
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.1)' }}>
+                                <AlertTriangle className="w-5 h-5" style={{ color: '#ef4444' }} />
+                            </div>
+                            <h3 className="text-base font-bold" style={{ color: '#F4F0EA' }}>Salir del POS</h3>
+                        </div>
+                        <p className="text-sm mb-6 ml-[52px]" style={{ color: 'rgba(244,240,234,0.5)' }}>
+                            Tienes items sin guardar en el carrito. Salir de todos modos?
+                        </p>
+                        <div className="flex gap-2 justify-end">
+                            <button onClick={() => setPendingNav(null)}
+                                className="px-5 py-2.5 rounded-xl text-sm font-medium"
+                                style={{ background: 'rgba(244,240,234,0.06)', color: 'rgba(244,240,234,0.6)' }}>
+                                Cancelar
+                            </button>
+                            <button onClick={() => { const path = pendingNav; setPendingNav(null); navigate(path); }}
+                                className="px-5 py-2.5 rounded-xl text-sm font-bold"
+                                style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
+                                Salir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
 
@@ -143,7 +172,7 @@ function ProtectedApp() {
 
     // 3. Authenticated & Open Session -> Main App
     return (
-        <div className="min-h-screen bg-enigma-black text-enigma-text-primary flex flex-col">
+        <div className={`bg-enigma-black text-enigma-text-primary flex flex-col ${isFullscreen ? 'h-screen' : 'min-h-screen'}`}>
             {/* Fixed top tabs - always visible */}
             <TopModeTabs />
 
