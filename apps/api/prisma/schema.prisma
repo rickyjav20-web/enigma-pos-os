@@ -711,7 +711,7 @@ model TableFlowConfig {
 
   preset String @default("standard") // "casual", "standard", "fine_dining", "custom"
 
-  // Thresholds — defaults match "standard" preset (revenue-backed)
+  // Thresholds - defaults match "standard" preset (revenue-backed)
   reviewThresholdMin    Int @default(3)  // 3-min check-back: catch errors + upsell ("otra ronda?")
   urgencyWarningMin     Int @default(35) // 35 min no activity = forgotten table or camper
   tableTurnTargetMin    Int @default(60) // 4 turns/4hr = $4,400/night (20 tables x $55)
