@@ -6,6 +6,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCartStore } from '../stores/cartStore';
+import { useCurrencies } from '../hooks/useCurrencies';
 import {
     Search, X, ChevronDown, Plus, Minus, Trash2,
     MapPin, RefreshCw, Scissors, ArrowRightLeft, ArrowLeft,
@@ -157,6 +158,8 @@ export default function TabletPOSPage() {
     const [payMethod, setPayMethod] = useState<PayMethod>('cash');
     const [paying, setPaying] = useState(false);
     const [paySuccess, setPaySuccess] = useState(false);
+    const [cashReceived, setCashReceived] = useState('');
+    const { getRate, formatLocal } = useCurrencies();
 
     // Split
     const [showSplit, setShowSplit] = useState(false);
@@ -419,6 +422,7 @@ export default function TabletPOSPage() {
                 clearCart();
                 setShowPayment(false);
                 setPaySuccess(false);
+                setCashReceived('');
                 fetchTables();
             }, 1500);
         } catch {
@@ -518,23 +522,23 @@ export default function TabletPOSPage() {
                         </div>
                     </div>
 
-                    {/* Right: method selection */}
-                    <div className="w-[380px] border-l border-white/[0.05] p-6 flex flex-col">
+                    {/* Right: method selection + change calculator */}
+                    <div className="w-[420px] border-l border-white/[0.05] p-6 flex flex-col overflow-y-auto">
                         <p className="text-xs uppercase tracking-widest font-semibold mb-4" style={{ color: 'rgba(244,240,234,0.2)' }}>
                             Metodo de Pago
                         </p>
-                        <div className="grid grid-cols-2 gap-2 mb-6">
+                        <div className="grid grid-cols-2 gap-2 mb-4">
                             {PAY_METHODS.map(m => {
                                 const Icon = m.icon;
                                 const active = payMethod === m.id;
                                 return (
-                                    <button key={m.id} onClick={() => setPayMethod(m.id)}
-                                        className="p-3.5 rounded-xl flex items-center gap-3 transition-all"
+                                    <button key={m.id} onClick={() => { setPayMethod(m.id); if (m.id !== 'cash') setCashReceived(''); }}
+                                        className="p-3 rounded-xl flex items-center gap-2.5 transition-all"
                                         style={{
                                             background: active ? 'rgba(28,64,46,0.15)' : 'rgba(244,240,234,0.03)',
                                             border: `1px solid ${active ? 'rgba(147,181,157,0.2)' : 'rgba(244,240,234,0.06)'}`,
                                         }}>
-                                        <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                                             style={{ background: active ? 'rgba(28,64,46,0.3)' : 'rgba(244,240,234,0.04)' }}>
                                             <Icon className="w-4 h-4" style={{ color: active ? '#93B59D' : 'rgba(244,240,234,0.4)' }} />
                                         </div>
@@ -545,6 +549,154 @@ export default function TabletPOSPage() {
                                 );
                             })}
                         </div>
+
+                        {/* ── Cash Change Calculator ── */}
+                        {payMethod === 'cash' && (() => {
+                            const copRate = getRate('COP');
+                            const received = parseFloat(cashReceived) || 0;
+                            const changeUSD = received - cartTotal;
+                            const hasChange = received > 0 && changeUSD > 0;
+                            const isExact = received > 0 && Math.abs(changeUSD) < 0.005;
+
+                            // Smart denomination breakdown for Tachira border economy:
+                            // - No $1 bills or USD coins available
+                            // - Anything under $5 change → return in COP
+                            // - Break down into largest USD bills first, remainder in COP
+                            const USD_BILLS = [100, 50, 20, 10, 5];
+
+                            let breakdown: { usdBills: { bill: number; count: number }[]; copAmount: number; copFormatted: string } | null = null;
+                            if (hasChange) {
+                                const bills: { bill: number; count: number }[] = [];
+                                let remaining = changeUSD;
+
+                                for (const bill of USD_BILLS) {
+                                    if (remaining >= bill) {
+                                        const count = Math.floor(remaining / bill);
+                                        bills.push({ bill, count });
+                                        remaining = +(remaining - count * bill).toFixed(2);
+                                    }
+                                }
+
+                                // Everything under $5 (remainder) goes to COP
+                                const copAmount = remaining > 0 ? Math.round(remaining * copRate) : 0;
+
+                                // Round COP to nearest 100 (no coins in practice)
+                                const copRounded = Math.ceil(copAmount / 100) * 100;
+
+                                breakdown = {
+                                    usdBills: bills,
+                                    copAmount: copRounded,
+                                    copFormatted: formatLocal(copRounded, 'COP'),
+                                };
+                            }
+
+                            // Quick-pick buttons: common bills
+                            const quickPicks = [5, 10, 20, 50, 100].filter(b => b >= cartTotal);
+                            // Also add exact amount rounded up to next $5
+                            const roundedUp = Math.ceil(cartTotal / 5) * 5;
+                            if (roundedUp > cartTotal && !quickPicks.includes(roundedUp)) {
+                                quickPicks.unshift(roundedUp);
+                                quickPicks.sort((a, b) => a - b);
+                            }
+
+                            return (
+                                <div className="rounded-xl p-4 mb-4 space-y-3" style={{ background: 'rgba(244,240,234,0.03)', border: '1px solid rgba(244,240,234,0.06)' }}>
+                                    <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'rgba(244,240,234,0.3)' }}>
+                                        Calculadora de cambio
+                                    </p>
+
+                                    {/* Amount received input */}
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-lg font-bold" style={{ color: 'rgba(244,240,234,0.3)' }}>$</span>
+                                        <input
+                                            type="number"
+                                            inputMode="decimal"
+                                            placeholder="Recibido..."
+                                            value={cashReceived}
+                                            onChange={e => setCashReceived(e.target.value)}
+                                            className="flex-1 bg-transparent text-2xl font-bold font-mono tabular-nums outline-none"
+                                            style={{ color: '#F4F0EA' }}
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    {/* Quick pick bills */}
+                                    <div className="flex gap-1.5 flex-wrap">
+                                        {quickPicks.map(bill => (
+                                            <button key={bill} onClick={() => setCashReceived(String(bill))}
+                                                className="px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all"
+                                                style={{
+                                                    background: cashReceived === String(bill) ? 'rgba(28,64,46,0.3)' : 'rgba(244,240,234,0.05)',
+                                                    border: `1px solid ${cashReceived === String(bill) ? 'rgba(147,181,157,0.3)' : 'rgba(244,240,234,0.08)'}`,
+                                                    color: cashReceived === String(bill) ? '#93B59D' : 'rgba(244,240,234,0.5)',
+                                                }}>
+                                                ${bill}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Change result */}
+                                    {received > 0 && changeUSD < -0.005 && (
+                                        <div className="flex items-center gap-2 py-2 px-3 rounded-lg" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
+                                            <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: '#ef4444' }} />
+                                            <span className="text-sm font-medium" style={{ color: '#ef4444' }}>
+                                                Faltan ${Math.abs(changeUSD).toFixed(2)}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {isExact && (
+                                        <div className="flex items-center gap-2 py-2 px-3 rounded-lg" style={{ background: 'rgba(147,181,157,0.08)', border: '1px solid rgba(147,181,157,0.15)' }}>
+                                            <Check className="w-4 h-4 shrink-0" style={{ color: '#93B59D' }} />
+                                            <span className="text-sm font-semibold" style={{ color: '#93B59D' }}>Monto exacto</span>
+                                        </div>
+                                    )}
+
+                                    {hasChange && !isExact && breakdown && (
+                                        <div className="space-y-2">
+                                            {/* Total change */}
+                                            <div className="flex items-center justify-between py-2 px-3 rounded-lg" style={{ background: 'rgba(147,181,157,0.08)', border: '1px solid rgba(147,181,157,0.15)' }}>
+                                                <span className="text-xs font-semibold uppercase" style={{ color: 'rgba(244,240,234,0.4)' }}>Cambio</span>
+                                                <span className="text-xl font-bold font-mono" style={{ color: '#93B59D' }}>
+                                                    ${changeUSD.toFixed(2)}
+                                                </span>
+                                            </div>
+
+                                            {/* Denomination breakdown */}
+                                            <div className="px-3 py-2 space-y-1.5">
+                                                <p className="text-[9px] uppercase tracking-widest font-bold" style={{ color: 'rgba(244,240,234,0.2)' }}>
+                                                    Entregar
+                                                </p>
+                                                {breakdown.usdBills.map(b => (
+                                                    <div key={b.bill} className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <Banknote className="w-3.5 h-3.5" style={{ color: '#93B59D' }} />
+                                                            <span className="text-sm font-mono" style={{ color: 'rgba(244,240,234,0.7)' }}>
+                                                                ${b.bill} USD
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-sm font-bold font-mono" style={{ color: '#F4F0EA' }}>x{b.count}</span>
+                                                    </div>
+                                                ))}
+                                                {breakdown.copAmount > 0 && (
+                                                    <div className="flex items-center justify-between pt-1" style={{ borderTop: '1px solid rgba(244,240,234,0.06)' }}>
+                                                        <div className="flex items-center gap-2">
+                                                            <Wallet className="w-3.5 h-3.5" style={{ color: '#f59e0b' }} />
+                                                            <span className="text-sm" style={{ color: 'rgba(244,240,234,0.7)' }}>
+                                                                En pesos
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-sm font-bold font-mono" style={{ color: '#f59e0b' }}>
+                                                            {breakdown.copFormatted}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
 
                         <div className="flex-1" />
 
