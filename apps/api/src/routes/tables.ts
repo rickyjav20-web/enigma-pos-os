@@ -141,17 +141,34 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
     // POST /tables — create table
     const createSchema = z.object({
         name: z.string().min(1),
-        zone: z.string().optional(),
-        capacity: z.number().int().positive().optional(),
-        sortOrder: z.number().int().optional(),
+        zone: z.string().nullable().optional(),
+        capacity: z.number().int().positive().nullable().optional(),
+        sortOrder: z.number().int().nullable().optional(),
     });
 
     fastify.post('/tables', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
         const { name, zone, capacity, sortOrder } = createSchema.parse(request.body);
 
+        // Reactivate soft-deleted table if same name exists
+        const existing = await prisma.diningTable.findUnique({
+            where: { tenantId_name: { tenantId, name } },
+        });
+
+        if (existing && !existing.isActive) {
+            const table = await prisma.diningTable.update({
+                where: { id: existing.id },
+                data: { isActive: true, zone: zone || null, capacity: capacity || null, sortOrder: sortOrder || 0 },
+            });
+            return reply.status(200).send({ success: true, data: table });
+        }
+
+        if (existing) {
+            return reply.status(409).send({ success: false, message: `Ya existe una mesa con el nombre "${name}"` });
+        }
+
         const table = await prisma.diningTable.create({
-            data: { tenantId, name, zone, capacity, sortOrder: sortOrder || 0 },
+            data: { tenantId, name, zone: zone || null, capacity: capacity || null, sortOrder: sortOrder || 0 },
         });
 
         return reply.status(201).send({ success: true, data: table });
@@ -162,6 +179,10 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
         const { id } = request.params as { id: string };
         const tenantId = request.tenantId || 'enigma_hq';
         const body = request.body as any;
+
+        // Verify table belongs to tenant
+        const existing = await prisma.diningTable.findFirst({ where: { id, tenantId } });
+        if (!existing) return reply.status(404).send({ success: false, message: 'Mesa no encontrada' });
 
         const table = await prisma.diningTable.update({
             where: { id },

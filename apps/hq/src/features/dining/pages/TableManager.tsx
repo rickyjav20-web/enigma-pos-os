@@ -70,6 +70,9 @@ export default function TableManager() {
             queryClient.invalidateQueries({ queryKey: ['dining-tables'] });
             resetForm();
         },
+        onError: (err: any) => {
+            alert(`Error al crear mesa: ${err?.response?.data?.message || err.message}`);
+        },
     });
 
     const updateMutation = useMutation({
@@ -79,16 +82,25 @@ export default function TableManager() {
             queryClient.invalidateQueries({ queryKey: ['dining-tables'] });
             resetForm();
         },
+        onError: (err: any) => {
+            alert(`Error al actualizar mesa: ${err?.response?.data?.message || err.message}`);
+        },
     });
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => api.delete(`/tables/${id}`),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dining-tables'] }),
+        onError: (err: any) => {
+            alert(`Error al eliminar mesa: ${err?.response?.data?.message || err.message}`);
+        },
     });
 
     const seedMutation = useMutation({
         mutationFn: () => api.post('/tables/seed'),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dining-tables'] }),
+        onError: (err: any) => {
+            alert(`Error al cargar mesas: ${err?.response?.data?.message || err.message}`);
+        },
     });
 
     // ── Helpers ──
