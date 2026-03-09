@@ -138,6 +138,91 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
         return reply.send({ success: true });
     });
 
+    // POST /tables/:id/free — void open tickets and free a table
+    fastify.post('/tables/:id/free', async (request, reply) => {
+        const tenantId = request.tenantId || 'enigma_hq';
+        const { id } = request.params as { id: string };
+        const { employeeId, employeeName } = request.body as { employeeId?: string; employeeName?: string };
+
+        // Find all open orders for this table
+        const openOrders = await prisma.salesOrder.findMany({
+            where: { tenantId, tableId: id, status: 'open' },
+            select: { id: true },
+        });
+
+        if (openOrders.length === 0) {
+            return reply.send({ success: true, message: 'Mesa ya estaba libre', voided: 0 });
+        }
+
+        // Void each open order (delete items + order)
+        for (const order of openOrders) {
+            await prisma.salesItem.deleteMany({ where: { salesOrderId: order.id } });
+            await prisma.salesOrder.delete({ where: { id: order.id } });
+        }
+
+        // Log the action
+        await prisma.kitchenActivityLog.create({
+            data: {
+                tenantId,
+                employeeId: employeeId || 'system',
+                employeeName: employeeName || 'OPS',
+                action: 'TABLE_FREE',
+                entityType: 'DiningTable',
+                entityId: id,
+                entityName: `Freed ${openOrders.length} ticket(s)`,
+            },
+        });
+
+        return reply.send({ success: true, voided: openOrders.length });
+    });
+
+    // GET /tables/:id/detail — full table detail with order items
+    fastify.get('/tables/:id/detail', async (request, reply) => {
+        const tenantId = request.tenantId || 'enigma_hq';
+        const { id } = request.params as { id: string };
+
+        const table = await prisma.diningTable.findFirst({
+            where: { id, tenantId, isActive: true },
+        });
+
+        if (!table) return reply.status(404).send({ success: false, message: 'Mesa no encontrada' });
+
+        const ordersWithItems = await prisma.salesOrder.findMany({
+            where: { tenantId, tableId: id, status: 'open' },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                items: {
+                    select: {
+                        id: true,
+                        productNameSnapshot: true,
+                        quantity: true,
+                        unitPrice: true,
+                        totalPrice: true,
+                    },
+                },
+            },
+        });
+
+        return reply.send({
+            success: true,
+            data: {
+                ...table,
+                orders: ordersWithItems.map(o => ({
+                    id: o.id,
+                    ticketName: o.ticketName,
+                    tableName: o.tableName,
+                    totalAmount: o.totalAmount,
+                    createdAt: o.createdAt,
+                    employeeId: o.employeeId,
+                    notes: o.notes,
+                    items: o.items,
+                })),
+                totalAmount: ordersWithItems.reduce((sum, o) => sum + o.totalAmount, 0),
+                totalItems: ordersWithItems.reduce((sum, o) => sum + o.items.length, 0),
+            },
+        });
+    });
+
     // POST /tables — create table
     const createSchema = z.object({
         name: z.string().min(1),

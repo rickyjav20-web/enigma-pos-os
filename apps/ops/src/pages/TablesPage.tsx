@@ -2,17 +2,19 @@
  * TablesPage — OPS Torre de Control
  * Live table states powered by KDS activity.
  * States: libre → preparando → servida → revisar
+ * Tap a table → detail drawer with actions.
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
     ArrowLeft, RefreshCw, MapPin, Users, Clock, LayoutGrid,
     ChefHat, CheckCircle2, AlertTriangle, CircleDot,
-    Info, X,
+    Info, X, ExternalLink, Trash2, Eye,
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 const TENANT_ID = 'enigma_hq';
+const TH = { 'x-tenant-id': TENANT_ID, 'Content-Type': 'application/json' };
 
 type TableStatus = 'libre' | 'preparando' | 'servida' | 'revisar' | 'ocupada_sin_kds';
 
@@ -34,6 +36,31 @@ interface DiningTable {
     currentTicket: CurrentTicket | null;
     itemsDone?: number;
     itemsTotal?: number;
+}
+
+interface OrderItem {
+    id: string;
+    productNameSnapshot: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+}
+
+interface TableDetail {
+    id: string;
+    name: string;
+    zone: string | null;
+    capacity: number | null;
+    orders: {
+        id: string;
+        ticketName: string | null;
+        totalAmount: number;
+        createdAt: string;
+        employeeId: string | null;
+        items: OrderItem[];
+    }[];
+    totalAmount: number;
+    totalItems: number;
 }
 
 // ─── Status Config ───────────────────────────────────────────────────────────
@@ -107,27 +134,18 @@ function timeElapsed(dateStr: string): string {
 }
 
 // ─── Table Card ──────────────────────────────────────────────────────────────
-function TableCard({ table, onClick, onCheck }: {
+function TableCard({ table, onClick }: {
     table: DiningTable;
     onClick: () => void;
-    onCheck: () => void;
 }) {
     const isTakeaway = table.zone === 'Takeaway';
     const isBar = table.zone === 'Bar';
     const cfg = STATUS_CONFIG[table.status];
     const hasProgress = table.isOccupied && (table.itemsTotal ?? 0) > 0;
 
-    const handleClick = () => {
-        if (table.status === 'revisar' || table.status === 'servida') {
-            onCheck();
-        } else {
-            onClick();
-        }
-    };
-
     return (
         <button
-            onClick={handleClick}
+            onClick={onClick}
             className={`
                 relative w-full text-left p-4 rounded-2xl border
                 transition-all duration-200 active:scale-[0.96] touch-manipulation
@@ -212,6 +230,230 @@ function TableCard({ table, onClick, onCheck }: {
     );
 }
 
+// ─── Table Detail Drawer ─────────────────────────────────────────────────────
+function TableDrawer({ table, onClose, onNavigate, onCheck, onFree, fetchDetail }: {
+    table: DiningTable;
+    onClose: () => void;
+    onNavigate: () => void;
+    onCheck: () => void;
+    onFree: () => void;
+    fetchDetail: (id: string) => Promise<TableDetail | null>;
+}) {
+    const cfg = STATUS_CONFIG[table.status];
+    const [detail, setDetail] = useState<TableDetail | null>(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
+    const [confirmFree, setConfirmFree] = useState(false);
+    const [freeing, setFreeing] = useState(false);
+
+    useEffect(() => {
+        if (table.isOccupied) {
+            setLoadingDetail(true);
+            fetchDetail(table.id).then(d => {
+                setDetail(d);
+                setLoadingDetail(false);
+            });
+        }
+    }, [table.id, table.isOccupied, fetchDetail]);
+
+    const handleFree = async () => {
+        setFreeing(true);
+        await onFree();
+        setFreeing(false);
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={onClose}>
+            <div
+                className="w-full max-w-lg max-h-[85vh] overflow-y-auto bg-[#1A1D1B] rounded-t-3xl sm:rounded-3xl border border-white/[0.08] animate-in slide-in-from-bottom-4"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="sticky top-0 z-10 bg-[#1A1D1B] rounded-t-3xl border-b border-white/[0.05] px-5 py-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className={`w-3 h-3 rounded-full ${cfg.dot} ${cfg.dotGlow} ${cfg.pulse ? 'animate-pulse' : ''}`} />
+                            <div>
+                                <h2 className="text-lg font-bold text-[#F4F0EA]">{table.name}</h2>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                    {table.zone && (
+                                        <span className="text-[10px] text-[#F4F0EA]/30 flex items-center gap-1">
+                                            <MapPin className="w-3 h-3" /> {table.zone}
+                                        </span>
+                                    )}
+                                    {table.capacity && (
+                                        <span className="text-[10px] text-[#F4F0EA]/30 flex items-center gap-1">
+                                            <Users className="w-3 h-3" /> {table.capacity} pax
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span
+                                className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full"
+                                style={{ color: cfg.color, background: `${cfg.color}15`, border: `1px solid ${cfg.color}30` }}
+                            >
+                                {cfg.label}
+                            </span>
+                            <button onClick={onClose} className="p-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10">
+                                <X className="w-4 h-4 text-[#F4F0EA]/50" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Body */}
+                <div className="p-5 space-y-4">
+
+                    {/* Ticket info when occupied */}
+                    {table.isOccupied && table.currentTicket && (
+                        <div className="p-4 rounded-2xl border" style={{ background: `${cfg.color}08`, borderColor: `${cfg.color}20` }}>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xl font-bold font-mono" style={{ color: cfg.color }}>
+                                    ${table.currentTicket.totalAmount.toFixed(2)}
+                                </span>
+                                <div className="flex items-center gap-1 text-xs" style={{ color: `${cfg.color}99` }}>
+                                    <Clock className="w-3.5 h-3.5" />
+                                    <span>{timeElapsed(table.currentTicket.createdAt)}</span>
+                                </div>
+                            </div>
+
+                            {/* Progress */}
+                            {(table.itemsTotal ?? 0) > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                        <div
+                                            className="h-full rounded-full transition-all duration-500"
+                                            style={{
+                                                width: `${((table.itemsDone ?? 0) / (table.itemsTotal ?? 1)) * 100}%`,
+                                                background: cfg.color,
+                                            }}
+                                        />
+                                    </div>
+                                    <span className="text-[11px] font-mono tabular-nums" style={{ color: cfg.color }}>
+                                        {table.itemsDone}/{table.itemsTotal} items
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Order items detail */}
+                    {table.isOccupied && (
+                        <div>
+                            <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#F4F0EA]/30 mb-2">
+                                Detalle del pedido
+                            </h3>
+                            {loadingDetail ? (
+                                <div className="flex items-center justify-center py-6">
+                                    <div className="w-5 h-5 border-2 border-[#93B59D]/20 border-t-[#93B59D] rounded-full animate-spin" />
+                                </div>
+                            ) : detail && detail.orders.length > 0 ? (
+                                <div className="space-y-2">
+                                    {detail.orders.map(order => (
+                                        <div key={order.id} className="rounded-xl bg-white/[0.03] border border-white/[0.05] overflow-hidden">
+                                            {order.items.map((item, i) => (
+                                                <div
+                                                    key={item.id}
+                                                    className={`flex items-center justify-between px-3 py-2.5 ${
+                                                        i !== order.items.length - 1 ? 'border-b border-white/[0.04]' : ''
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                        <span className="text-[11px] font-bold text-[#F4F0EA]/40 w-5 text-center tabular-nums">
+                                                            {item.quantity}x
+                                                        </span>
+                                                        <span className="text-[13px] text-[#F4F0EA]/80 truncate">
+                                                            {item.productNameSnapshot}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[12px] font-mono text-[#F4F0EA]/40 ml-2 flex-shrink-0">
+                                                        ${item.totalPrice.toFixed(2)}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-[#F4F0EA]/25 py-4 text-center">Sin items en el pedido</p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Free table - description */}
+                    {!table.isOccupied && (
+                        <div className="text-center py-6">
+                            <div className="w-12 h-12 rounded-2xl bg-[#93B59D]/10 border border-[#93B59D]/20 flex items-center justify-center mx-auto mb-3">
+                                <CheckCircle2 className="w-5 h-5 text-[#93B59D]" />
+                            </div>
+                            <p className="text-sm text-[#F4F0EA]/50">Mesa disponible</p>
+                            <p className="text-[11px] text-[#F4F0EA]/25 mt-1">Toca "Abrir Orden" para asignar un pedido</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Actions */}
+                <div className="sticky bottom-0 bg-[#1A1D1B] border-t border-white/[0.05] p-4 space-y-2">
+                    {/* Primary action row */}
+                    <div className="flex gap-2">
+                        <button
+                            onClick={onNavigate}
+                            className="flex-1 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+                            style={{
+                                background: 'linear-gradient(135deg, #1C402E, #255639)',
+                                color: '#F4F0EA',
+                            }}
+                        >
+                            {table.isOccupied ? (
+                                <><Eye className="w-4 h-4" /> Ver / Editar Orden</>
+                            ) : (
+                                <><ExternalLink className="w-4 h-4" /> Abrir Orden</>
+                            )}
+                        </button>
+                    </div>
+
+                    {/* Secondary actions for occupied tables */}
+                    {table.isOccupied && (
+                        <div className="flex gap-2">
+                            {(table.status === 'servida' || table.status === 'revisar') && (
+                                <button
+                                    onClick={() => { onCheck(); onClose(); }}
+                                    className="flex-1 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5
+                                        bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                                >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    Marcar Revisada
+                                </button>
+                            )}
+                            {!confirmFree ? (
+                                <button
+                                    onClick={() => setConfirmFree(true)}
+                                    className="flex-1 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5
+                                        bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    Liberar Mesa
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleFree}
+                                    disabled={freeing}
+                                    className="flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5
+                                        bg-red-500/20 text-red-300 border border-red-500/40 animate-pulse disabled:opacity-50"
+                                >
+                                    {freeing ? 'Liberando...' : 'Confirmar Anular Tickets'}
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Color Legend ────────────────────────────────────────────────────────────
 function ColorLegend({ onClose }: { onClose: () => void }) {
     const statuses: TableStatus[] = ['libre', 'preparando', 'servida', 'revisar', 'ocupada_sin_kds'];
@@ -221,13 +463,6 @@ function ColorLegend({ onClose }: { onClose: () => void }) {
         servida: <CheckCircle2 className="w-4 h-4" />,
         revisar: <AlertTriangle className="w-4 h-4" />,
         ocupada_sin_kds: <Clock className="w-4 h-4" />,
-    };
-    const actions: Record<TableStatus, string> = {
-        libre: 'Toca para abrir nueva orden',
-        preparando: 'Toca para ver/editar la orden',
-        servida: 'Toca para marcar como revisada',
-        revisar: 'Toca para marcar como revisada',
-        ocupada_sin_kds: 'Toca para ver/editar la orden',
     };
 
     return (
@@ -257,7 +492,6 @@ function ColorLegend({ onClose }: { onClose: () => void }) {
                                         <span className="text-sm font-bold" style={{ color: cfg.color }}>{cfg.label}</span>
                                     </div>
                                     <p className="text-[11px] text-[#F4F0EA]/40 mt-0.5">{cfg.description}</p>
-                                    <p className="text-[10px] font-semibold mt-1" style={{ color: `${cfg.color}99` }}>{actions[s]}</p>
                                 </div>
                             </div>
                         );
@@ -278,6 +512,7 @@ export default function TablesPage() {
     const [lastRefresh, setLastRefresh] = useState(new Date());
     const [seeding, setSeeding] = useState(false);
     const [showLegend, setShowLegend] = useState(false);
+    const [selectedTable, setSelectedTable] = useState<DiningTable | null>(null);
 
     const fetchTables = useCallback(async (silent = false) => {
         if (silent) setRefreshing(true);
@@ -300,24 +535,32 @@ export default function TablesPage() {
 
     useEffect(() => {
         fetchTables();
-        const interval = setInterval(() => fetchTables(true), 10000); // 10s for live updates
+        const interval = setInterval(() => fetchTables(true), 10000);
         return () => clearInterval(interval);
     }, [fetchTables]);
+
+    const fetchTableDetail = useCallback(async (id: string): Promise<TableDetail | null> => {
+        try {
+            const res = await fetch(`${API_URL}/tables/${id}/detail`, { headers: TH });
+            if (!res.ok) return null;
+            const data = await res.json();
+            return data.data || null;
+        } catch {
+            return null;
+        }
+    }, []);
 
     const handleSeedDefaults = async () => {
         setSeeding(true);
         try {
-            await fetch(`${API_URL}/tables/seed`, {
-                method: 'POST',
-                headers: { 'x-tenant-id': TENANT_ID }
-            });
+            await fetch(`${API_URL}/tables/seed`, { method: 'POST', headers: TH });
             await fetchTables();
         } finally {
             setSeeding(false);
         }
     };
 
-    const handleTableClick = (table: DiningTable) => {
+    const handleNavigateToOrder = (table: DiningTable) => {
         const params = new URLSearchParams({ tableId: table.id, tableName: table.name });
         if (table.isOccupied && table.currentTicket?.id) {
             params.set('ticketId', table.currentTicket.id);
@@ -326,17 +569,24 @@ export default function TablesPage() {
     };
 
     const handleTableCheck = async (table: DiningTable) => {
-        // Mark table as reviewed — navigates to the order
         try {
             await fetch(`${API_URL}/tables/${table.id}/check`, {
-                method: 'POST',
-                headers: { 'x-tenant-id': TENANT_ID, 'Content-Type': 'application/json' },
-                body: JSON.stringify({}),
+                method: 'POST', headers: TH, body: JSON.stringify({}),
             });
+            await fetchTables(true);
         } catch { /* non-critical */ }
+    };
 
-        // Then navigate to the order
-        handleTableClick(table);
+    const handleFreeTable = async (table: DiningTable) => {
+        try {
+            await fetch(`${API_URL}/tables/${table.id}/free`, {
+                method: 'POST', headers: TH, body: JSON.stringify({}),
+            });
+            setSelectedTable(null);
+            await fetchTables(true);
+        } catch {
+            alert('Error al liberar la mesa');
+        }
     };
 
     // Build zone list
@@ -358,6 +608,9 @@ export default function TablesPage() {
         servida: tables.filter(t => t.status === 'servida').length,
         revisar: tables.filter(t => t.status === 'revisar').length,
     };
+
+    // Urgency: tables needing attention
+    const urgentCount = statusCounts.revisar;
 
     if (loading) {
         return (
@@ -384,6 +637,11 @@ export default function TablesPage() {
                             <div className="flex items-center gap-2">
                                 <LayoutGrid className="w-4 h-4 text-[#93B59D]" />
                                 <h1 className="text-base font-bold text-[#F4F0EA] leading-none">Torre de Control</h1>
+                                {urgentCount > 0 && (
+                                    <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
+                                        {urgentCount}
+                                    </span>
+                                )}
                             </div>
                             <div className="flex items-center gap-2 mt-1">
                                 {statusCounts.preparando > 0 && (
@@ -507,8 +765,7 @@ export default function TablesPage() {
                                         <TableCard
                                             key={table.id}
                                             table={table}
-                                            onClick={() => handleTableClick(table)}
-                                            onCheck={() => handleTableCheck(table)}
+                                            onClick={() => setSelectedTable(table)}
                                         />
                                     ))}
                                 </div>
@@ -517,6 +774,18 @@ export default function TablesPage() {
                     })
                 )}
             </div>
+
+            {/* ── Table Detail Drawer ── */}
+            {selectedTable && (
+                <TableDrawer
+                    table={selectedTable}
+                    onClose={() => setSelectedTable(null)}
+                    onNavigate={() => handleNavigateToOrder(selectedTable)}
+                    onCheck={() => handleTableCheck(selectedTable)}
+                    onFree={() => handleFreeTable(selectedTable)}
+                    fetchDetail={fetchTableDetail}
+                />
+            )}
 
             {/* ── Color Legend Modal ── */}
             {showLegend && <ColorLegend onClose={() => setShowLegend(false)} />}
