@@ -67,6 +67,7 @@ fastify.register(import('./routes/currencies'), { prefix: '/api/v1' });
 fastify.register(import('./routes/inventory-tasks'), { prefix: '/api/v1' });
 fastify.register(import('./routes/waste-analytics'), { prefix: '/api/v1' });
 fastify.register(import('./routes/tables'), { prefix: '/api/v1' });
+fastify.register(import('./routes/table-flow-config'), { prefix: '/api/v1' });
 fastify.register(import('./routes/goals'), { prefix: '/api/v1' });
 fastify.register(import('./routes/analytics'), { prefix: '/api/v1' });
 

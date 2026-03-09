@@ -18,6 +18,7 @@ import RolesManager from "./features/staff/pages/RolesManager";
 import KioskAuth from "./features/staff/pages/KioskAuth";
 import DailyGoals from "./features/staff/pages/DailyGoals";
 import TableManager from "./features/dining/pages/TableManager";
+import TableFlowSettings from "./features/dining/pages/TableFlowSettings";
 // @ts-ignore
 import AccountPage from "./features/account/pages/AccountPage";
 // @ts-ignore
@@ -76,6 +77,7 @@ function AppRoot() {
               <Route path="purchases/waste" element={<WasteDashboardPage />} />
               <Route path="register" element={<RegisterAdminPage />} />
               <Route path="dining/tables" element={<TableManager />} />
+              <Route path="dining/flow" element={<TableFlowSettings />} />
             </Route>
 
             {/* Standalone Apps (No Layout) */}

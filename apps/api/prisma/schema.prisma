@@ -37,6 +37,7 @@ model Tenant {
   shiftTasks       ShiftTask[]
   diningTables     DiningTable[]
   dailyGoals       DailyGoal[]
+  tableFlowConfig  TableFlowConfig?
 }
 
 // --- MODULE: ACCESS CONTROL ---
@@ -702,6 +703,27 @@ model DiningTable {
   salesOrders SalesOrder[]
 
   @@unique([tenantId, name])
+}
+
+model TableFlowConfig {
+  id       String @id @default(uuid())
+  tenantId String @unique
+
+  preset String @default("standard") // "casual", "standard", "fine_dining", "custom"
+
+  // Thresholds (minutes unless noted)
+  reviewThresholdMin    Int @default(10) // After food served, alert manager
+  urgencyWarningMin     Int @default(30) // Ticket open too long without progress
+  tableTurnTargetMin    Int @default(60) // Ideal table turnover time
+  staleTicketAlertMin   Int @default(20) // Open ticket with no activity
+  kdsPrepTimeWarningMin Int @default(15) // Kitchen taking too long on item
+
+  // System (seconds)
+  autoRefreshSec Int @default(15) // Live update interval for torre de control
+
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
 }
 
 // --- MODULE: EMPLOYEE REWARDS ---

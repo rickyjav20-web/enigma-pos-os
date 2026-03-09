@@ -7,14 +7,18 @@ import { z } from 'zod';
 // Computed from open SalesOrders + KDS activity logs
 type TableStatus = 'libre' | 'preparando' | 'servida' | 'revisar' | 'ocupada_sin_kds';
 
-// After table is fully served, time before it becomes "revisar" (10 minutes)
-const REVIEW_THRESHOLD_MS = 10 * 60 * 1000;
+// Default review threshold (overridden by TableFlowConfig)
+const DEFAULT_REVIEW_THRESHOLD_MIN = 10;
 
 export default async function tablesRoutes(fastify: FastifyInstance) {
 
     // GET /tables — list all tables with live KDS-aware status
     fastify.get('/tables', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
+
+        // Load tenant flow config for thresholds
+        const flowConfig = await prisma.tableFlowConfig.findUnique({ where: { tenantId } });
+        const reviewThresholdMs = (flowConfig?.reviewThresholdMin ?? DEFAULT_REVIEW_THRESHOLD_MIN) * 60 * 1000;
 
         const tables = await prisma.diningTable.findMany({
             where: { tenantId, isActive: true },
@@ -91,7 +95,7 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
                 const latestDone = doneAt.length > 0 ? Math.max(...doneAt.map(d => d.getTime())) : now;
                 const elapsed = now - latestDone;
 
-                status = elapsed > REVIEW_THRESHOLD_MS ? 'revisar' : 'servida';
+                status = elapsed > reviewThresholdMs ? 'revisar' : 'servida';
             } else if (anyItemDone) {
                 // Partially served — still preparing
                 status = 'preparando';
