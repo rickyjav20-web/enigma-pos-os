@@ -9,7 +9,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useCartStore } from '../stores/cartStore';
 import {
     ArrowLeft, RefreshCw, MapPin, Users, Clock, LayoutGrid,
-    ChefHat, CheckCircle2, AlertTriangle, CircleDot,
+    ChefHat, CheckCircle2, AlertTriangle, CircleDot, Coffee,
     Info, X, ExternalLink, Trash2, Eye,
 } from 'lucide-react';
 
@@ -17,7 +17,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 const TENANT_ID = 'enigma_hq';
 const TH = { 'x-tenant-id': TENANT_ID, 'Content-Type': 'application/json' };
 
-type TableStatus = 'libre' | 'preparando' | 'servida' | 'revisar' | 'ocupada_sin_kds';
+type TableStatus = 'libre' | 'preparando' | 'servida' | 'revisar' | 'sobremesa' | 'ocupada_sin_kds';
 
 interface CurrentTicket {
     id: string;
@@ -114,6 +114,16 @@ const STATUS_CONFIG: Record<TableStatus, {
         dotGlow: 'shadow-[0_0_8px_rgba(248,113,113,0.7)]',
         pulse: true,
         description: 'Servida hace mas de 10 min — verificar si necesita algo',
+    },
+    sobremesa: {
+        label: 'Sobremesa',
+        color: '#A78BFA',
+        bg: 'bg-violet-500/10',
+        border: 'border-violet-500/30',
+        dot: 'bg-violet-400',
+        dotGlow: 'shadow-[0_0_8px_rgba(167,139,250,0.5)]',
+        pulse: false,
+        description: 'Mesa revisada, clientes disfrutando — esperando antes de volver a revisar',
     },
     ocupada_sin_kds: {
         label: 'Ocupada',
@@ -457,12 +467,13 @@ function TableDrawer({ table, onClose, onNavigate, onCheck, onFree, fetchDetail 
 
 // ─── Color Legend ────────────────────────────────────────────────────────────
 function ColorLegend({ onClose }: { onClose: () => void }) {
-    const statuses: TableStatus[] = ['libre', 'preparando', 'servida', 'revisar', 'ocupada_sin_kds'];
+    const statuses: TableStatus[] = ['libre', 'preparando', 'servida', 'revisar', 'sobremesa', 'ocupada_sin_kds'];
     const icons: Record<TableStatus, React.ReactNode> = {
         libre: <CircleDot className="w-4 h-4" />,
         preparando: <ChefHat className="w-4 h-4" />,
         servida: <CheckCircle2 className="w-4 h-4" />,
         revisar: <AlertTriangle className="w-4 h-4" />,
+        sobremesa: <Coffee className="w-4 h-4" />,
         ocupada_sin_kds: <Clock className="w-4 h-4" />,
     };
 
@@ -635,6 +646,7 @@ export default function TablesPage() {
         preparando: tables.filter(t => t.status === 'preparando').length,
         servida: tables.filter(t => t.status === 'servida').length,
         revisar: tables.filter(t => t.status === 'revisar').length,
+        sobremesa: tables.filter(t => t.status === 'sobremesa').length,
     };
 
     // Urgency: tables needing attention
@@ -682,6 +694,14 @@ export default function TablesPage() {
                                         {statusCounts.preparando > 0 && <span className="text-[#F4F0EA]/15 text-[10px]">·</span>}
                                         <span className="text-[10px] font-semibold" style={{ color: STATUS_CONFIG.servida.color }}>
                                             {statusCounts.servida} servida{statusCounts.servida !== 1 ? 's' : ''}
+                                        </span>
+                                    </>
+                                )}
+                                {statusCounts.sobremesa > 0 && (
+                                    <>
+                                        <span className="text-[#F4F0EA]/15 text-[10px]">·</span>
+                                        <span className="text-[10px] font-semibold" style={{ color: STATUS_CONFIG.sobremesa.color }}>
+                                            {statusCounts.sobremesa} sobremesa
                                         </span>
                                     </>
                                 )}

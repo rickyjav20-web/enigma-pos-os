@@ -3,12 +3,13 @@ import { FastifyInstance } from 'fastify';
 import prisma from '../lib/prisma';
 import { z } from 'zod';
 
-// Table status: libre → preparando → servida → revisar
-// Computed from open SalesOrders + KDS activity logs
-type TableStatus = 'libre' | 'preparando' | 'servida' | 'revisar' | 'ocupada_sin_kds';
+// Table status: libre → preparando → servida → revisar → sobremesa (cycle)
+// Computed from open SalesOrders + KDS activity logs + TABLE_CHECK logs
+type TableStatus = 'libre' | 'preparando' | 'servida' | 'revisar' | 'sobremesa' | 'ocupada_sin_kds';
 
-// Default review threshold (overridden by TableFlowConfig)
+// Defaults (overridden by TableFlowConfig)
 const DEFAULT_REVIEW_THRESHOLD_MIN = 3;
+const DEFAULT_SOBREMESA_MIN = 15;
 
 export default async function tablesRoutes(fastify: FastifyInstance) {
 
@@ -19,6 +20,7 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
         // Load tenant flow config for thresholds
         const flowConfig = await prisma.tableFlowConfig.findUnique({ where: { tenantId } });
         const reviewThresholdMs = (flowConfig?.reviewThresholdMin ?? DEFAULT_REVIEW_THRESHOLD_MIN) * 60 * 1000;
+        const sobremesaMs = (flowConfig?.sobremesaMin ?? DEFAULT_SOBREMESA_MIN) * 60 * 1000;
 
         const tables = await prisma.diningTable.findMany({
             where: { tenantId, isActive: true },
@@ -101,32 +103,37 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
             const totalItems = allItems.length;
             const doneItems = allItems.filter(i => doneItemIds.has(i.id)).length;
 
-            // Determine status
+            // Determine status using intelligent flow:
+            // libre → preparando → servida → [reviewThreshold] → revisar
+            //   → [Revisada click] → sobremesa → [sobremesaMin] → revisar (cycle)
+            // Auto-breaks: new items added → preparando | payment → libre
             let status: TableStatus;
             const allOrdersDone = openOrders.every(o => doneOrderIds.has(o.id));
             const allItemsDone = totalItems > 0 && doneItems === totalItems;
             const anyItemDone = doneItems > 0;
 
-            if (allOrdersDone || allItemsDone) {
-                // Check if enough time has passed → needs review
+            if (totalItems === 0) {
+                // Order exists but no items
+                status = 'ocupada_sin_kds';
+            } else if (!allItemsDone && !allOrdersDone) {
+                // Not all items done — kitchen is working (includes new dessert round)
+                status = anyItemDone ? 'preparando' : 'preparando';
+            } else {
+                // All items done — determine where we are in the post-serve flow
                 const doneAt = openOrders.map(o => doneTimestamps[o.id]).filter(Boolean);
                 const latestDone = doneAt.length > 0 ? Math.max(...doneAt.map(d => d.getTime())) : now;
-
-                // If table was checked (reviewed) after it was done, use check time as baseline
                 const lastCheck = tableCheckTimestamps[t.id];
-                const baseline = lastCheck && lastCheck.getTime() > latestDone ? lastCheck.getTime() : latestDone;
-                const elapsed = now - baseline;
+                const hasBeenChecked = lastCheck && lastCheck.getTime() > latestDone;
 
-                status = elapsed > reviewThresholdMs ? 'revisar' : 'servida';
-            } else if (anyItemDone) {
-                // Partially served — still preparing
-                status = 'preparando';
-            } else if (totalItems === 0) {
-                // Order exists but no items (shouldn't normally happen)
-                status = 'ocupada_sin_kds';
-            } else {
-                // No KDS activity yet
-                status = 'preparando';
+                if (hasBeenChecked) {
+                    // Table was reviewed after serving — SOBREMESA or re-REVISAR
+                    const elapsedSinceCheck = now - lastCheck.getTime();
+                    status = elapsedSinceCheck > sobremesaMs ? 'revisar' : 'sobremesa';
+                } else {
+                    // First serve, no check yet — SERVIDA or REVISAR
+                    const elapsedSinceDone = now - latestDone;
+                    status = elapsedSinceDone > reviewThresholdMs ? 'revisar' : 'servida';
+                }
             }
 
             return {
