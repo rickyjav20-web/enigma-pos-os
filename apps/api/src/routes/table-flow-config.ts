@@ -17,6 +17,7 @@ const PRESETS = {
         staleTicketAlertMin: 45,     // 50% over target — likely forgotten tab or walkout
         kdsPrepTimeWarningMin: 8,    // Café items should fire in 5-7 min; 8 = cascade risk
         sobremesaMin: 10,            // Fast casual — guests eat quickly, re-check in 10 min
+        deliveryBufferMin: 1,        // 1 min from KDS done to "servida" (food transit from kitchen)
     },
     standard: {
         label: 'Restaurante Estándar',
@@ -28,6 +29,7 @@ const PRESETS = {
         staleTicketAlertMin: 90,     // At 90 min: forgotten tab, shift-change miss, or walkout risk
         kdsPrepTimeWarningMin: 15,   // Entrees fire in 10-14 min; 15 = server should manage guest expectation
         sobremesaMin: 15,            // Standard dining — comfortable 15-min window after check-back
+        deliveryBufferMin: 1,        // 1 min from KDS done to "servida" (food transit from kitchen)
     },
     fine_dining: {
         label: 'Fine Dining / Premium',
@@ -39,6 +41,7 @@ const PRESETS = {
         staleTicketAlertMin: 150,    // Even luxury meals should be in final act at 2.5 hrs
         kdsPrepTimeWarningMin: 22,   // Complex dishes take 15-20 min; 22 catches genuine delays
         sobremesaMin: 25,            // Fine dining — leisurely pace, 25 min between check-backs
+        deliveryBufferMin: 2,        // 2 min — fine dining has longer plating + runner walk
     },
 } as const;
 
@@ -86,6 +89,7 @@ export default async function tableFlowConfigRoutes(fastify: FastifyInstance) {
         staleTicketAlertMin: z.number().int().min(5).max(300).optional(),
         kdsPrepTimeWarningMin: z.number().int().min(3).max(60).optional(),
         sobremesaMin: z.number().int().min(3).max(120).optional(),
+        deliveryBufferMin: z.number().int().min(0).max(10).optional(),
     });
 
     fastify.put('/table-flow-config', async (request, reply) => {
@@ -101,6 +105,7 @@ export default async function tableFlowConfigRoutes(fastify: FastifyInstance) {
             staleTicketAlertMin: number;
             kdsPrepTimeWarningMin: number;
             sobremesaMin: number;
+            deliveryBufferMin: number;
         };
 
         if (body.preset !== 'custom' && body.preset in PRESETS) {
@@ -113,6 +118,7 @@ export default async function tableFlowConfigRoutes(fastify: FastifyInstance) {
                 staleTicketAlertMin: presetData.staleTicketAlertMin,
                 kdsPrepTimeWarningMin: presetData.kdsPrepTimeWarningMin,
                 sobremesaMin: presetData.sobremesaMin,
+                deliveryBufferMin: presetData.deliveryBufferMin,
             };
         } else {
             // Custom — use provided values or keep existing
@@ -125,6 +131,7 @@ export default async function tableFlowConfigRoutes(fastify: FastifyInstance) {
                 staleTicketAlertMin: body.staleTicketAlertMin ?? existing?.staleTicketAlertMin ?? DEFAULT_CONFIG.staleTicketAlertMin,
                 kdsPrepTimeWarningMin: body.kdsPrepTimeWarningMin ?? existing?.kdsPrepTimeWarningMin ?? DEFAULT_CONFIG.kdsPrepTimeWarningMin,
                 sobremesaMin: body.sobremesaMin ?? existing?.sobremesaMin ?? DEFAULT_CONFIG.sobremesaMin,
+                deliveryBufferMin: body.deliveryBufferMin ?? existing?.deliveryBufferMin ?? DEFAULT_CONFIG.deliveryBufferMin,
             };
         }
 

@@ -654,7 +654,7 @@ export default function TablesPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#121413] flex items-center justify-center">
+            <div className="h-full bg-[#121413] flex items-center justify-center">
                 <div className="text-center space-y-3">
                     <div className="w-10 h-10 border-2 border-[#93B59D]/20 border-t-[#93B59D] rounded-full animate-spin mx-auto" />
                     <p className="text-[#F4F0EA]/40 text-sm">Cargando salon...</p>
@@ -664,7 +664,7 @@ export default function TablesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#121413] text-[#F4F0EA]">
+        <div className="h-full bg-[#121413] text-[#F4F0EA] overflow-y-auto">
 
             {/* ── Sticky Header ── */}
             <div className="sticky top-0 z-20 bg-[#121413]/95 backdrop-blur-xl border-b border-white/[0.05]">

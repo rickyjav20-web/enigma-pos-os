@@ -718,6 +718,7 @@ model TableFlowConfig {
   staleTicketAlertMin   Int @default(90) // 90 min = forgotten tab or walkout risk
   kdsPrepTimeWarningMin Int @default(15) // Entrees fire in 10-14 min; 15 = alert server
   sobremesaMin          Int @default(15) // Post-review idle time before re-alerting
+  deliveryBufferMin     Int @default(1)  // Minutes after KDS done before showing "servida" (food transit time)
 
   // System (seconds)
   autoRefreshSec Int @default(30) // Moderate pace; 2x/min catches stalls

@@ -161,6 +161,7 @@ export default function TabletPOSPage() {
     const [cashUSD, setCashUSD] = useState('');
     const [cashCOP, setCashCOP] = useState('');
     const [giveBackUSD, setGiveBackUSD] = useState(0);
+    const [activeInput, setActiveInput] = useState<'usd' | 'cop' | null>(null);
     const { getRate, formatLocal } = useCurrencies();
 
     // Split
@@ -594,6 +595,31 @@ export default function TabletPOSPage() {
                             // Also show the total in COP as a quick pick
                             const totalInCOP = Math.ceil((cartTotal * copRate) / 1000) * 1000;
 
+                            // Numpad handler
+                            const handleNumpad = (key: string) => {
+                                const target = activeInput;
+                                if (!target) return;
+                                const setter = target === 'usd' ? setCashUSD : setCashCOP;
+                                const current = target === 'usd' ? cashUSD : cashCOP;
+                                if (key === 'C') { setter(''); setGiveBackUSD(0); return; }
+                                if (key === '⌫') { setter(current.slice(0, -1)); setGiveBackUSD(0); return; }
+                                if (key === '.' && current.includes('.')) return;
+                                setter(current + key);
+                                setGiveBackUSD(0);
+                            };
+
+                            // COP bill breakdown for change
+                            const COP_BILLS = [100000, 50000, 20000, 10000, 5000, 2000, 1000];
+                            const copBillBreakdown: { bill: number; count: number }[] = [];
+                            let copRem = remainderCOP;
+                            for (const bill of COP_BILLS) {
+                                if (copRem >= bill) {
+                                    const count = Math.floor(copRem / bill);
+                                    copBillBreakdown.push({ bill, count });
+                                    copRem -= count * bill;
+                                }
+                            }
+
                             return (
                                 <div className="rounded-xl p-4 mb-4 space-y-3" style={{ background: 'rgba(244,240,234,0.03)', border: '1px solid rgba(244,240,234,0.06)' }}>
                                     <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'rgba(244,240,234,0.3)' }}>
@@ -606,17 +632,22 @@ export default function TabletPOSPage() {
                                             <Banknote className="w-3.5 h-3.5" style={{ color: '#93B59D' }} />
                                             <span className="text-[10px] font-bold uppercase" style={{ color: 'rgba(244,240,234,0.35)' }}>Recibido USD</span>
                                         </div>
-                                        <div className="flex items-center gap-2 mb-1.5">
+                                        <button
+                                            onClick={() => setActiveInput(activeInput === 'usd' ? null : 'usd')}
+                                            className="w-full flex items-center gap-2 mb-1.5 px-3 py-2.5 rounded-xl transition-all"
+                                            style={{
+                                                background: activeInput === 'usd' ? 'rgba(28,64,46,0.2)' : 'rgba(244,240,234,0.04)',
+                                                border: `1.5px solid ${activeInput === 'usd' ? 'rgba(147,181,157,0.4)' : 'rgba(244,240,234,0.08)'}`,
+                                            }}>
                                             <span className="text-base font-bold" style={{ color: 'rgba(244,240,234,0.3)' }}>$</span>
-                                            <input type="number" inputMode="decimal" placeholder="0"
-                                                value={cashUSD} onChange={e => { setCashUSD(e.target.value); setGiveBackUSD(0); }}
-                                                className="flex-1 bg-transparent text-xl font-bold font-mono tabular-nums outline-none"
-                                                style={{ color: '#F4F0EA' }}
-                                            />
-                                        </div>
+                                            <span className="flex-1 text-left text-xl font-bold font-mono tabular-nums" style={{ color: cashUSD ? '#F4F0EA' : 'rgba(244,240,234,0.15)' }}>
+                                                {cashUSD || '0'}
+                                            </span>
+                                            {activeInput === 'usd' && <span className="w-0.5 h-5 rounded-full bg-[#93B59D] animate-pulse" />}
+                                        </button>
                                         <div className="flex gap-1 flex-wrap">
                                             {usdQuick.map(bill => (
-                                                <button key={bill} onClick={() => { setCashUSD(String(bill)); setGiveBackUSD(0); }}
+                                                <button key={bill} onClick={() => { setCashUSD(String(bill)); setGiveBackUSD(0); setActiveInput(null); }}
                                                     className="px-2.5 py-1 rounded-md text-[11px] font-bold font-mono transition-all"
                                                     style={{
                                                         background: cashUSD === String(bill) ? 'rgba(28,64,46,0.3)' : 'rgba(244,240,234,0.04)',
@@ -640,17 +671,22 @@ export default function TabletPOSPage() {
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-2 mb-1.5">
-                                            <span className="text-base font-bold" style={{ color: 'rgba(244,240,234,0.3)' }}>$</span>
-                                            <input type="number" inputMode="numeric" placeholder="0"
-                                                value={cashCOP} onChange={e => { setCashCOP(e.target.value); setGiveBackUSD(0); }}
-                                                className="flex-1 bg-transparent text-xl font-bold font-mono tabular-nums outline-none"
-                                                style={{ color: '#f59e0b' }}
-                                            />
-                                        </div>
+                                        <button
+                                            onClick={() => setActiveInput(activeInput === 'cop' ? null : 'cop')}
+                                            className="w-full flex items-center gap-2 mb-1.5 px-3 py-2.5 rounded-xl transition-all"
+                                            style={{
+                                                background: activeInput === 'cop' ? 'rgba(245,158,11,0.08)' : 'rgba(244,240,234,0.04)',
+                                                border: `1.5px solid ${activeInput === 'cop' ? 'rgba(245,158,11,0.4)' : 'rgba(244,240,234,0.08)'}`,
+                                            }}>
+                                            <span className="text-base font-bold" style={{ color: 'rgba(244,240,234,0.3)' }}>Bs</span>
+                                            <span className="flex-1 text-left text-xl font-bold font-mono tabular-nums" style={{ color: cashCOP ? '#f59e0b' : 'rgba(244,240,234,0.15)' }}>
+                                                {cashCOP ? Number(cashCOP).toLocaleString('es-CO') : '0'}
+                                            </span>
+                                            {activeInput === 'cop' && <span className="w-0.5 h-5 rounded-full bg-amber-400 animate-pulse" />}
+                                        </button>
                                         <div className="flex gap-1 flex-wrap">
                                             {copQuickValues.map(v => (
-                                                <button key={v} onClick={() => { setCashCOP(String(v)); setGiveBackUSD(0); }}
+                                                <button key={v} onClick={() => { setCashCOP(String(v)); setGiveBackUSD(0); setActiveInput(null); }}
                                                     className="px-2.5 py-1 rounded-md text-[11px] font-bold font-mono transition-all"
                                                     style={{
                                                         background: cashCOP === String(v) ? 'rgba(245,158,11,0.15)' : 'rgba(244,240,234,0.04)',
@@ -660,7 +696,7 @@ export default function TabletPOSPage() {
                                                     {(v / 1000).toFixed(0)}K
                                                 </button>
                                             ))}
-                                            <button onClick={() => { setCashCOP(String(totalInCOP)); setGiveBackUSD(0); }}
+                                            <button onClick={() => { setCashCOP(String(totalInCOP)); setGiveBackUSD(0); setActiveInput(null); }}
                                                 className="px-2.5 py-1 rounded-md text-[11px] font-bold font-mono transition-all"
                                                 style={{
                                                     background: 'rgba(244,240,234,0.04)',
@@ -671,6 +707,28 @@ export default function TabletPOSPage() {
                                             </button>
                                         </div>
                                     </div>
+
+                                    {/* ── Dark Numpad ── */}
+                                    {activeInput && (
+                                        <div className="grid grid-cols-3 gap-1.5 pt-1">
+                                            {['1','2','3','4','5','6','7','8','9','.','0','⌫'].map(key => (
+                                                <button key={key} onClick={() => handleNumpad(key)}
+                                                    className="py-3 rounded-xl text-lg font-bold font-mono transition-all active:scale-95"
+                                                    style={{
+                                                        background: key === '⌫' ? 'rgba(239,68,68,0.08)' : 'rgba(244,240,234,0.05)',
+                                                        border: `1px solid ${key === '⌫' ? 'rgba(239,68,68,0.15)' : 'rgba(244,240,234,0.08)'}`,
+                                                        color: key === '⌫' ? '#ef4444' : 'rgba(244,240,234,0.7)',
+                                                    }}>
+                                                    {key}
+                                                </button>
+                                            ))}
+                                            <button onClick={() => handleNumpad('C')}
+                                                className="col-span-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
+                                                style={{ background: 'rgba(244,240,234,0.03)', border: '1px solid rgba(244,240,234,0.06)', color: 'rgba(244,240,234,0.3)' }}>
+                                                Limpiar
+                                            </button>
+                                        </div>
+                                    )}
 
                                     {/* ── Total received summary ── */}
                                     {hasInput && (
@@ -753,17 +811,31 @@ export default function TabletPOSPage() {
                                                     </div>
                                                 )}
 
-                                                {/* COP remainder */}
-                                                <div className="flex items-center justify-between py-2 px-2 rounded-lg" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)' }}>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Wallet className="w-3.5 h-3.5" style={{ color: '#f59e0b' }} />
-                                                        <span className="text-xs font-semibold" style={{ color: 'rgba(244,240,234,0.5)' }}>
-                                                            {effectiveGiveUSD > 0 ? 'Resto en pesos' : 'Todo en pesos'}
+                                                {/* COP remainder + bill breakdown */}
+                                                <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(245,158,11,0.15)' }}>
+                                                    <div className="flex items-center justify-between py-2 px-2" style={{ background: 'rgba(245,158,11,0.08)' }}>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Wallet className="w-3.5 h-3.5" style={{ color: '#f59e0b' }} />
+                                                            <span className="text-xs font-semibold" style={{ color: 'rgba(244,240,234,0.5)' }}>
+                                                                {effectiveGiveUSD > 0 ? 'Resto en pesos' : 'Todo en pesos'}
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-base font-bold font-mono" style={{ color: '#f59e0b' }}>
+                                                            {formatLocal(remainderCOP, 'COP')}
                                                         </span>
                                                     </div>
-                                                    <span className="text-base font-bold font-mono" style={{ color: '#f59e0b' }}>
-                                                        {formatLocal(remainderCOP, 'COP')}
-                                                    </span>
+                                                    {copBillBreakdown.length > 0 && remainderCOP > 0 && (
+                                                        <div className="px-3 py-1.5 space-y-0.5" style={{ background: 'rgba(245,158,11,0.03)' }}>
+                                                            {copBillBreakdown.map(b => (
+                                                                <div key={b.bill} className="flex items-center justify-between">
+                                                                    <span className="text-[11px] font-mono" style={{ color: 'rgba(244,240,234,0.4)' }}>
+                                                                        Billete {(b.bill / 1000).toFixed(0)}K
+                                                                    </span>
+                                                                    <span className="text-[11px] font-bold font-mono" style={{ color: '#f59e0b' }}>x{b.count}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 {/* Quick adjust: all in COP / max in USD */}

@@ -46,14 +46,13 @@ import LockScreen from './pages/LockScreen';
 import RegisterOpenPage from './pages/RegisterOpenPage';
 import RegisterClosePage from './pages/RegisterClosePage';
 import CashMovementsPage from './pages/CashMovementsPage';
-import ManualSalePage from './pages/ManualSalePage';
 import TablesPage from './pages/TablesPage';
 import TabletPOSPage from './pages/TabletPOSPage';
 import { useCartStore } from './stores/cartStore';
 
 // Top-level mode tabs
 const MODE_TABS = [
-    { label: 'OPS', path: '/', icon: Home, matchPaths: ['/', '/inventory', '/suppliers', '/purchases', '/smart-shopper', '/settings', '/close-register', '/cash-movements', '/manual-sale'] },
+    { label: 'OPS', path: '/', icon: Home, matchPaths: ['/', '/inventory', '/suppliers', '/purchases', '/smart-shopper', '/settings', '/close-register', '/cash-movements'] },
     { label: 'POS', path: '/pos', icon: Monitor, matchPaths: ['/pos'] },
     { label: 'Mesas', path: '/tables', icon: LayoutGrid, matchPaths: ['/tables'] },
 ];
@@ -178,7 +177,7 @@ function ProtectedApp() {
 
             {/* Content */}
             {isFullscreen ? (
-                <main className="flex-1 overflow-hidden">
+                <main className="flex-1 overflow-y-auto">
                     <Routes>
                         <Route path="/pos" element={<TabletPOSPage />} />
                         <Route path="/tables" element={<TablesPage />} />
@@ -197,7 +196,6 @@ function ProtectedApp() {
                             <Route path="/settings" element={<SettingsPage />} />
                             <Route path="/close-register" element={<RegisterClosePage />} />
                             <Route path="/cash-movements" element={<CashMovementsPage />} />
-                            <Route path="/manual-sale" element={<ManualSalePage />} />
                             <Route path="/pos" element={<TabletPOSPage />} />
                             <Route path="/tables" element={<TablesPage />} />
                             <Route path="*" element={<Navigate to="/" />} />

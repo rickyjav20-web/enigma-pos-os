@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import {
     Settings2, Clock, AlertTriangle, Timer, ChefHat,
     RefreshCw, CheckCircle2, Coffee, UtensilsCrossed, Wine,
-    Pencil, RotateCcw,
+    Pencil, RotateCcw, Truck,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ interface FlowConfig {
     staleTicketAlertMin: number;
     kdsPrepTimeWarningMin: number;
     sobremesaMin: number;
+    deliveryBufferMin: number;
 }
 
 interface Preset {
@@ -38,6 +39,7 @@ interface Preset {
     staleTicketAlertMin: number;
     kdsPrepTimeWarningMin: number;
     sobremesaMin: number;
+    deliveryBufferMin: number;
 }
 
 const PRESET_ICONS: Record<string, React.ReactNode> = {
@@ -94,6 +96,14 @@ const FIELD_CONFIG = [
         color: 'text-violet-400',
     },
     {
+        key: 'deliveryBufferMin' as const,
+        label: 'Tiempo de entrega',
+        description: 'Minutos desde que cocina marca listo hasta mostrar "servida" (tránsito de platos)',
+        icon: <Truck className="w-4 h-4" />,
+        unit: 'min',
+        color: 'text-sky-400',
+    },
+    {
         key: 'kdsPrepTimeWarningMin' as const,
         label: 'Alerta de cocina',
         description: 'Minutos de preparación antes de marcar como lento',
@@ -123,6 +133,7 @@ export default function TableFlowSettings() {
         tableTurnTargetMin: 60,
         staleTicketAlertMin: 20,
         sobremesaMin: 15,
+        deliveryBufferMin: 1,
         kdsPrepTimeWarningMin: 15,
         autoRefreshSec: 15,
     });
@@ -154,6 +165,7 @@ export default function TableFlowSettings() {
                 tableTurnTargetMin: config.tableTurnTargetMin,
                 staleTicketAlertMin: config.staleTicketAlertMin,
                 sobremesaMin: config.sobremesaMin,
+                deliveryBufferMin: config.deliveryBufferMin,
                 kdsPrepTimeWarningMin: config.kdsPrepTimeWarningMin,
                 autoRefreshSec: config.autoRefreshSec,
             });
@@ -191,6 +203,7 @@ export default function TableFlowSettings() {
             tableTurnTargetMin: config?.tableTurnTargetMin ?? 60,
             staleTicketAlertMin: config?.staleTicketAlertMin ?? 20,
             sobremesaMin: config?.sobremesaMin ?? 15,
+            deliveryBufferMin: config?.deliveryBufferMin ?? 1,
             kdsPrepTimeWarningMin: config?.kdsPrepTimeWarningMin ?? 15,
             autoRefreshSec: config?.autoRefreshSec ?? 15,
         };
@@ -278,6 +291,12 @@ export default function TableFlowSettings() {
                                             {preset.sobremesaMin}m
                                         </div>
                                         <div className="text-[9px] text-zinc-600">Sobremesa</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className={`text-sm font-bold font-mono ${isActive ? colors.text : 'text-zinc-400'}`}>
+                                            {preset.deliveryBufferMin}m
+                                        </div>
+                                        <div className="text-[9px] text-zinc-600">Entrega</div>
                                     </div>
                                     <div className="text-center">
                                         <div className={`text-sm font-bold font-mono ${isActive ? colors.text : 'text-zinc-400'}`}>
@@ -383,6 +402,7 @@ export default function TableFlowSettings() {
                                     tableTurnTargetMin: config.tableTurnTargetMin,
                                     staleTicketAlertMin: config.staleTicketAlertMin,
                                     sobremesaMin: config.sobremesaMin,
+                                    deliveryBufferMin: config.deliveryBufferMin,
                                     kdsPrepTimeWarningMin: config.kdsPrepTimeWarningMin,
                                     autoRefreshSec: config.autoRefreshSec,
                                 });
