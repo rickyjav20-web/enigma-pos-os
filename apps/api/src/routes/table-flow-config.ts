@@ -3,36 +3,39 @@ import prisma from '../lib/prisma';
 import { z } from 'zod';
 
 // ─── Presets ─────────────────────────────────────────────────────────────────
+// Revenue-backed presets based on hospitality industry standards.
+// Each value is calibrated to protect revenue at scale:
+// Standard 20-table restaurant loses ~$33K/month if turn time rises from 60→80 min.
 const PRESETS = {
     casual: {
         label: 'Casual / Fast Casual',
-        description: 'Cafeterías, coffee shops, fast food, taquerías',
-        reviewThresholdMin: 5,
-        urgencyWarningMin: 15,
-        autoRefreshSec: 10,
-        tableTurnTargetMin: 30,
-        staleTicketAlertMin: 10,
-        kdsPrepTimeWarningMin: 8,
+        description: 'Cafeterías, coffee shops, fast food, taquerías — check ~$15, 150+ covers/noche',
+        reviewThresholdMin: 2,       // 2-min check — upsell window ("otro café?") exists here or not at all
+        urgencyWarningMin: 20,       // At 20 min a 30-min turn table is at risk of blowing capacity
+        autoRefreshSec: 15,          // High volume, fast turns — need near-real-time visibility
+        tableTurnTargetMin: 30,      // 12 seatings/table in 6hr peak = $180/table/day at $15 check
+        staleTicketAlertMin: 45,     // 50% over target — likely forgotten tab or walkout
+        kdsPrepTimeWarningMin: 8,    // Café items should fire in 5-7 min; 8 = cascade risk
     },
     standard: {
         label: 'Restaurante Estándar',
-        description: 'Servicio completo, trattoria, bistró, gastropub',
-        reviewThresholdMin: 10,
-        urgencyWarningMin: 30,
-        autoRefreshSec: 15,
-        tableTurnTargetMin: 60,
-        staleTicketAlertMin: 20,
-        kdsPrepTimeWarningMin: 15,
+        description: 'Servicio completo, trattoria, bistró — check ~$55, 80-150 covers/noche',
+        reviewThresholdMin: 3,       // Classic 3-min check: catch errors + "otra ronda?" = +15-20% check
+        urgencyWarningMin: 35,       // 35 min sin actividad = mesa olvidada o campista sin gasto
+        autoRefreshSec: 30,          // Moderate pace; 2x/min refresh catches stalls before complaints
+        tableTurnTargetMin: 60,      // 4 turns in 4hr service = $4,400/noche (20 mesas x $55)
+        staleTicketAlertMin: 90,     // At 90 min: forgotten tab, shift-change miss, or walkout risk
+        kdsPrepTimeWarningMin: 15,   // Entrees fire in 10-14 min; 15 = server should manage guest expectation
     },
     fine_dining: {
         label: 'Fine Dining / Premium',
-        description: 'Fine dining, tasting menu, chef\'s table, omakase',
-        reviewThresholdMin: 15,
-        urgencyWarningMin: 50,
-        autoRefreshSec: 30,
-        tableTurnTargetMin: 120,
-        staleTicketAlertMin: 40,
-        kdsPrepTimeWarningMin: 25,
+        description: 'Fine dining, tasting menu, omakase — check ~$150, 30-60 covers/noche',
+        reviewThresholdMin: 4,       // Unhurried but attentive; missed error at $150+ check = $40-60 comp
+        urgencyWarningMin: 50,       // Long dwell expected, but 50 min dead air = broken pacing
+        autoRefreshSec: 45,          // Fewer tables, maître d' on floor; 45s catches anomalies
+        tableTurnTargetMin: 105,     // 5-7 course tasting in 105 min allows second partial seating
+        staleTicketAlertMin: 150,    // Even luxury meals should be in final act at 2.5 hrs
+        kdsPrepTimeWarningMin: 22,   // Complex dishes take 15-20 min; 22 catches genuine delays
     },
 } as const;
 
@@ -77,7 +80,7 @@ export default async function tableFlowConfigRoutes(fastify: FastifyInstance) {
         urgencyWarningMin: z.number().int().min(5).max(180).optional(),
         autoRefreshSec: z.number().int().min(5).max(120).optional(),
         tableTurnTargetMin: z.number().int().min(10).max(300).optional(),
-        staleTicketAlertMin: z.number().int().min(5).max(120).optional(),
+        staleTicketAlertMin: z.number().int().min(5).max(300).optional(),
         kdsPrepTimeWarningMin: z.number().int().min(3).max(60).optional(),
     });
 

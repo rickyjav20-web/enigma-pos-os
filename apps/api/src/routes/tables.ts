@@ -8,7 +8,7 @@ import { z } from 'zod';
 type TableStatus = 'libre' | 'preparando' | 'servida' | 'revisar' | 'ocupada_sin_kds';
 
 // Default review threshold (overridden by TableFlowConfig)
-const DEFAULT_REVIEW_THRESHOLD_MIN = 10;
+const DEFAULT_REVIEW_THRESHOLD_MIN = 3;
 
 export default async function tablesRoutes(fastify: FastifyInstance) {
 

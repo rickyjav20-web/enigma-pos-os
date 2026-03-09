@@ -711,15 +711,15 @@ model TableFlowConfig {
 
   preset String @default("standard") // "casual", "standard", "fine_dining", "custom"
 
-  // Thresholds (minutes unless noted)
-  reviewThresholdMin    Int @default(10) // After food served, alert manager
-  urgencyWarningMin     Int @default(30) // Ticket open too long without progress
-  tableTurnTargetMin    Int @default(60) // Ideal table turnover time
-  staleTicketAlertMin   Int @default(20) // Open ticket with no activity
-  kdsPrepTimeWarningMin Int @default(15) // Kitchen taking too long on item
+  // Thresholds — defaults match "standard" preset (revenue-backed)
+  reviewThresholdMin    Int @default(3)  // 3-min check-back: catch errors + upsell ("otra ronda?")
+  urgencyWarningMin     Int @default(35) // 35 min no activity = forgotten table or camper
+  tableTurnTargetMin    Int @default(60) // 4 turns/4hr = $4,400/night (20 tables x $55)
+  staleTicketAlertMin   Int @default(90) // 90 min = forgotten tab or walkout risk
+  kdsPrepTimeWarningMin Int @default(15) // Entrees fire in 10-14 min; 15 = alert server
 
   // System (seconds)
-  autoRefreshSec Int @default(15) // Live update interval for torre de control
+  autoRefreshSec Int @default(30) // Moderate pace; 2x/min catches stalls
 
   updatedAt DateTime @updatedAt
 

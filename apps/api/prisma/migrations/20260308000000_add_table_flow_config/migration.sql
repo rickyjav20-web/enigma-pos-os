@@ -3,12 +3,12 @@ CREATE TABLE IF NOT EXISTS "TableFlowConfig" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
     "preset" TEXT NOT NULL DEFAULT 'standard',
-    "reviewThresholdMin" INTEGER NOT NULL DEFAULT 10,
-    "urgencyWarningMin" INTEGER NOT NULL DEFAULT 30,
+    "reviewThresholdMin" INTEGER NOT NULL DEFAULT 3,
+    "urgencyWarningMin" INTEGER NOT NULL DEFAULT 35,
     "tableTurnTargetMin" INTEGER NOT NULL DEFAULT 60,
-    "staleTicketAlertMin" INTEGER NOT NULL DEFAULT 20,
+    "staleTicketAlertMin" INTEGER NOT NULL DEFAULT 90,
     "kdsPrepTimeWarningMin" INTEGER NOT NULL DEFAULT 15,
-    "autoRefreshSec" INTEGER NOT NULL DEFAULT 15,
+    "autoRefreshSec" INTEGER NOT NULL DEFAULT 30,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "TableFlowConfig_pkey" PRIMARY KEY ("id")
