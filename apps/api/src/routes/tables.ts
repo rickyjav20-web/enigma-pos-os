@@ -39,18 +39,26 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
         let doneOrderIds = new Set<string>();
         let doneItemIds = new Set<string>();
         let doneTimestamps: Record<string, Date> = {};
+        let tableCheckTimestamps: Record<string, Date> = {};
 
-        if (openOrderIds.length > 0) {
+        const tableIds = tables.map(t => t.id);
+
+        if (openOrderIds.length > 0 || tableIds.length > 0) {
             const todayStart = new Date();
             todayStart.setHours(0, 0, 0, 0);
 
-            const [orderDoneLogs, itemDoneLogs] = await Promise.all([
-                prisma.kitchenActivityLog.findMany({
+            const [orderDoneLogs, itemDoneLogs, tableCheckLogs] = await Promise.all([
+                openOrderIds.length > 0 ? prisma.kitchenActivityLog.findMany({
                     where: { tenantId, action: 'ORDER_DONE', entityId: { in: openOrderIds }, createdAt: { gte: todayStart } },
                     select: { entityId: true, createdAt: true },
-                }),
-                prisma.kitchenActivityLog.findMany({
+                }) : [],
+                openOrderIds.length > 0 ? prisma.kitchenActivityLog.findMany({
                     where: { tenantId, action: 'ITEM_DONE', entityId: { in: allItemIds }, createdAt: { gte: todayStart } },
+                    select: { entityId: true, createdAt: true },
+                }) : [],
+                // Fetch TABLE_CHECK logs to know when tables were last reviewed
+                prisma.kitchenActivityLog.findMany({
+                    where: { tenantId, action: 'TABLE_CHECK', entityType: 'DiningTable', entityId: { in: tableIds }, createdAt: { gte: todayStart } },
                     select: { entityId: true, createdAt: true },
                 }),
             ]);
@@ -61,6 +69,16 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
             // Track when order was marked done (for review threshold)
             for (const log of orderDoneLogs) {
                 if (log.entityId) doneTimestamps[log.entityId] = log.createdAt;
+            }
+
+            // Track latest TABLE_CHECK per table (resets review timer)
+            for (const log of tableCheckLogs) {
+                if (log.entityId) {
+                    const prev = tableCheckTimestamps[log.entityId];
+                    if (!prev || log.createdAt > prev) {
+                        tableCheckTimestamps[log.entityId] = log.createdAt;
+                    }
+                }
             }
         }
 
@@ -93,7 +111,11 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
                 // Check if enough time has passed → needs review
                 const doneAt = openOrders.map(o => doneTimestamps[o.id]).filter(Boolean);
                 const latestDone = doneAt.length > 0 ? Math.max(...doneAt.map(d => d.getTime())) : now;
-                const elapsed = now - latestDone;
+
+                // If table was checked (reviewed) after it was done, use check time as baseline
+                const lastCheck = tableCheckTimestamps[t.id];
+                const baseline = lastCheck && lastCheck.getTime() > latestDone ? lastCheck.getTime() : latestDone;
+                const elapsed = now - baseline;
 
                 status = elapsed > reviewThresholdMs ? 'revisar' : 'servida';
             } else if (anyItemDone) {

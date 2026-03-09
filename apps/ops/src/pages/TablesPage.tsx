@@ -6,6 +6,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useCartStore } from '../stores/cartStore';
 import {
     ArrowLeft, RefreshCw, MapPin, Users, Clock, LayoutGrid,
     ChefHat, CheckCircle2, AlertTriangle, CircleDot,
@@ -560,12 +561,39 @@ export default function TablesPage() {
         }
     };
 
-    const handleNavigateToOrder = (table: DiningTable) => {
-        const params = new URLSearchParams({ tableId: table.id, tableName: table.name });
+    const { loadTicket, setTable, clearCart } = useCartStore();
+
+    const handleNavigateToOrder = async (table: DiningTable) => {
         if (table.isOccupied && table.currentTicket?.id) {
-            params.set('ticketId', table.currentTicket.id);
+            // Load existing ticket into cart then go to POS
+            try {
+                const res = await fetch(`${API_URL}/sales/${table.currentTicket.id}`, { headers: TH });
+                const data = await res.json();
+                const order = data?.data || data;
+                loadTicket({
+                    id: order.id,
+                    name: order.ticketName || order.tableName || `Ticket #${order.id.slice(-4)}`,
+                    tableId: table.id,
+                    tableName: table.name,
+                    items: (order.items || []).map((i: any) => ({
+                        productId: i.productId,
+                        name: i.productNameSnapshot,
+                        price: i.unitPrice,
+                        quantity: i.quantity,
+                    })),
+                });
+            } catch {
+                // Fallback: just set table
+                clearCart();
+                setTable(table.id, table.name);
+            }
+        } else {
+            // Free table: clear cart, assign table, go to POS
+            clearCart();
+            setTable(table.id, table.name);
         }
-        navigate(`/manual-sale?${params.toString()}`);
+        setSelectedTable(null);
+        navigate('/pos');
     };
 
     const handleTableCheck = async (table: DiningTable) => {
