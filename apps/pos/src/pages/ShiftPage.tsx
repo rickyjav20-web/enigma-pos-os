@@ -11,21 +11,6 @@ import { useAuth } from '../context/AuthContext';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 
-interface RegisterSession {
-    id: string;
-    employeeId: string;
-    registerType: 'PHYSICAL' | 'ELECTRONIC';
-    status: 'open' | 'closed';
-    startedAt: string;
-    endedAt: string | null;
-    startingCash: number;
-    declaredCash: number | null;
-    expectedCash: number | null;
-    linkedSessionId: string | null;
-    startingBreakdown: any;
-    notes: string | null;
-}
-
 interface AuditData {
     startingCash: number;
     transactionsTotal: number;
@@ -107,7 +92,7 @@ export default function ShiftPage() {
     const [cashCurrency, setCashCurrency] = useState('USD');
     const [submitting, setSubmitting] = useState(false);
     const [showTransactions, setShowTransactions] = useState(false);
-    const [loadingStatus, setLoadingStatus] = useState(false);
+    const loadingStatus = false;
 
     // Sessions come from AuthContext (tenant-wide, not employee-specific)
     const isOpen = !!(physicalSession || electronicSession);
@@ -151,8 +136,6 @@ export default function ShiftPage() {
 
     // Combined sales summary (both registers)
     const combinedSales = (auditData?.breakdown?.sales || 0) + (otherAudit?.breakdown?.sales || 0);
-    const combinedExpenses = (auditData?.breakdown?.expenses || 0) + (otherAudit?.breakdown?.expenses || 0);
-    const combinedPurchases = (auditData?.breakdown?.purchases || 0) + (otherAudit?.breakdown?.purchases || 0);
 
     // ─── Cash movement handler ──────────────────────────────────────────
     const handleCashMovement = async () => {

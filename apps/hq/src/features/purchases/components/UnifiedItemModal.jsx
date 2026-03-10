@@ -30,7 +30,7 @@ function calcFactor(stockUnit, recipeUnit) {
     return UNIT_FACTOR_MAP[key] ?? null; // null = invalid combo
 }
 
-export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess, allItems = [] }) {
+export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess, allItems = [], productCategories = [] }) {
     if (!isOpen) return null;
 
     const [loading, setLoading] = useState(false);
@@ -70,9 +70,9 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
             setFormData({
                 name: initialData.name || '',
                 sku: initialData.sku || '',
-                category: initialData.category || '',
+                category: initialData.categoryId || initialData.category || '',
                 price: initialData.price || '', // Product
-                currentCost: initialData.currentCost || '', // Supply
+                currentCost: initialData.cost ?? initialData.currentCost ?? '', // Product / Supply
                 stockQuantity: initialData.stockQuantity !== undefined ? initialData.stockQuantity : '',
                 unitOfMeasure: initialData.defaultUnit || 'und', // Supply
                 yieldQuantity: initialData.yieldQuantity || '', // Batch
@@ -137,14 +137,28 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
         } else {
             // Reset
             setFormData({
-                name: '', sku: `SKU-${Date.now()}`, category: '',
-                price: '', currentCost: '', unitOfMeasure: 'und', stockQuantity: '',
-                yieldQuantity: '10', yieldUnit: 'kg', // Defaults for Batch
+                name: '',
+                sku: `SKU-${Date.now()}`,
+                category: '',
+                price: '',
+                currentCost: '',
+                stockQuantity: '',
+                unitOfMeasure: 'und',
+                yieldQuantity: type === 'BATCH' ? '10' : '',
+                yieldUnit: 'und',
+                yieldPercentage: 1.0,
+                recipeUnit: '',
+                stockCorrectionFactor: 1,
+                parLevel: '',
+                minStock: '',
+                maxStock: '',
+                countFrequency: 'SMART',
+                countZone: 2,
                 preferredSupplierId: null
             });
             setRecipe([]);
         }
-    }, [initialData, isOpen]);
+    }, [initialData, isOpen, type]);
 
     // --- LOGIC ---
 
@@ -205,10 +219,10 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
             const payload = { ...formData };
 
             // Format numbers
-            if (payload.price) payload.price = parseFloat(payload.price);
-            if (payload.currentCost) payload.currentCost = parseFloat(payload.currentCost);
+            if (payload.price !== '') payload.price = parseFloat(payload.price);
+            if (payload.currentCost !== '') payload.currentCost = parseFloat(payload.currentCost);
             if (payload.stockQuantity !== '') payload.stockQuantity = parseFloat(payload.stockQuantity);
-            if (payload.yieldQuantity) payload.yieldQuantity = parseFloat(payload.yieldQuantity);
+            if (payload.yieldQuantity !== '') payload.yieldQuantity = parseFloat(payload.yieldQuantity);
             // Stock levels — send undefined if empty so API ignores them
             payload.parLevel = payload.parLevel !== '' ? parseFloat(payload.parLevel) : undefined;
             payload.minStock = payload.minStock !== '' ? parseFloat(payload.minStock) : undefined;
@@ -237,6 +251,23 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
             }));
 
             if (type === 'PRODUCT') {
+                payload.categoryId = formData.category?.trim() || undefined;
+                payload.cost = payload.currentCost !== '' ? Number(payload.currentCost) : undefined;
+                delete payload.category;
+                delete payload.currentCost;
+                delete payload.stockQuantity;
+                delete payload.unitOfMeasure;
+                delete payload.yieldQuantity;
+                delete payload.yieldUnit;
+                delete payload.yieldPercentage;
+                delete payload.recipeUnit;
+                delete payload.stockCorrectionFactor;
+                delete payload.parLevel;
+                delete payload.minStock;
+                delete payload.maxStock;
+                delete payload.countFrequency;
+                delete payload.countZone;
+                delete payload.preferredSupplierId;
                 payload.recipes = recipePayload;
                 // Cost is auto-calculated by backend sync, but we can send current calc as cache
                 // payload.cost = calculatedCost; 
@@ -334,6 +365,25 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                                 disabled={!!initialData}
                             />
                         </div>
+                        <div className="col-span-2 sm:col-span-1">
+                            <label className="block text-xs font-medium text-zinc-400 mb-1">
+                                {type === 'PRODUCT' ? 'Categoria del Menu' : 'Categoria'}
+                            </label>
+                            <input
+                                list={type === 'PRODUCT' ? 'menu-product-categories' : undefined}
+                                className="w-full bg-zinc-800 border-zinc-700 rounded-lg p-2 text-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                                value={formData.category}
+                                onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                placeholder={type === 'PRODUCT' ? 'Ej. Cafes, Postres, Brunch' : 'Ej. Lacteos, Vegetales'}
+                            />
+                            {type === 'PRODUCT' && productCategories.length > 0 && (
+                                <datalist id="menu-product-categories">
+                                    {productCategories.map((category) => (
+                                        <option key={category} value={category} />
+                                    ))}
+                                </datalist>
+                            )}
+                        </div>
 
                         {type === 'PRODUCT' && (
                             <div className="col-span-2 sm:col-span-1">
@@ -403,27 +453,36 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
 
                         <>
                             <div className="col-span-2 sm:col-span-1">
-                                <label className="block text-xs font-medium text-zinc-400 mb-1">Direct Cost ($)</label>
+                                <label className="block text-xs font-medium text-zinc-400 mb-1">
+                                    {type === 'PRODUCT' ? 'Costo Manual / Override ($)' : 'Direct Cost ($)'}
+                                </label>
                                 <input
                                     type="number"
                                     className="w-full bg-zinc-800 border-zinc-700 rounded-lg p-2 text-white outline-none"
                                     value={formData.currentCost}
                                     onChange={e => setFormData({ ...formData, currentCost: e.target.value })}
                                 />
+                                {type === 'PRODUCT' && (
+                                    <p className="text-[10px] text-zinc-500 mt-1">
+                                        Si tiene receta, el sistema recalcula el costo real automaticamente.
+                                    </p>
+                                )}
                             </div>
-                            <div className="col-span-2 sm:col-span-1 bg-blue-900/10 p-2 rounded-lg border border-blue-500/20">
-                                <label className="block text-xs font-medium text-blue-300 mb-1">Current Stock (Physical)</label>
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="number"
-                                        className="w-full bg-zinc-800 border-zinc-700 rounded-lg p-2 text-white outline-none"
-                                        value={formData.stockQuantity}
-                                        onChange={e => setFormData({ ...formData, stockQuantity: e.target.value })}
-                                        placeholder="0.00"
-                                    />
-                                    <span className="text-xs text-zinc-500">{formData.unitOfMeasure}</span>
+                            {type !== 'PRODUCT' && (
+                                <div className="col-span-2 sm:col-span-1 bg-blue-900/10 p-2 rounded-lg border border-blue-500/20">
+                                    <label className="block text-xs font-medium text-blue-300 mb-1">Current Stock (Physical)</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            className="w-full bg-zinc-800 border-zinc-700 rounded-lg p-2 text-white outline-none"
+                                            value={formData.stockQuantity}
+                                            onChange={e => setFormData({ ...formData, stockQuantity: e.target.value })}
+                                            placeholder="0.00"
+                                        />
+                                        <span className="text-xs text-zinc-500">{formData.unitOfMeasure}</span>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* PROTOCOLO SMART YIELD - Exclusivo para Supply Items y Batches */}
                             {(type === 'SUPPLY' || type === 'BATCH') && (

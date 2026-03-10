@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { X, Target, Trophy, Clock, Package, Tag, Wallet, ChevronRight } from 'lucide-react';
+import { X, Target, Trophy, Clock, Package, Tag, Wallet } from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -87,7 +87,6 @@ export default function GoalsPage() {
         prevCompletedIds.current = currentCompleted;
     }, [myGoals]);
 
-    const activeGoals = myGoals.filter(g => !g.isCompleted);
     const completedGoals = myGoals.filter(g => g.isCompleted);
     const sessionGoals = myGoals.filter(g => g.sessionId === sessionId);
     const dailyGoals = myGoals.filter(g => !g.sessionId);

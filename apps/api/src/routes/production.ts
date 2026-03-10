@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import prisma from '../lib/prisma';
 import { recipeService } from '../services/RecipeService';
 import { eventBus } from '../events/EventBus';
+import { getInventoryDeduction } from '../lib/inventory-math';
 
 export default async function productionRoutes(fastify: FastifyInstance) {
 
@@ -39,7 +40,12 @@ export default async function productionRoutes(fastify: FastifyInstance) {
         // 4. Deduct Ingredients
         const movements = [];
         for (const ing of ingredients) {
-            const requiredQty = ing.quantity * scale;
+            const requiredQty = getInventoryDeduction({
+                recipeQuantity: ing.quantity,
+                multiplier: scale,
+                stockCorrectionFactor: ing.component?.stockCorrectionFactor,
+                yieldPercentage: ing.component?.yieldPercentage,
+            });
 
             // Deduct
             await prisma.supplyItem.update({

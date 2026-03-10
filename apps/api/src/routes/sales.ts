@@ -4,6 +4,7 @@ import prisma from '../lib/prisma';
 import { z } from 'zod';
 import { logAudit } from '../lib/audit';
 import { detectSessionSmart, getLocalDateStr } from '../lib/detectSession';
+import { getInventoryDeduction } from '../lib/inventory-math';
 
 export default async function salesRoutes(fastify: FastifyInstance) {
 
@@ -51,7 +52,12 @@ export default async function salesRoutes(fastify: FastifyInstance) {
                 });
                 if (!product || product.recipes.length === 0) continue;
                 for (const recipe of product.recipes) {
-                    const toDeduct = recipe.quantity * item.quantity;
+                    const toDeduct = getInventoryDeduction({
+                        recipeQuantity: recipe.quantity,
+                        multiplier: item.quantity,
+                        stockCorrectionFactor: recipe.supplyItem?.stockCorrectionFactor,
+                        yieldPercentage: recipe.supplyItem?.yieldPercentage,
+                    });
                     const current = await tx.supplyItem.findUnique({ where: { id: recipe.supplyItemId } });
                     const prev = current?.stockQuantity ?? 0;
                     await tx.supplyItem.update({

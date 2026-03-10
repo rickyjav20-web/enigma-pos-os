@@ -106,8 +106,6 @@ export default function ReceiptsPage() {
     const { employee } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
-    const [showSearch, setShowSearch] = useState(false);
-
     // Fetch completed sales
     const { data: salesData, isLoading } = useQuery({
         queryKey: ['receipts'],

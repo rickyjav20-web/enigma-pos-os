@@ -81,7 +81,7 @@ export default async function (fastify: FastifyInstance) {
                     prod.loyverseId ?? '',
                     `"${prod.name}"`,
                     prod.sku ?? '',
-                    'Product', // Todo: store real category
+                    prod.categoryId ?? 'Product',
                     prod.price.toFixed(2),
                     prod.cost?.toFixed(4) ?? '0',
                     '', '',

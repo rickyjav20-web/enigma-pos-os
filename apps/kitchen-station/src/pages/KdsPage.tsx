@@ -393,7 +393,7 @@ function KdsDisplay({
 
             // Detect new orders → play sound (only for filtered items)
             const relevantOrders = stationFilter
-                ? recent.filter(o => o.status === 'open' && o.items.some(i => !i.kdsStation || i.kdsStation === stationFilter))
+                ? recent.filter(o => o.status === 'open' && o.items.some(i => i.kdsStation === stationFilter))
                 : recent.filter(o => o.status === 'open');
             const currentIds = new Set(relevantOrders.map(o => o.id));
             if (!initialLoadRef.current && soundEnabled) {
@@ -544,7 +544,7 @@ function KdsDisplay({
         ? allActiveOrders
             .map(o => ({
                 ...o,
-                items: o.items.filter(i => !i.kdsStation || i.kdsStation === stationFilter),
+                items: o.items.filter(i => i.kdsStation === stationFilter),
             }))
             .filter(o => o.items.length > 0)
         : allActiveOrders;

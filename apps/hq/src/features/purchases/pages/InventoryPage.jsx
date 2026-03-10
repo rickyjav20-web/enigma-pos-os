@@ -242,6 +242,7 @@ export default function InventoryPage() {
     });
     const kitchenItems = filteredSupplyItems.filter(i => i.isProduction && !products.some(p => p.sku && i.sku && p.sku === i.sku));
     const pantryItems = filteredSupplyItems.filter(i => !i.isProduction && !products.some(p => p.sku && i.sku && p.sku === i.sku));
+    const productCategories = [...new Set(products.map((item) => item.categoryId).filter(Boolean))].sort();
 
     // Combine for Search (Ingredients can come from Pantry OR Kitchen)
     const allIngredients = [...supplyItems];
@@ -624,6 +625,18 @@ export default function InventoryPage() {
                                                         {isNegative && <AlertTriangle size={11} className="text-red-400 shrink-0" />}
                                                     </div>
                                                     <div className="text-[11px] text-zinc-600 font-mono mt-0.5">{item.sku || item.id.slice(0, 8)}</div>
+                                                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                        <span className="text-[10px] uppercase tracking-wide text-emerald-300/80 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">
+                                                            {item.categoryId || 'Sin categoria'}
+                                                        </span>
+                                                        <span className={`text-[10px] uppercase tracking-wide rounded-full px-2 py-0.5 border ${
+                                                            item.kdsStation
+                                                                ? 'text-sky-300 bg-sky-500/10 border-sky-500/20'
+                                                                : 'text-zinc-500 bg-zinc-800/60 border-zinc-700'
+                                                        }`}>
+                                                            {item.kdsStation ? `KDS ${item.kdsStation}` : 'Sin KDS'}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -970,6 +983,7 @@ export default function InventoryPage() {
                 initialData={editingItem}
                 onSuccess={fetchData}
                 allItems={allIngredients}
+                productCategories={productCategories}
             />
 
             {/* PRODUCTION MODAL */}

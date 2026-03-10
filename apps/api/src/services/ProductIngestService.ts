@@ -189,6 +189,7 @@ export class ProductIngestService {
                         update: {
                             name: node.name,
                             currentCost: node.cost,
+                            category: node.category,
                             preferredSupplierId: node.supplierId || null,
                             isProduction: node.isProduction
                         }
@@ -212,12 +213,14 @@ export class ProductIngestService {
                             tenantId,
                             loyverseId: node.handle,
                             sku: node.sku,
+                            categoryId: node.category,
                             isActive: true
                         },
                         update: {
                             name: node.name,
                             price: node.price,
                             sku: node.sku,
+                            categoryId: node.category,
                             cost: node.cost
                         }
                     });

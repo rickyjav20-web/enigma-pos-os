@@ -3,6 +3,45 @@ import prisma from '../lib/prisma';
 import { z } from 'zod';
 
 export default async function kitchenStationsRoutes(fastify: FastifyInstance) {
+    async function syncStationAssignments(tenantId: string) {
+        await prisma.product.updateMany({
+            where: { tenantId },
+            data: { kdsStation: null },
+        });
+
+        const stations = await prisma.kitchenStation.findMany({
+            where: { tenantId, isActive: true },
+            orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        });
+
+        let updated = 0;
+
+        // Apply category routing first.
+        for (const station of stations) {
+            const categories = station.categories as string[] | null;
+            if (!categories || categories.length === 0) continue;
+
+            const result = await prisma.product.updateMany({
+                where: { tenantId, categoryId: { in: categories }, isActive: true },
+                data: { kdsStation: station.name },
+            });
+            updated += result.count;
+        }
+
+        // Apply per-product routing last so manual overrides win over category defaults.
+        for (const station of stations) {
+            const productIds = station.productIds as string[] | null;
+            if (!productIds || productIds.length === 0) continue;
+
+            const result = await prisma.product.updateMany({
+                where: { tenantId, id: { in: productIds }, isActive: true },
+                data: { kdsStation: station.name },
+            });
+            updated += result.count;
+        }
+
+        return { stationsProcessed: stations.length, productsUpdated: updated };
+    }
 
     // GET /kitchen-stations — list all stations
     fastify.get('/kitchen-stations', async (request, reply) => {
@@ -40,19 +79,7 @@ export default async function kitchenStationsRoutes(fastify: FastifyInstance) {
             },
         });
 
-        // Auto-update Product.kdsStation for products matching these categories
-        if (body.categories && body.categories.length > 0) {
-            await prisma.product.updateMany({
-                where: { tenantId, categoryId: { in: body.categories }, isActive: true },
-                data: { kdsStation: body.name },
-            });
-        }
-        if (body.productIds && body.productIds.length > 0) {
-            await prisma.product.updateMany({
-                where: { tenantId, id: { in: body.productIds }, isActive: true },
-                data: { kdsStation: body.name },
-            });
-        }
+        await syncStationAssignments(tenantId);
 
         return reply.status(201).send({ success: true, data: station });
     });
@@ -79,28 +106,7 @@ export default async function kitchenStationsRoutes(fastify: FastifyInstance) {
             data: updateData,
         });
 
-        // Re-sync Product.kdsStation
-        const stationName = body.name || existing.name;
-        // Clear old assignments for this station
-        await prisma.product.updateMany({
-            where: { tenantId, kdsStation: existing.name },
-            data: { kdsStation: null },
-        });
-        // Set new assignments
-        const cats = (body.categories ?? existing.categories) as string[] | null;
-        const pids = (body.productIds ?? existing.productIds) as string[] | null;
-        if (cats && cats.length > 0) {
-            await prisma.product.updateMany({
-                where: { tenantId, categoryId: { in: cats }, isActive: true },
-                data: { kdsStation: stationName },
-            });
-        }
-        if (pids && pids.length > 0) {
-            await prisma.product.updateMany({
-                where: { tenantId, id: { in: pids }, isActive: true },
-                data: { kdsStation: stationName },
-            });
-        }
+        await syncStationAssignments(tenantId);
 
         return reply.send({ success: true, data: station });
     });
@@ -113,13 +119,8 @@ export default async function kitchenStationsRoutes(fastify: FastifyInstance) {
         const station = await prisma.kitchenStation.findUnique({ where: { id } });
         if (!station) return reply.status(404).send({ success: false, message: 'Station not found' });
 
-        // Clear Product.kdsStation for products assigned to this station
-        await prisma.product.updateMany({
-            where: { tenantId, kdsStation: station.name },
-            data: { kdsStation: null },
-        });
-
         await prisma.kitchenStation.delete({ where: { id } });
+        await syncStationAssignments(tenantId);
         return reply.send({ success: true });
     });
 
@@ -127,37 +128,8 @@ export default async function kitchenStationsRoutes(fastify: FastifyInstance) {
     fastify.post('/kitchen-stations/sync', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
 
-        // Clear all kdsStation assignments
-        await prisma.product.updateMany({
-            where: { tenantId },
-            data: { kdsStation: null },
-        });
+        const result = await syncStationAssignments(tenantId);
 
-        const stations = await prisma.kitchenStation.findMany({
-            where: { tenantId, isActive: true },
-            orderBy: { sortOrder: 'asc' },
-        });
-
-        let updated = 0;
-        for (const station of stations) {
-            const cats = station.categories as string[] | null;
-            const pids = station.productIds as string[] | null;
-            if (cats && cats.length > 0) {
-                const r = await prisma.product.updateMany({
-                    where: { tenantId, categoryId: { in: cats }, isActive: true },
-                    data: { kdsStation: station.name },
-                });
-                updated += r.count;
-            }
-            if (pids && pids.length > 0) {
-                const r = await prisma.product.updateMany({
-                    where: { tenantId, id: { in: pids }, isActive: true },
-                    data: { kdsStation: station.name },
-                });
-                updated += r.count;
-            }
-        }
-
-        return reply.send({ success: true, stationsProcessed: stations.length, productsUpdated: updated });
+        return reply.send({ success: true, ...result });
     });
 }

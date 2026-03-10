@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import prisma from '../lib/prisma';
 import { recipeService } from '../services/RecipeService';
+import { getEffectiveRecipeUnitCost } from '../lib/inventory-math';
 
 export default async function productRoutes(fastify: FastifyInstance) {
 
@@ -44,7 +45,7 @@ export default async function productRoutes(fastify: FastifyInstance) {
 
     // POST /products
     fastify.post('/products', async (request, reply) => {
-        const { name, price, cost, tenantId, categoryId, recipes } = request.body as any;
+        const { name, price, cost, tenantId, categoryId, sku, kdsStation, recipes } = request.body as any;
 
         const product = await prisma.product.create({
             data: {
@@ -52,7 +53,9 @@ export default async function productRoutes(fastify: FastifyInstance) {
                 price: Number(price),
                 cost: Number(cost) || 0,
                 tenantId: tenantId || 'enigma_hq',
-                categoryId
+                categoryId,
+                sku: sku || null,
+                kdsStation: kdsStation || null,
             }
         });
 
@@ -69,7 +72,7 @@ export default async function productRoutes(fastify: FastifyInstance) {
         try {
             const { id } = request.params;
             const body = request.body as any;
-            const { name, price, cost, categoryId, kdsStation, recipes } = body;
+            const { name, price, cost, categoryId, sku, kdsStation, recipes } = body;
 
             console.log(`[API] PUT /products/${id} payload:`, { name, kdsStation, recipesCount: recipes?.length });
 
@@ -80,6 +83,7 @@ export default async function productRoutes(fastify: FastifyInstance) {
                     price: price !== undefined ? Number(price) : undefined,
                     cost: cost !== undefined ? Number(cost) : undefined,
                     categoryId,
+                    sku: sku !== undefined ? (sku || null) : undefined,
                     kdsStation: kdsStation !== undefined ? (kdsStation || null) : undefined,
                 }
             });
@@ -106,13 +110,21 @@ export default async function productRoutes(fastify: FastifyInstance) {
     fastify.post<{ Params: { id: string } }>('/products/:id/recipes', async (request, reply) => {
         const { id } = request.params;
         const { supplyItemId, quantity, unit } = request.body as any;
+        const supplyItem = await prisma.supplyItem.findUnique({ where: { id: supplyItemId } });
 
         await prisma.productRecipe.create({
             data: {
                 productId: id,
                 supplyItemId,
                 quantity: Number(quantity),
-                unit
+                unit,
+                costAtCreation: supplyItem
+                    ? getEffectiveRecipeUnitCost({
+                        rawCost: supplyItem.averageCost || supplyItem.currentCost || 0,
+                        stockCorrectionFactor: supplyItem.stockCorrectionFactor,
+                        yieldPercentage: supplyItem.yieldPercentage,
+                    })
+                    : 0,
             }
         });
 

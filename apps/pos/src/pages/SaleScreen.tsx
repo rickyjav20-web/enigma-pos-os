@@ -62,7 +62,7 @@ export default function SaleScreen() {
         items, addItem, removeItem, updateQuantity,
         ticketName, setTicketName,
         total, itemCount, clearCart,
-        tableId, tableName, setTable, ticketId, loadTicket,
+        tableId, tableName, ticketId, loadTicket,
     } = useCartStore();
 
     const [search, setSearch] = useState('');
@@ -662,10 +662,6 @@ export default function SaleScreen() {
                     <div className="px-5 py-3 flex items-center gap-2"
                         style={{ borderBottom: '1px solid rgba(244,240,234,0.04)', background: 'rgba(244,240,234,0.02)' }}>
                         {(() => {
-                            const type = ORDER_TYPES.find(t => {
-                                const n = (items[0]?.category || '').toLowerCase();
-                                return t.key === 'dine_in';
-                            }) || ORDER_TYPES[0];
                             return (
                                 <span className="text-[12px] font-medium" style={{ color: 'rgba(244,240,234,0.35)' }}>
                                     🍽️ Dine-in

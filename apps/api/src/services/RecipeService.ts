@@ -1,6 +1,7 @@
 import prisma from '../lib/prisma';
 import { eventBus } from '../events/EventBus';
 import { EventType } from '@enigma/types';
+import { getEffectiveRecipeUnitCost } from '../lib/inventory-math';
 
 export class RecipeService {
 
@@ -44,12 +45,11 @@ export class RecipeService {
                 // Use Average Cost (WAC) for accurate inventory valuation. Fallback to currentCost (Last Price) if 0.
                 const component = r.component;
                 const rawCost = component.averageCost || component.currentCost || 0;
-
-                // SMART YIELD LOGIC:
-                const factor = component.stockCorrectionFactor || 1;
-                const yieldPct = component.yieldPercentage || 1;
-
-                const effectiveUnitCost = rawCost / (factor * yieldPct);
+                const effectiveUnitCost = getEffectiveRecipeUnitCost({
+                    rawCost,
+                    stockCorrectionFactor: component.stockCorrectionFactor,
+                    yieldPercentage: component.yieldPercentage,
+                });
 
                 totalBatchCost += r.quantity * effectiveUnitCost;
             }
@@ -124,13 +124,11 @@ export class RecipeService {
             // Use Average Cost (WAC) if available.
             const ingredient = r.supplyItem;
             const rawCost = ingredient.averageCost || ingredient.currentCost || 0;
-
-            // SMART YIELD LOGIC:
-            // Effective Cost = RawCost / (Factor * Yield)
-            const factor = ingredient.stockCorrectionFactor || 1;
-            const yieldPct = ingredient.yieldPercentage || 1;
-
-            const effectiveUnitCost = rawCost / (factor * yieldPct);
+            const effectiveUnitCost = getEffectiveRecipeUnitCost({
+                rawCost,
+                stockCorrectionFactor: ingredient.stockCorrectionFactor,
+                yieldPercentage: ingredient.yieldPercentage,
+            });
 
             newTotalCost += r.quantity * effectiveUnitCost;
         }
@@ -254,12 +252,20 @@ export class RecipeService {
         }
 
         for (const item of toAdd) {
+            const ingredient = await prisma.supplyItem.findUnique({ where: { id: item.id } });
             await prisma.productRecipe.create({
                 data: {
                     productId,
                     supplyItemId: item.id,
                     quantity: Number(item.quantity),
-                    unit: item.unit || 'und'
+                    unit: item.unit || 'und',
+                    costAtCreation: ingredient
+                        ? getEffectiveRecipeUnitCost({
+                            rawCost: ingredient.averageCost || ingredient.currentCost || 0,
+                            stockCorrectionFactor: ingredient.stockCorrectionFactor,
+                            yieldPercentage: ingredient.yieldPercentage,
+                        })
+                        : 0,
                 }
             });
         }
@@ -267,11 +273,19 @@ export class RecipeService {
         for (const item of toUpdate) {
             const rel = existing.find(e => e.supplyItemId === item.id);
             if (rel) {
+                const ingredient = await prisma.supplyItem.findUnique({ where: { id: item.id } });
                 await prisma.productRecipe.update({
                     where: { id: rel.id },
                     data: {
                         quantity: Number(item.quantity),
-                        unit: item.unit || 'und'
+                        unit: item.unit || 'und',
+                        costAtCreation: ingredient
+                            ? getEffectiveRecipeUnitCost({
+                                rawCost: ingredient.averageCost || ingredient.currentCost || 0,
+                                stockCorrectionFactor: ingredient.stockCorrectionFactor,
+                                yieldPercentage: ingredient.yieldPercentage,
+                            })
+                            : 0,
                     }
                 });
             }

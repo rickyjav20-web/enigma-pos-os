@@ -23,10 +23,23 @@
  */
 import { FastifyInstance } from 'fastify';
 import prisma from '../lib/prisma';
+import { getEffectiveRecipeUnitCost } from '../lib/inventory-math';
 
 export default async function analyticsRoutes(fastify: FastifyInstance) {
 
     const getTenant = (req: any): string => req.tenantId || 'enigma_hq';
+    type ImportedAnalyticsEvent = {
+        id: string;
+        day: string;
+        hour: number;
+        quantity: number;
+        unitPrice: number;
+        totalPrice: number;
+        externalId: string | null;
+        productId: string | null;
+        productName: string;
+        categoryId: string | null;
+    };
 
     // ── helpers ──────────────────────────────────────────────────────────────
     function dateRange(from?: string, to?: string): { gte: Date; lte: Date } {
@@ -42,6 +55,83 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             gte: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0),
             lte: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59),
         };
+    }
+
+    function dayKey(date: Date | string): string {
+        return new Date(date).toISOString().split('T')[0];
+    }
+
+    async function getLiveOrderDays(tenantId: string, range: { gte: Date; lte: Date }) {
+        const orders = await prisma.salesOrder.findMany({
+            where: { tenantId, status: 'completed', createdAt: range },
+            select: { createdAt: true },
+        });
+
+        return new Set(orders.map((order) => dayKey(order.createdAt)));
+    }
+
+    async function getImportedEventsForAnalytics(
+        tenantId: string,
+        range: { gte: Date; lte: Date },
+        skipDays = new Set<string>()
+    ): Promise<ImportedAnalyticsEvent[]> {
+        const [events, products] = await Promise.all([
+            prisma.saleEvent.findMany({
+                where: {
+                    tenantId,
+                    timestamp: range,
+                    status: { in: ['PROCESSED', 'CONSUMED'] },
+                    saleBatch: {
+                        is: {
+                            status: { in: ['COMPLETED', 'PROCESSED'] },
+                        },
+                    },
+                },
+                select: {
+                    id: true,
+                    sku: true,
+                    productName: true,
+                    quantity: true,
+                    unitPrice: true,
+                    totalPrice: true,
+                    externalId: true,
+                    timestamp: true,
+                },
+            }),
+            prisma.product.findMany({
+                where: { tenantId },
+                select: { id: true, sku: true, name: true, categoryId: true },
+            }),
+        ]);
+
+        const skuMap = new Map<string, { id: string; name: string; categoryId: string | null }>();
+        const nameMap = new Map<string, { id: string; name: string; categoryId: string | null }>();
+
+        for (const product of products) {
+            if (product.sku) skuMap.set(product.sku.toLowerCase(), product);
+            nameMap.set(product.name.toLowerCase(), product);
+        }
+
+        return events
+            .filter((event) => !skipDays.has(dayKey(event.timestamp)))
+            .map((event) => {
+                const matched = (event.sku && skuMap.get(event.sku.toLowerCase()))
+                    || nameMap.get(event.productName.toLowerCase())
+                    || null;
+
+                return {
+                    id: event.id,
+                    day: dayKey(event.timestamp),
+                    hour: event.timestamp.getHours(),
+                    quantity: event.quantity,
+                    unitPrice: event.unitPrice,
+                    totalPrice: event.totalPrice,
+                    externalId: event.externalId,
+                    productId: matched?.id || null,
+                    productName: matched?.name || event.productName,
+                    categoryId: matched?.categoryId || null,
+                };
+            });
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -194,6 +284,21 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             else if (o.paymentMethod === 'transfer') byDate[d].transfer += o.totalAmount;
         }
 
+        const liveDays = new Set(Object.keys(byDate));
+        const importedEvents = await getImportedEventsForAnalytics(tenantId, range, liveDays);
+        const importedOrdersByDay: Record<string, Set<string>> = {};
+
+        for (const event of importedEvents) {
+            if (!byDate[event.day]) byDate[event.day] = { date: event.day, revenue: 0, orders: 0, cash: 0, card: 0, transfer: 0 };
+            byDate[event.day].revenue += event.totalPrice;
+            if (!importedOrdersByDay[event.day]) importedOrdersByDay[event.day] = new Set();
+            importedOrdersByDay[event.day].add(event.externalId || `event:${event.id}`);
+        }
+
+        for (const [day, orderKeys] of Object.entries(importedOrdersByDay)) {
+            byDate[day].orders += orderKeys.size;
+        }
+
         const result = Object.values(byDate).map(d => ({
             ...d,
             revenue: Math.round(d.revenue * 100) / 100,
@@ -247,6 +352,21 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             hours[h].revenue += o.totalAmount;
             hours[h].orders++;
             if (o.tableId) hours[h].tablesActive.add(o.tableId);
+        }
+
+        if (orders.length === 0) {
+            const importedEvents = await getImportedEventsForAnalytics(tenantId, range);
+            const hourlyOrderKeys: Record<number, Set<string>> = {};
+
+            for (const event of importedEvents) {
+                hours[event.hour].revenue += event.totalPrice;
+                if (!hourlyOrderKeys[event.hour]) hourlyOrderKeys[event.hour] = new Set();
+                hourlyOrderKeys[event.hour].add(event.externalId || `event:${event.id}`);
+            }
+
+            for (const [hour, orderKeys] of Object.entries(hourlyOrderKeys)) {
+                hours[Number(hour)].orders += orderKeys.size;
+            }
         }
 
         return Object.values(hours).map(h => ({
@@ -305,6 +425,25 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             byProduct[key].orders++;
         }
 
+        const liveDays = await getLiveOrderDays(tenantId, range);
+        const importedEvents = await getImportedEventsForAnalytics(tenantId, range, liveDays);
+        for (const event of importedEvents) {
+            const key = event.productId || event.productName;
+            if (!byProduct[key]) {
+                byProduct[key] = {
+                    productId: event.productId || '',
+                    name: event.productName,
+                    unitsSold: 0,
+                    revenue: 0,
+                    avgPrice: event.unitPrice,
+                    orders: 0,
+                };
+            }
+            byProduct[key].unitsSold += event.quantity;
+            byProduct[key].revenue += event.totalPrice;
+            byProduct[key].orders++;
+        }
+
         // Sort by revenue, take top N
         const sorted = Object.values(byProduct)
             .sort((a, b) => b.revenue - a.revenue)
@@ -343,13 +482,21 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             select: {
                 id: true,
                 name: true,
+                categoryId: true,
                 price: true,
                 cost: true,
                 recipes: {
                     select: {
                         quantity: true,
                         costAtCreation: true,
-                        supplyItem: { select: { averageCost: true, currentCost: true, defaultUnit: true } },
+                        supplyItem: {
+                            select: {
+                                averageCost: true,
+                                currentCost: true,
+                                stockCorrectionFactor: true,
+                                yieldPercentage: true,
+                            }
+                        },
                     },
                 },
             },
@@ -360,13 +507,17 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             let cogs = p.cost ?? 0;
             if (p.recipes.length > 0 && cogs === 0) {
                 cogs = p.recipes.reduce((s, r) => {
-                    const itemCost = r.supplyItem?.averageCost ?? r.supplyItem?.currentCost ?? r.costAtCreation ?? 0;
+                    const itemCost = r.costAtCreation ?? getEffectiveRecipeUnitCost({
+                        rawCost: r.supplyItem?.averageCost ?? r.supplyItem?.currentCost ?? 0,
+                        stockCorrectionFactor: r.supplyItem?.stockCorrectionFactor,
+                        yieldPercentage: r.supplyItem?.yieldPercentage,
+                    });
                     return s + r.quantity * itemCost;
                 }, 0);
             }
             const margin = p.price - cogs;
             const marginPct = p.price > 0 ? margin / p.price : 0;
-            return { id: p.id, name: p.name, price: p.price, cogs, margin, marginPct };
+            return { id: p.id, name: p.name, categoryId: p.categoryId || null, price: p.price, cogs, margin, marginPct };
         });
 
         // Sales counts for the period
@@ -382,6 +533,17 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
                 units: s._sum.quantity ?? 0,
                 revenue: s._sum.totalPrice ?? 0,
             };
+        }
+
+        const liveDays = await getLiveOrderDays(tenantId, range);
+        const importedEvents = await getImportedEventsForAnalytics(tenantId, range, liveDays);
+        for (const event of importedEvents) {
+            if (!event.productId) continue;
+            if (!salesMap[event.productId]) {
+                salesMap[event.productId] = { units: 0, revenue: 0 };
+            }
+            salesMap[event.productId].units += event.quantity;
+            salesMap[event.productId].revenue += event.totalPrice;
         }
 
         const result = productMargins
@@ -430,6 +592,16 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             if (!byCategory[catId]) byCategory[catId] = { name: catName, revenue: 0, units: 0 };
             byCategory[catId].revenue += i.totalPrice;
             byCategory[catId].units += i.quantity;
+        }
+
+        const liveDays = await getLiveOrderDays(tenantId, range);
+        const importedEvents = await getImportedEventsForAnalytics(tenantId, range, liveDays);
+        for (const event of importedEvents) {
+            const catId = event.categoryId || 'uncategorized';
+            const catName = catId === 'uncategorized' ? 'Sin Categoría' : catId;
+            if (!byCategory[catId]) byCategory[catId] = { name: catName, revenue: 0, units: 0 };
+            byCategory[catId].revenue += event.totalPrice;
+            byCategory[catId].units += event.quantity;
         }
 
         const total = Object.values(byCategory).reduce((s, c) => s + c.revenue, 0);
