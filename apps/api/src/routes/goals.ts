@@ -149,11 +149,11 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
             orderBy: { currentQty: 'desc' },
         });
 
-        // Filter by session if specified or auto-detect
+        // Filter by session: 'ALL' = show everything, otherwise filter to specific or auto-detected
         const currentSession = session || detectSession();
-        const filteredGoals = goals.filter(g =>
-            g.session === 'ALL_DAY' || g.session === currentSession
-        );
+        const filteredGoals = session === 'ALL'
+            ? goals
+            : goals.filter(g => g.session === 'ALL_DAY' || g.session === currentSession);
 
         // Group by employee
         const byEmployee: Record<string, { employeeId: string; goals: typeof filteredGoals; completed: number; total: number }> = {};

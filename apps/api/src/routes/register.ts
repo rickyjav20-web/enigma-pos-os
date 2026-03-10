@@ -11,61 +11,95 @@ export default async function registerRoutes(fastify: FastifyInstance) {
     // Helper: Get Tenant (uses middleware-resolved UUID, not raw header)
     const getTenant = (req: any) => req.tenantId as string;
 
-    // ── Default shift goals template ─────────────────────────────────
-    // Auto-assigned when a register session opens.
-    // Future: make this configurable from HQ via GoalTemplate model.
-    async function assignShiftGoals(tenantId: string, employeeId: string, sessionId: string) {
+    // ── Auto-assign goals from GoalTemplates ────────────────────────
+    // Reads active templates from DB and creates DailyGoal instances.
+    // Scope: SESSION = shared (employeeId=''), EMPLOYEE = one per waiter.
+    // Duplicate prevention: skips if system goals already exist for today + session.
+    async function assignShiftGoals(tenantId: string, employeeId: string, _sessionId: string) {
         const today = new Date().toISOString().split('T')[0];
+        const currentSession = new Date().getHours() < 15 ? 'MORNING' : 'AFTERNOON';
 
-        // Find the "Galleta" product dynamically by name match
-        const galletaProduct = await prisma.product.findFirst({
-            where: { tenantId, name: { contains: 'alleta', mode: 'insensitive' } },
-            select: { id: true, name: true },
+        // Fetch active templates that match current session
+        const templates = await prisma.goalTemplate.findMany({
+            where: {
+                tenantId,
+                isActive: true,
+                session: { in: [currentSession, 'ALL_DAY'] },
+            },
+            orderBy: { sortOrder: 'asc' },
         });
 
-        const goals = [
-            // Goal 1: Upsell galletas
-            ...(galletaProduct ? [{
-                tenantId,
-                employeeId,
-                date: today,
-                sessionId,
-                type: 'PRODUCT',
-                targetId: galletaProduct.id,
-                targetName: galletaProduct.name,
-                targetQty: 10,
-                rewardType: 'BONUS',
-                rewardValue: 1.5,
-                rewardNote: 'Bono por upsell de galletas',
-                createdBy: 'system',
-                status: 'ACTIVE',
-                currentQty: 0,
-                isCompleted: false,
-            }] : []),
-            // Goal 2: Revenue target
-            {
-                tenantId,
-                employeeId,
-                date: today,
-                sessionId,
-                type: 'REVENUE',
-                targetId: null,
-                targetName: 'Ventas del Turno',
-                targetQty: 200,
-                rewardType: 'BONUS',
-                rewardValue: 1.5,
-                rewardNote: 'Bono por meta de ventas',
-                createdBy: 'system',
-                status: 'ACTIVE',
-                currentQty: 0,
-                isCompleted: false,
-            },
-        ];
-
-        for (const g of goals) {
-            await prisma.dailyGoal.create({ data: g as any });
+        if (templates.length === 0) {
+            console.log(`[Goals] No active templates for ${currentSession}, skipping`);
+            return;
         }
-        console.log(`[Goals] Auto-assigned ${goals.length} shift goals for session ${sessionId.slice(0, 8)}`);
+
+        // Check if goals already exist for today + session (prevent duplicates on re-open)
+        const existing = await prisma.dailyGoal.findFirst({
+            where: {
+                tenantId,
+                date: today,
+                session: { in: [currentSession, 'ALL_DAY'] },
+                createdBy: 'system',
+            },
+        });
+        if (existing) {
+            console.log(`[Goals] Session goals already exist for ${today} ${currentSession}, skipping`);
+            return;
+        }
+
+        let created = 0;
+        for (const t of templates) {
+            if (t.scope === 'SESSION') {
+                // Shared goal: all employees feed into one
+                await prisma.dailyGoal.create({
+                    data: {
+                        tenantId,
+                        employeeId: '',
+                        date: today,
+                        session: t.session,
+                        type: t.type,
+                        targetId: t.targetId,
+                        targetIds: t.targetIds ?? undefined,
+                        targetName: t.targetName,
+                        targetQty: t.targetQty,
+                        rewardType: t.rewardType,
+                        rewardValue: t.rewardValue,
+                        rewardNote: t.rewardNote,
+                        createdBy: 'system',
+                        status: 'ACTIVE',
+                        currentQty: 0,
+                        isCompleted: false,
+                    },
+                });
+                created++;
+            } else {
+                // Per-employee goal: create one for the opening employee
+                // (other employees get theirs when they open or via batch)
+                await prisma.dailyGoal.create({
+                    data: {
+                        tenantId,
+                        employeeId,
+                        date: today,
+                        session: t.session,
+                        type: t.type,
+                        targetId: t.targetId,
+                        targetIds: t.targetIds ?? undefined,
+                        targetName: t.targetName,
+                        targetQty: t.targetQty,
+                        rewardType: t.rewardType,
+                        rewardValue: t.rewardValue,
+                        rewardNote: t.rewardNote,
+                        createdBy: 'system',
+                        status: 'ACTIVE',
+                        currentQty: 0,
+                        isCompleted: false,
+                    },
+                });
+                created++;
+            }
+        }
+        console.log(`[Goals] Auto-assigned ${created} goals from ${templates.length} templates for ${currentSession}`);
     }
 
     // --- OPEN REGISTER (DUAL: PHYSICAL + ELECTRONIC) ---

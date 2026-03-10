@@ -37,6 +37,7 @@ model Tenant {
   shiftTasks       ShiftTask[]
   diningTables     DiningTable[]
   dailyGoals       DailyGoal[]
+  goalTemplates    GoalTemplate[]
   kitchenStations  KitchenStation[]
   tableFlowConfig  TableFlowConfig?
 }
@@ -766,6 +767,40 @@ model DailyGoal {
   @@index([tenantId, date])
   @@index([employeeId, date])
   @@index([session])
+}
+
+// Goal Templates: reusable goal definitions that auto-create when a register session opens.
+// Tenants configure these from HQ to customize what goals appear each session.
+model GoalTemplate {
+  id         String  @id @default(uuid())
+  tenantId   String
+
+  // When to apply
+  session    String  @default("ALL_DAY") // "MORNING" | "AFTERNOON" | "ALL_DAY"
+  scope      String  @default("SESSION") // "SESSION" (shared, all feed it) | "EMPLOYEE" (one per waiter)
+
+  // Goal definition (same shape as DailyGoal)
+  type       String  // "PRODUCT" | "CATEGORY" | "REVENUE" | "MIXED"
+  targetId   String? // productId or category
+  targetIds  Json?   // Array of productIds for MIXED
+  targetName String
+  targetQty  Float
+
+  // Reward
+  rewardType  String  @default("BONUS")
+  rewardValue Float   @default(1.5)
+  rewardNote  String  @default("Bono por meta")
+
+  // State
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, isActive])
+  @@index([tenantId, session])
 }
 
 // --- MODULE: KDS STATIONS ---
