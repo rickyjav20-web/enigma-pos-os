@@ -1,20 +1,23 @@
 /**
- * KdsPage — Kitchen Display System v4
+ * KdsPage — Kitchen Display System v5
  *
- * POS-matching dark theme. Landscape-first card layout.
- * - Colored header bar per card (tap to bump all)
+ * Professional station-locked KDS (like Toast, Square KDS, Fresh KDS):
+ * - First launch: full-screen station setup ("What station is this device?")
+ * - Station locked to device via localStorage
+ * - Station badge with color in top bar
+ * - Settings icon to change station (not accidental)
+ * - "All Stations" option for managers
  * - Per-item tap-to-mark with large touch targets
  * - Urgency colors: green → blue → amber → red
  * - Loud notification sound on new orders
  * - Auto-refresh every 5s with stale data warning
- * - Bump animation on completion
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import {
-    CheckCircle2, Clock, RefreshCw,
-    Loader2, Wifi, WifiOff, Volume2, VolumeX, AlertTriangle,
+    CheckCircle2, Clock, RefreshCw, Monitor,
+    Loader2, Wifi, WifiOff, Volume2, VolumeX, AlertTriangle, Settings,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,6 +40,14 @@ interface Order {
     items: OrderItem[];
     _elapsed?: number;
     _urgency?: Urgency;
+}
+
+interface KitchenStation {
+    id: string;
+    name: string;
+    color: string;
+    isActive: boolean;
+    categories: string[] | null;
 }
 
 type Urgency = 'fresh' | 'normal' | 'late' | 'urgent';
@@ -120,12 +131,143 @@ function playNotificationSound() {
     }
 }
 
-const POLL_INTERVAL = 5000; // 5 seconds
-const STALE_THRESHOLD = 15000; // 15 seconds without update = stale warning
+// ─── LocalStorage keys ───────────────────────────────────────────────────────
+const LS_STATION_NAME = 'kds_locked_station';
+const LS_STATION_COLOR = 'kds_locked_color';
 
-// ─── Main Component ──────────────────────────────────────────────────────────
+function getSavedStation(): { name: string; color: string } | null {
+    const name = localStorage.getItem(LS_STATION_NAME);
+    const color = localStorage.getItem(LS_STATION_COLOR);
+    if (name) return { name, color: color || COLORS.accent };
+    return null;
+}
+
+function saveStation(name: string, color: string) {
+    localStorage.setItem(LS_STATION_NAME, name);
+    localStorage.setItem(LS_STATION_COLOR, color);
+}
+
+function clearStation() {
+    localStorage.removeItem(LS_STATION_NAME);
+    localStorage.removeItem(LS_STATION_COLOR);
+}
+
+const POLL_INTERVAL = 5000;
+const STALE_THRESHOLD = 15000;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STATION SETUP SCREEN — shown on first launch or when no station is locked
+// ═══════════════════════════════════════════════════════════════════════════════
+function StationSetup({ onSelect }: { onSelect: (name: string, color: string) => void }) {
+    const [stations, setStations] = useState<KitchenStation[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        api.get('/kitchen-stations')
+            .then(res => setStations((res.data?.data || []).filter((s: KitchenStation) => s.isActive)))
+            .catch(() => {})
+            .finally(() => setLoading(false));
+    }, []);
+
+    return (
+        <div className="h-full flex flex-col items-center justify-center p-8"
+            style={{ background: COLORS.bg, color: COLORS.text }}>
+
+            {/* Logo area */}
+            <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6"
+                style={{ background: 'rgba(147,181,157,0.08)', border: '1px solid rgba(147,181,157,0.15)' }}>
+                <Monitor size={40} style={{ color: COLORS.accent }} />
+            </div>
+
+            <h1 className="text-2xl font-extrabold tracking-tight mb-2">Configurar Estacion</h1>
+            <p className="text-sm mb-10 text-center max-w-md" style={{ color: COLORS.textMuted }}>
+                Selecciona que estacion es este dispositivo. Solo veras los pedidos asignados a esta estacion.
+            </p>
+
+            {loading ? (
+                <Loader2 size={28} className="animate-spin" style={{ color: COLORS.accent }} />
+            ) : stations.length === 0 ? (
+                <div className="text-center space-y-4">
+                    <div className="rounded-2xl p-6" style={{ background: 'rgba(244,240,234,0.03)', border: `1px solid ${COLORS.border}` }}>
+                        <p className="text-sm font-medium" style={{ color: COLORS.textMuted }}>
+                            No hay estaciones configuradas.
+                        </p>
+                        <p className="text-xs mt-2" style={{ color: COLORS.textDim }}>
+                            Ve a HQ &rarr; Salon &rarr; Estaciones KDS para crear estaciones como "Cocina" y "Barra".
+                        </p>
+                    </div>
+                    {/* Fallback: allow "All Stations" mode */}
+                    <button
+                        onClick={() => onSelect('__ALL__', COLORS.accent)}
+                        className="px-6 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
+                        style={{ background: 'rgba(244,240,234,0.06)', color: COLORS.textMuted, border: `1px solid ${COLORS.border}` }}>
+                        Continuar sin estacion (ver todo)
+                    </button>
+                </div>
+            ) : (
+                <div className="w-full max-w-lg space-y-3">
+                    {/* Station buttons */}
+                    {stations.map(s => (
+                        <button
+                            key={s.id}
+                            onClick={() => onSelect(s.name, s.color)}
+                            className="w-full flex items-center gap-4 p-5 rounded-2xl text-left transition-all active:scale-[0.97] hover:brightness-110"
+                            style={{
+                                background: `${s.color}10`,
+                                border: `2px solid ${s.color}30`,
+                            }}>
+                            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
+                                style={{ background: `${s.color}20`, border: `1px solid ${s.color}40` }}>
+                                <Monitor size={28} style={{ color: s.color }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-lg font-extrabold uppercase tracking-wide" style={{ color: s.color }}>
+                                    {s.name}
+                                </h3>
+                                {s.categories && (s.categories as string[]).length > 0 && (
+                                    <p className="text-xs mt-1 truncate" style={{ color: COLORS.textMuted }}>
+                                        {(s.categories as string[]).join(', ')}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+                                style={{ background: `${s.color}15` }}>
+                                <span className="text-lg" style={{ color: s.color }}>→</span>
+                            </div>
+                        </button>
+                    ))}
+
+                    {/* All stations option — for managers */}
+                    <button
+                        onClick={() => onSelect('__ALL__', COLORS.accent)}
+                        className="w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all active:scale-[0.97]"
+                        style={{ background: 'rgba(244,240,234,0.03)', border: `1px dashed ${COLORS.border}` }}>
+                        <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
+                            style={{ background: 'rgba(244,240,234,0.04)' }}>
+                            <Monitor size={24} style={{ color: COLORS.textDim }} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold" style={{ color: COLORS.textMuted }}>Todas las estaciones</h3>
+                            <p className="text-xs mt-0.5" style={{ color: COLORS.textDim }}>Ver todos los pedidos sin filtrar</p>
+                        </div>
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN KDS COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
 export default function KdsPage() {
     const { user } = useAuth();
+
+    // Station lock
+    const [lockedStation, setLockedStation] = useState<{ name: string; color: string } | null>(getSavedStation);
+    const [showStationPicker, setShowStationPicker] = useState(false);
+
+    // Orders state
     const [orders, setOrders] = useState<Order[]>([]);
     const [doneOrderIds, setDoneOrderIds] = useState<Set<string>>(new Set());
     const [doneItemIds, setDoneItemIds] = useState<Set<string>>(new Set());
@@ -135,15 +277,90 @@ export default function KdsPage() {
     const [lastRefresh, setLastRefresh] = useState(new Date());
     const [isStale, setIsStale] = useState(false);
     const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('kds_sound') !== 'off');
-    const [stationFilter, setStationFilter] = useState<string>(
-        () => localStorage.getItem('kds_station_filter') || ''
-    );
     const [failCount, setFailCount] = useState(0);
 
     const prevOrderIdsRef = useRef<Set<string>>(new Set());
     const initialLoadRef = useRef(true);
 
-    // ── Fetch done state (last 2 hours only — no full-day history) ─────────
+    // ── Station selection handler ─────────────────────────────────────────────
+    const handleStationSelect = (name: string, color: string) => {
+        saveStation(name, color);
+        setLockedStation({ name, color });
+        setShowStationPicker(false);
+    };
+
+    // ── Show setup if no station locked ───────────────────────────────────────
+    if (!lockedStation) {
+        return <StationSetup onSelect={handleStationSelect} />;
+    }
+
+    // Station filter: '__ALL__' means no filtering
+    const stationFilter = lockedStation.name === '__ALL__' ? '' : lockedStation.name;
+    const stationLabel = lockedStation.name === '__ALL__' ? 'Todas' : lockedStation.name;
+    const stationColor = lockedStation.color;
+
+    // ── Station picker overlay ────────────────────────────────────────────────
+    if (showStationPicker) {
+        return (
+            <StationSetup onSelect={(name, color) => {
+                handleStationSelect(name, color);
+            }} />
+        );
+    }
+
+    return (
+        <KdsDisplay
+            user={user}
+            stationFilter={stationFilter}
+            stationLabel={stationLabel}
+            stationColor={stationColor}
+            onChangeStation={() => { clearStation(); setLockedStation(null); }}
+            // Pass all state down
+            orders={orders} setOrders={setOrders}
+            doneOrderIds={doneOrderIds} setDoneOrderIds={setDoneOrderIds}
+            doneItemIds={doneItemIds} setDoneItemIds={setDoneItemIds}
+            markingOrder={markingOrder} setMarkingOrder={setMarkingOrder}
+            loading={loading} setLoading={setLoading}
+            online={online} setOnline={setOnline}
+            lastRefresh={lastRefresh} setLastRefresh={setLastRefresh}
+            isStale={isStale} setIsStale={setIsStale}
+            soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled}
+            failCount={failCount} setFailCount={setFailCount}
+            prevOrderIdsRef={prevOrderIdsRef}
+            initialLoadRef={initialLoadRef}
+        />
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// KDS DISPLAY — the actual kitchen display (extracted to avoid hooks-in-conditional)
+// ═══════════════════════════════════════════════════════════════════════════════
+function KdsDisplay({
+    user, stationFilter, stationLabel, stationColor, onChangeStation,
+    orders, setOrders, doneOrderIds, setDoneOrderIds, doneItemIds, setDoneItemIds,
+    markingOrder, setMarkingOrder, loading, setLoading, online, setOnline,
+    lastRefresh, setLastRefresh, isStale, setIsStale, soundEnabled, setSoundEnabled,
+    failCount, setFailCount, prevOrderIdsRef, initialLoadRef,
+}: {
+    user: any;
+    stationFilter: string;
+    stationLabel: string;
+    stationColor: string;
+    onChangeStation: () => void;
+    orders: Order[]; setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+    doneOrderIds: Set<string>; setDoneOrderIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+    doneItemIds: Set<string>; setDoneItemIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+    markingOrder: string | null; setMarkingOrder: React.Dispatch<React.SetStateAction<string | null>>;
+    loading: boolean; setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+    online: boolean; setOnline: React.Dispatch<React.SetStateAction<boolean>>;
+    lastRefresh: Date; setLastRefresh: React.Dispatch<React.SetStateAction<Date>>;
+    isStale: boolean; setIsStale: React.Dispatch<React.SetStateAction<boolean>>;
+    soundEnabled: boolean; setSoundEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+    failCount: number; setFailCount: React.Dispatch<React.SetStateAction<number>>;
+    prevOrderIdsRef: React.MutableRefObject<Set<string>>;
+    initialLoadRef: React.MutableRefObject<boolean>;
+}) {
+    // ── Fetch done state ──────────────────────────────────────────────────────
     const fetchDoneState = useCallback(async () => {
         try {
             const from = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
@@ -154,9 +371,9 @@ export default function KdsPage() {
             setDoneOrderIds(new Set((orderRes.data?.data || []).map((l: any) => l.entityId).filter(Boolean)));
             setDoneItemIds(new Set((itemRes.data?.data || []).map((l: any) => l.entityId).filter(Boolean)));
         } catch { /* non-critical */ }
-    }, []);
+    }, [setDoneOrderIds, setDoneItemIds]);
 
-    // ── Fetch orders (only open for KDS — completed are tracked via doneState) ──
+    // ── Fetch orders ──────────────────────────────────────────────────────────
     const fetchOrders = useCallback(async (silent = false) => {
         if (!silent) setLoading(true);
         try {
@@ -174,8 +391,11 @@ export default function KdsPage() {
                     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
                 });
 
-            // Detect new orders → play sound
-            const currentIds = new Set(recent.filter(o => o.status === 'open').map(o => o.id));
+            // Detect new orders → play sound (only for filtered items)
+            const relevantOrders = stationFilter
+                ? recent.filter(o => o.status === 'open' && o.items.some(i => !i.kdsStation || i.kdsStation === stationFilter))
+                : recent.filter(o => o.status === 'open');
+            const currentIds = new Set(relevantOrders.map(o => o.id));
             if (!initialLoadRef.current && soundEnabled) {
                 for (const id of currentIds) {
                     if (!prevOrderIdsRef.current.has(id)) {
@@ -198,7 +418,7 @@ export default function KdsPage() {
         } finally {
             setLoading(false);
         }
-    }, [soundEnabled]);
+    }, [soundEnabled, stationFilter, setOrders, setLastRefresh, setOnline, setIsStale, setFailCount, setLoading, prevOrderIdsRef, initialLoadRef]);
 
     // ── Initial load + auto-refresh ──────────────────────────────────────────
     useEffect(() => {
@@ -220,13 +440,12 @@ export default function KdsPage() {
                 const mins = minutesAgo(o.createdAt);
                 return { ...o, _elapsed: mins, _urgency: getUrgency(mins) };
             }));
-            // Check if data is stale
             if (Date.now() - lastRefresh.getTime() > STALE_THRESHOLD) {
                 setIsStale(true);
             }
         }, 15000);
         return () => clearInterval(timer);
-    }, [lastRefresh]);
+    }, [lastRefresh, setOrders, setIsStale]);
 
     // ── Mark single item done ────────────────────────────────────────────────
     const handleMarkItemDone = useCallback(async (order: Order, item: OrderItem) => {
@@ -251,8 +470,10 @@ export default function KdsPage() {
             return;
         }
 
-        // Auto-complete when ALL items done
-        const allDone = order.items.every(i => newDoneItems.has(i.id));
+        // Auto-complete when ALL items done (check against full order, not just filtered)
+        const fullOrder = orders.find(o => o.id === order.id);
+        const allItems = fullOrder ? fullOrder.items : order.items;
+        const allDone = allItems.every(i => newDoneItems.has(i.id));
         if (allDone && !doneOrderIds.has(order.id)) {
             try {
                 await api.post('/kitchen/activity', {
@@ -268,7 +489,7 @@ export default function KdsPage() {
                 setDoneOrderIds(prev => new Set([...prev, order.id]));
             } catch { /* retry on next poll */ }
         }
-    }, [user, doneItemIds, doneOrderIds]);
+    }, [user, doneItemIds, doneOrderIds, orders, setDoneItemIds, setDoneOrderIds]);
 
     // ── Mark full order done ─────────────────────────────────────────────────
     const handleMarkOrderDone = useCallback(async (order: Order) => {
@@ -313,7 +534,7 @@ export default function KdsPage() {
         } finally {
             setMarkingOrder(null);
         }
-    }, [user, doneItemIds, doneOrderIds]);
+    }, [user, doneItemIds, doneOrderIds, setDoneOrderIds, setDoneItemIds, setMarkingOrder]);
 
     // ── Derived state ────────────────────────────────────────────────────────
     const allActiveOrders = orders.filter(o => o.status === 'open' && !doneOrderIds.has(o.id));
@@ -328,15 +549,11 @@ export default function KdsPage() {
             .filter(o => o.items.length > 0)
         : allActiveOrders;
 
-    const availableStations = Array.from(new Set(
-        orders.flatMap(o => o.items.map(i => i.kdsStation).filter(Boolean) as string[])
-    )).sort();
-
     // ── Loading state ────────────────────────────────────────────────────────
     if (loading) {
         return (
             <div className="h-full flex items-center justify-center" style={{ background: COLORS.bg }}>
-                <Loader2 size={32} className="animate-spin" style={{ color: COLORS.accent }} />
+                <Loader2 size={32} className="animate-spin" style={{ color: stationColor }} />
             </div>
         );
     }
@@ -359,9 +576,15 @@ export default function KdsPage() {
             <div className="flex items-center justify-between px-4 py-2.5 shrink-0"
                 style={{ borderBottom: `1px solid ${COLORS.border}`, background: 'rgba(0,0,0,0.25)' }}>
                 <div className="flex items-center gap-3">
-                    <h1 className="text-sm font-extrabold uppercase tracking-widest" style={{ color: COLORS.accent }}>
-                        Cocina
-                    </h1>
+                    {/* Station badge — colored with station color */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+                        style={{ background: `${stationColor}15`, border: `1px solid ${stationColor}30` }}>
+                        <Monitor size={14} style={{ color: stationColor }} />
+                        <span className="text-sm font-extrabold uppercase tracking-widest" style={{ color: stationColor }}>
+                            {stationLabel}
+                        </span>
+                    </div>
+
                     <span className="text-xs font-bold px-2.5 py-1 rounded-full"
                         style={{
                             background: activeOrders.length > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(147,181,157,0.1)',
@@ -379,36 +602,6 @@ export default function KdsPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {/* Station filter pills */}
-                    {availableStations.length > 0 && (
-                        <div className="flex gap-1.5 mr-2">
-                            <button
-                                onClick={() => { setStationFilter(''); localStorage.setItem('kds_station_filter', ''); }}
-                                className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95"
-                                style={{
-                                    background: !stationFilter ? COLORS.accent : 'rgba(244,240,234,0.04)',
-                                    color: !stationFilter ? COLORS.bg : COLORS.textMuted,
-                                    border: `1px solid ${!stationFilter ? COLORS.accent : COLORS.border}`,
-                                }}
-                            >Todo</button>
-                            {availableStations.map(s => (
-                                <button key={s}
-                                    onClick={() => {
-                                        const next = stationFilter === s ? '' : s;
-                                        setStationFilter(next);
-                                        localStorage.setItem('kds_station_filter', next);
-                                    }}
-                                    className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95"
-                                    style={{
-                                        background: stationFilter === s ? COLORS.accent : 'rgba(244,240,234,0.04)',
-                                        color: stationFilter === s ? COLORS.bg : COLORS.textMuted,
-                                        border: `1px solid ${stationFilter === s ? COLORS.accent : COLORS.border}`,
-                                    }}
-                                >{s}</button>
-                            ))}
-                        </div>
-                    )}
-
                     {/* Sound toggle */}
                     <button
                         onClick={() => {
@@ -447,6 +640,16 @@ export default function KdsPage() {
                     >
                         <RefreshCw size={16} />
                     </button>
+
+                    {/* Change station — settings gear */}
+                    <button
+                        onClick={onChangeStation}
+                        className="p-2 rounded-xl transition-all active:scale-95"
+                        style={{ background: 'rgba(244,240,234,0.04)', color: COLORS.textDim }}
+                        title="Cambiar estacion"
+                    >
+                        <Settings size={16} />
+                    </button>
                 </div>
             </div>
 
@@ -455,11 +658,13 @@ export default function KdsPage() {
                 {activeOrders.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center gap-5">
                         <div className="w-20 h-20 rounded-2xl flex items-center justify-center"
-                            style={{ background: 'rgba(147,181,157,0.08)', border: `1px solid rgba(147,181,157,0.15)` }}>
-                            <CheckCircle2 size={36} style={{ color: COLORS.accent }} />
+                            style={{ background: `${stationColor}10`, border: `1px solid ${stationColor}20` }}>
+                            <CheckCircle2 size={36} style={{ color: stationColor }} />
                         </div>
                         <div className="text-center">
-                            <p className="text-lg font-bold" style={{ color: 'rgba(244,240,234,0.8)' }}>Cocina al dia</p>
+                            <p className="text-lg font-bold" style={{ color: 'rgba(244,240,234,0.8)' }}>
+                                {stationLabel} al dia
+                            </p>
                             <p className="text-sm mt-1" style={{ color: COLORS.textMuted }}>
                                 No hay pedidos pendientes
                             </p>
