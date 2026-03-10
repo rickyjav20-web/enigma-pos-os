@@ -37,6 +37,7 @@ model Tenant {
   shiftTasks       ShiftTask[]
   diningTables     DiningTable[]
   dailyGoals       DailyGoal[]
+  kitchenStations  KitchenStation[]
   tableFlowConfig  TableFlowConfig?
 }
 
@@ -733,14 +734,16 @@ model TableFlowConfig {
 model DailyGoal {
   id         String @id @default(uuid())
   tenantId   String
-  employeeId String // Assigned to
+  employeeId String // Assigned to (empty string = "ALL" employees)
   date       String // "2026-03-02" ISO date
-  sessionId  String? // RegisterSession ID - ties goal to a specific shift (null = daily goal)
+  sessionId  String? // LEGACY: RegisterSession ID (kept for backward compat)
+  session    String  @default("ALL_DAY") // "MORNING" | "AFTERNOON" | "ALL_DAY"
 
   // Goal definition
-  type       String // "PRODUCT" | "CATEGORY" | "REVENUE"
+  type       String // "PRODUCT" | "CATEGORY" | "REVENUE" | "MIXED"
   targetId   String? // productId (PRODUCT) or category name (CATEGORY)
-  targetName String // "Combo Tequenos" or "Postres" or "Revenue"
+  targetIds  Json?   // Array of productIds for MIXED goals: ["id1","id2","id3"]
+  targetName String // "Cualquier Torta" or "Combo Tequenos" or "Revenue"
   targetQty  Float // 5 units, or $50 revenue
 
   // Progress
@@ -762,7 +765,30 @@ model DailyGoal {
 
   @@index([tenantId, date])
   @@index([employeeId, date])
-  @@index([sessionId])
+  @@index([session])
+}
+
+// --- MODULE: KDS STATIONS ---
+
+model KitchenStation {
+  id        String  @id @default(uuid())
+  tenantId  String
+  name      String  // "Cocina", "Barra", "Postres"
+  color     String  @default("#93B59D") // Station color for UI
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  // What this station handles (array of category names or product IDs)
+  categories Json? // ["Bebidas", "Cocteles"] - category names routed here
+  productIds Json? // ["id1","id2"] - specific products (overrides category)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
 }
 
 // --- MODULE: AUDIT LOG ---

@@ -12,7 +12,7 @@ import {
     MapPin, RefreshCw, Scissors, ArrowRightLeft, ArrowLeft,
     Check, Loader2, ShoppingBag, DollarSign, Smartphone,
     Building2, Wallet, CreditCard, Banknote, List,
-    LayoutGrid, FileText, Menu, AlertTriangle, Clock
+    LayoutGrid, FileText, Menu, AlertTriangle, Clock, Target
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
@@ -192,6 +192,9 @@ export default function TabletPOSPage() {
 
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // Goals
+    const [activeGoals, setActiveGoals] = useState<{ id: string; targetName: string; type: string; targetQty: number; currentQty: number; isCompleted: boolean; session: string }[]>([]);
+
     const cartTotal = total();
     const cartCount = itemCount();
     const hasItems = cartCount > 0;
@@ -241,10 +244,21 @@ export default function TabletPOSPage() {
         } catch { /* silent */ }
     }, []);
 
+    // --- Fetch active goals ---
+    const fetchGoals = useCallback(async () => {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const res = await fetch(`${API_URL}/goals?date=${today}&autoSession=true`, { headers: TH });
+            const data = await res.json();
+            setActiveGoals((data.data || []).filter((g: any) => g.status === 'ACTIVE'));
+        } catch { /* silent */ }
+    }, []);
+
     useEffect(() => {
         fetchProducts();
         fetchTables();
-        intervalRef.current = setInterval(() => fetchTables(), 30000);
+        fetchGoals();
+        intervalRef.current = setInterval(() => { fetchTables(); fetchGoals(); }, 30000);
         return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1201,6 +1215,29 @@ export default function TabletPOSPage() {
                     {filtered.length}
                 </span>
             </div>
+
+            {/* ── Goals banner ─────────────────────────────────────── */}
+            {activeGoals.length > 0 && (
+                <div className="flex items-center gap-3 px-4 py-1.5 border-b border-white/[0.05] shrink-0 overflow-x-auto" style={{ background: 'rgba(147,181,157,0.04)' }}>
+                    <Target className="w-3.5 h-3.5 shrink-0" style={{ color: '#93B59D' }} />
+                    {activeGoals.map(g => {
+                        const pct = Math.min(100, Math.round((g.currentQty / g.targetQty) * 100));
+                        return (
+                            <div key={g.id} className="flex items-center gap-2 shrink-0">
+                                <span className="text-[11px] font-medium" style={{ color: 'rgba(244,240,234,0.5)' }}>
+                                    {g.targetName}
+                                </span>
+                                <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(244,240,234,0.06)' }}>
+                                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: g.isCompleted ? '#34D399' : '#93B59D' }} />
+                                </div>
+                                <span className="text-[10px] font-mono" style={{ color: g.isCompleted ? '#34D399' : 'rgba(244,240,234,0.35)' }}>
+                                    {g.currentQty}/{g.targetQty}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
 
             {/* ── Body: products + cart ─────────────────────────────── */}
             <div className="flex-1 flex overflow-hidden">

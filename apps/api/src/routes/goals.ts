@@ -1,17 +1,29 @@
 
 import { FastifyInstance } from 'fastify';
+import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { z } from 'zod';
 
+// Session detection: before cutoff = MORNING, after = AFTERNOON
+// Default cutoff: 15:00 (3 PM). Could be made configurable later.
+const SESSION_CUTOFF_HOUR = 15;
+
+function detectSession(): 'MORNING' | 'AFTERNOON' {
+    const hour = new Date().getHours();
+    return hour < SESSION_CUTOFF_HOUR ? 'MORNING' : 'AFTERNOON';
+}
+
 export default async function goalsRoutes(fastify: FastifyInstance) {
 
-    // POST /goals — create daily goal (optionally tied to a session/shift)
+    // POST /goals — create daily goal with session support
     const createSchema = z.object({
-        employeeId: z.string(),
+        employeeId: z.string(), // empty string = ALL employees
         date: z.string().optional(), // defaults to today
-        sessionId: z.string().optional(), // RegisterSession ID — ties goal to a shift
-        type: z.enum(['PRODUCT', 'CATEGORY', 'REVENUE']),
-        targetId: z.string().optional(),
+        session: z.enum(['MORNING', 'AFTERNOON', 'ALL_DAY']).optional().default('ALL_DAY'),
+        sessionId: z.string().optional(), // LEGACY: RegisterSession ID
+        type: z.enum(['PRODUCT', 'CATEGORY', 'REVENUE', 'MIXED']),
+        targetId: z.string().optional(), // single productId or category
+        targetIds: z.array(z.string()).optional(), // multiple productIds for MIXED
         targetName: z.string(),
         targetQty: z.number().positive(),
         rewardType: z.enum(['POINTS', 'BONUS', 'BADGE']).optional(),
@@ -29,9 +41,11 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
                 tenantId,
                 employeeId: body.employeeId,
                 date,
+                session: body.session || 'ALL_DAY',
                 sessionId: body.sessionId || null,
                 type: body.type,
                 targetId: body.targetId,
+                targetIds: body.targetIds ?? Prisma.JsonNull,
                 targetName: body.targetName,
                 targetQty: body.targetQty,
                 rewardType: body.rewardType,
@@ -44,14 +58,16 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
         return reply.status(201).send({ success: true, data: goal });
     });
 
-    // GET /goals — list goals with filters
+    // GET /goals — list goals with filters + auto-session detection
     fastify.get('/goals', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
-        const { date, employeeId, status, sessionId } = request.query as {
+        const { date, employeeId, status, sessionId, session, autoSession } = request.query as {
             date?: string;
             employeeId?: string;
             status?: string;
             sessionId?: string;
+            session?: string; // MORNING | AFTERNOON | ALL_DAY
+            autoSession?: string; // "true" = auto-detect and filter
         };
 
         const where: any = { tenantId };
@@ -59,9 +75,13 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
         if (employeeId) where.employeeId = employeeId;
         if (status) where.status = status;
         if (sessionId) where.sessionId = sessionId;
+        if (session) where.session = session;
 
         // Default to today if no date specified
         if (!date && !employeeId) {
+            where.date = new Date().toISOString().split('T')[0];
+        }
+        if (!date && employeeId) {
             where.date = new Date().toISOString().split('T')[0];
         }
 
@@ -70,13 +90,55 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
             orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
         });
 
+        // If autoSession=true, filter to current session + ALL_DAY
+        if (autoSession === 'true' && !session) {
+            const currentSession = detectSession();
+            const filtered = goals.filter(g =>
+                g.session === 'ALL_DAY' || g.session === currentSession
+            );
+            // Also include goals assigned to ALL employees (employeeId = "")
+            // if filtering by a specific employee
+            if (employeeId) {
+                const allEmployeeGoals = await prisma.dailyGoal.findMany({
+                    where: {
+                        tenantId,
+                        employeeId: '',
+                        date: where.date,
+                        ...(status ? { status } : {}),
+                    },
+                    orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+                });
+                const allFiltered = allEmployeeGoals.filter(g =>
+                    g.session === 'ALL_DAY' || g.session === currentSession
+                );
+                return reply.send({
+                    success: true,
+                    data: [...filtered, ...allFiltered],
+                    currentSession,
+                });
+            }
+            return reply.send({ success: true, data: filtered, currentSession });
+        }
+
         return reply.send({ success: true, data: goals });
+    });
+
+    // GET /goals/session — detect current session
+    fastify.get('/goals/session', async (_request, reply) => {
+        return reply.send({
+            success: true,
+            data: {
+                currentSession: detectSession(),
+                cutoffHour: SESSION_CUTOFF_HOUR,
+                serverTime: new Date().toISOString(),
+            },
+        });
     });
 
     // GET /goals/leaderboard — all employees progress for a date
     fastify.get('/goals/leaderboard', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
-        const { date, sessionId } = request.query as { date?: string; sessionId?: string };
+        const { date, sessionId, session } = request.query as { date?: string; sessionId?: string; session?: string };
         const targetDate = date || new Date().toISOString().split('T')[0];
 
         const where: any = { tenantId, date: targetDate };
@@ -87,33 +149,40 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
             orderBy: { currentQty: 'desc' },
         });
 
+        // Filter by session if specified or auto-detect
+        const currentSession = session || detectSession();
+        const filteredGoals = goals.filter(g =>
+            g.session === 'ALL_DAY' || g.session === currentSession
+        );
+
         // Group by employee
-        const byEmployee: Record<string, { employeeId: string; goals: typeof goals; completed: number; total: number }> = {};
-        for (const g of goals) {
-            if (!byEmployee[g.employeeId]) {
-                byEmployee[g.employeeId] = { employeeId: g.employeeId, goals: [], completed: 0, total: 0 };
+        const byEmployee: Record<string, { employeeId: string; goals: typeof filteredGoals; completed: number; total: number }> = {};
+        for (const g of filteredGoals) {
+            const empKey = g.employeeId || '__ALL__';
+            if (!byEmployee[empKey]) {
+                byEmployee[empKey] = { employeeId: g.employeeId, goals: [], completed: 0, total: 0 };
             }
-            byEmployee[g.employeeId].goals.push(g);
-            byEmployee[g.employeeId].total++;
-            if (g.isCompleted) byEmployee[g.employeeId].completed++;
+            byEmployee[empKey].goals.push(g);
+            byEmployee[empKey].total++;
+            if (g.isCompleted) byEmployee[empKey].completed++;
         }
 
         // Get employee names
-        const employeeIds = Object.keys(byEmployee);
-        const employees = await prisma.employee.findMany({
+        const employeeIds = Object.keys(byEmployee).filter(id => id && id !== '__ALL__');
+        const employees = employeeIds.length > 0 ? await prisma.employee.findMany({
             where: { id: { in: employeeIds } },
             select: { id: true, fullName: true },
-        });
+        }) : [];
         const nameMap: Record<string, string> = {};
         employees.forEach(e => { nameMap[e.id] = e.fullName; });
 
         const leaderboard = Object.values(byEmployee).map(e => ({
             ...e,
-            employeeName: nameMap[e.employeeId] || 'Unknown',
+            employeeName: e.employeeId ? (nameMap[e.employeeId] || 'Unknown') : 'Todo el equipo',
             completionRate: e.total > 0 ? Math.round((e.completed / e.total) * 100) : 0,
         })).sort((a, b) => b.completionRate - a.completionRate);
 
-        return reply.send({ success: true, data: leaderboard });
+        return reply.send({ success: true, data: leaderboard, currentSession });
     });
 
     // GET /goals/history — completed goals + accumulated rewards for an employee
@@ -145,15 +214,22 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
         const { id } = request.params as { id: string };
         const body = request.body as any;
 
+        // Fetch current goal to check targetQty
+        const current = await prisma.dailyGoal.findUnique({ where: { id } });
+        if (!current) return reply.status(404).send({ success: false, message: 'Goal not found' });
+
         const updateData: any = {};
         if (body.targetQty !== undefined) updateData.targetQty = body.targetQty;
         if (body.rewardType) updateData.rewardType = body.rewardType;
         if (body.rewardValue !== undefined) updateData.rewardValue = body.rewardValue;
         if (body.rewardNote !== undefined) updateData.rewardNote = body.rewardNote;
         if (body.status) updateData.status = body.status;
+        if (body.session) updateData.session = body.session;
+        if (body.targetIds !== undefined) updateData.targetIds = body.targetIds;
         if (body.currentQty !== undefined) {
             updateData.currentQty = body.currentQty;
-            if (body.currentQty >= (body.targetQty || 0)) {
+            const effectiveTarget = body.targetQty ?? current.targetQty;
+            if (body.currentQty >= effectiveTarget) {
                 updateData.isCompleted = true;
                 updateData.completedAt = new Date();
                 updateData.status = 'COMPLETED';
@@ -186,16 +262,57 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
             const goal = await prisma.dailyGoal.create({
                 data: {
                     tenantId,
-                    employeeId: g.employeeId,
+                    employeeId: g.employeeId || '',
                     date: g.date || date,
+                    session: g.session || 'ALL_DAY',
                     sessionId: g.sessionId || null,
                     type: g.type,
                     targetId: g.targetId,
+                    targetIds: g.targetIds ?? Prisma.JsonNull,
                     targetName: g.targetName,
                     targetQty: g.targetQty,
-                    rewardType: g.rewardType || 'POINTS',
-                    rewardValue: g.rewardValue || 10,
-                    rewardNote: g.rewardNote || '🎯 Meta cumplida',
+                    rewardType: g.rewardType || 'BONUS',
+                    rewardValue: g.rewardValue || 1.5,
+                    rewardNote: g.rewardNote || 'Bono por meta',
+                    createdBy: g.createdBy,
+                },
+            });
+            created.push(goal);
+        }
+
+        return reply.status(201).send({ success: true, count: created.length, data: created });
+    });
+
+    // POST /goals/duplicate — copy goals from one date to another
+    fastify.post('/goals/duplicate', async (request, reply) => {
+        const tenantId = request.tenantId || 'enigma_hq';
+        const { fromDate, toDate } = request.body as { fromDate: string; toDate?: string };
+        const targetDate = toDate || new Date().toISOString().split('T')[0];
+
+        const sourceGoals = await prisma.dailyGoal.findMany({
+            where: { tenantId, date: fromDate },
+        });
+
+        if (sourceGoals.length === 0) {
+            return reply.status(404).send({ success: false, message: 'No goals found for source date' });
+        }
+
+        const created = [];
+        for (const g of sourceGoals) {
+            const goal = await prisma.dailyGoal.create({
+                data: {
+                    tenantId,
+                    employeeId: g.employeeId,
+                    date: targetDate,
+                    session: g.session,
+                    type: g.type,
+                    targetId: g.targetId,
+                    targetIds: g.targetIds ?? Prisma.JsonNull,
+                    targetName: g.targetName,
+                    targetQty: g.targetQty,
+                    rewardType: g.rewardType,
+                    rewardValue: g.rewardValue,
+                    rewardNote: g.rewardNote,
                     createdBy: g.createdBy,
                 },
             });

@@ -19,6 +19,7 @@ import KioskAuth from "./features/staff/pages/KioskAuth";
 import DailyGoals from "./features/staff/pages/DailyGoals";
 import TableManager from "./features/dining/pages/TableManager";
 import TableFlowSettings from "./features/dining/pages/TableFlowSettings";
+import KdsStations from "./features/dining/pages/KdsStations";
 // @ts-ignore
 import AccountPage from "./features/account/pages/AccountPage";
 // @ts-ignore
@@ -78,6 +79,7 @@ function AppRoot() {
               <Route path="register" element={<RegisterAdminPage />} />
               <Route path="dining/tables" element={<TableManager />} />
               <Route path="dining/flow" element={<TableFlowSettings />} />
+              <Route path="dining/kds-stations" element={<KdsStations />} />
             </Route>
 
             {/* Standalone Apps (No Layout) */}

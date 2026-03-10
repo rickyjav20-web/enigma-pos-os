@@ -73,18 +73,39 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         });
     }
 
+    /** Detect current session: MORNING before 15:00, AFTERNOON after */
+    function detectSession(): 'MORNING' | 'AFTERNOON' {
+        return new Date().getHours() < 15 ? 'MORNING' : 'AFTERNOON';
+    }
+
     /** Update daily goals for completed sales */
     async function trackGoals(tenantId: string, employeeId: string, items: { productId: string; quantity: number }[], totalAmount: number, sessionId?: string) {
         const today = new Date().toISOString().split('T')[0];
+        const currentSession = detectSession();
+
+        // Fetch goals for this employee + goals assigned to ALL employees (employeeId = "")
         const goals = await prisma.dailyGoal.findMany({
-            where: { tenantId, employeeId, date: today, status: 'ACTIVE' },
+            where: {
+                tenantId,
+                employeeId: { in: [employeeId, ''] },
+                date: today,
+                status: 'ACTIVE',
+            },
         });
+
         for (const goal of goals) {
-            // Session-scoped goals only track when the sale is in the matching session
+            // Session filter: skip goals that don't match current session
+            if (goal.session !== 'ALL_DAY' && goal.session !== currentSession) continue;
+            // Legacy session ID filter
             if (goal.sessionId && goal.sessionId !== sessionId) continue;
+
             let increment = 0;
             if (goal.type === 'PRODUCT') {
                 increment = items.filter(i => i.productId === goal.targetId).reduce((s, i) => s + i.quantity, 0);
+            } else if (goal.type === 'MIXED') {
+                // Mixed: match any of the targetIds array
+                const targetIds = (goal.targetIds as string[] | null) || [];
+                increment = items.filter(i => targetIds.includes(i.productId)).reduce((s, i) => s + i.quantity, 0);
             } else if (goal.type === 'CATEGORY') {
                 for (const item of items) {
                     const p = await prisma.product.findUnique({ where: { id: item.productId }, select: { categoryId: true } });

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
     Settings, LogOut, Package, Brain, LayoutDashboard,
     Users, Calendar, ShoppingCart, Building2, Wallet,
-    TrendingUp, Trash2, FileUp, Target, LayoutGrid, Settings2
+    TrendingUp, Trash2, FileUp, Target, LayoutGrid, Settings2, Monitor
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -62,6 +62,7 @@ const SECTIONS: NavSection[] = [
         items: [
             { icon: LayoutGrid, label: 'Mesas', href: '/dining/tables', activeColor: 'text-[#93B59D]', exact: true },
             { icon: Settings2, label: 'Flujo de Mesas', href: '/dining/flow', activeColor: 'text-[#93B59D]', exact: true },
+            { icon: Monitor, label: 'Estaciones KDS', href: '/dining/kds-stations', activeColor: 'text-[#93B59D]', exact: true },
         ],
     },
     {
