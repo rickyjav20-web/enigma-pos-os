@@ -33,7 +33,7 @@ export default function DailyGoals() {
     const [type, setType] = useState('PRODUCT');
     const [targetName, setTargetName] = useState('');
     const [targetId, setTargetId] = useState('');
-    const [targetIds, setTargetIds] = useState<string[]>([]);
+    const [, setTargetIds] = useState<string[]>([]);
     const [targetQty, setTargetQty] = useState('');
     const [rewardValue, setRewardValue] = useState('1.5');
     const [rewardNote, setRewardNote] = useState('Bono por meta');
