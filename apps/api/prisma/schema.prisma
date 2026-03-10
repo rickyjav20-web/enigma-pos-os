@@ -11,9 +11,10 @@ datasource db {
 // --- CORE ---
 
 model Tenant {
-  id   String @id @default(uuid())
-  name String
-  slug String @unique
+  id       String @id @default(uuid())
+  name     String
+  slug     String @unique
+  timezone String @default("America/Caracas") // IANA timezone for local time calculations
 
   // Relations
   employees        Employee[]

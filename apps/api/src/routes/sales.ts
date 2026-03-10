@@ -3,6 +3,7 @@ import { FastifyInstance } from 'fastify';
 import prisma from '../lib/prisma';
 import { z } from 'zod';
 import { logAudit } from '../lib/audit';
+import { detectSessionSmart, getLocalDateStr } from '../lib/detectSession';
 
 export default async function salesRoutes(fastify: FastifyInstance) {
 
@@ -73,15 +74,11 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         });
     }
 
-    /** Detect current session: MORNING before 15:00, AFTERNOON after */
-    function detectSession(): 'MORNING' | 'AFTERNOON' {
-        return new Date().getHours() < 15 ? 'MORNING' : 'AFTERNOON';
-    }
-
     /** Update daily goals for completed sales */
     async function trackGoals(tenantId: string, employeeId: string, items: { productId: string; quantity: number }[], totalAmount: number, sessionId?: string) {
-        const today = new Date().toISOString().split('T')[0];
-        const currentSession = detectSession();
+        const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { timezone: true } });
+        const today = getLocalDateStr(tenant?.timezone || 'America/Caracas');
+        const currentSession = await detectSessionSmart(tenantId);
 
         // Fetch goals for this employee + goals assigned to ALL employees (employeeId = "")
         const goals = await prisma.dailyGoal.findMany({

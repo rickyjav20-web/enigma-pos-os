@@ -5,6 +5,7 @@ import prisma from '../lib/prisma';
 import { notifyRegisterOpen, notifyRegisterClose, notifyCashMovement } from '../services/whatsapp';
 import { requireAdmin } from '../middleware/requireAdmin';
 import { logAudit } from '../lib/audit';
+import { detectSessionSmart, getLocalDateStr } from '../lib/detectSession';
 
 export default async function registerRoutes(fastify: FastifyInstance) {
 
@@ -16,8 +17,11 @@ export default async function registerRoutes(fastify: FastifyInstance) {
     // Scope: SESSION = shared (employeeId=''), EMPLOYEE = one per waiter.
     // Duplicate prevention: skips if system goals already exist for today + session.
     async function assignShiftGoals(tenantId: string, employeeId: string, _sessionId: string) {
-        const today = new Date().toISOString().split('T')[0];
-        const currentSession = new Date().getHours() < 15 ? 'MORNING' : 'AFTERNOON';
+        // Use tenant timezone for "today" so dates don't flip at UTC midnight
+        const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { timezone: true } });
+        const tz = tenant?.timezone || 'America/Caracas';
+        const today = getLocalDateStr(tz);
+        const currentSession = await detectSessionSmart(tenantId);
 
         // Fetch active templates that match current session
         const templates = await prisma.goalTemplate.findMany({

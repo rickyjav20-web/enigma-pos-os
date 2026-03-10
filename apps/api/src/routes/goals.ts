@@ -3,14 +3,12 @@ import { FastifyInstance } from 'fastify';
 import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { z } from 'zod';
+import { detectSessionSmart, getLocalDateStr } from '../lib/detectSession';
 
-// Session detection: before cutoff = MORNING, after = AFTERNOON
-// Default cutoff: 15:00 (3 PM). Could be made configurable later.
-const SESSION_CUTOFF_HOUR = 15;
-
-function detectSession(): 'MORNING' | 'AFTERNOON' {
-    const hour = new Date().getHours();
-    return hour < SESSION_CUTOFF_HOUR ? 'MORNING' : 'AFTERNOON';
+/** Get local today for a tenant */
+async function getTenantToday(tenantId: string): Promise<string> {
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { timezone: true } });
+    return getLocalDateStr(tenant?.timezone || 'America/Caracas');
 }
 
 export default async function goalsRoutes(fastify: FastifyInstance) {
@@ -34,7 +32,7 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
     fastify.post('/goals', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
         const body = createSchema.parse(request.body);
-        const date = body.date || new Date().toISOString().split('T')[0];
+        const date = body.date || await getTenantToday(tenantId);
 
         const goal = await prisma.dailyGoal.create({
             data: {
@@ -77,12 +75,9 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
         if (sessionId) where.sessionId = sessionId;
         if (session) where.session = session;
 
-        // Default to today if no date specified
-        if (!date && !employeeId) {
-            where.date = new Date().toISOString().split('T')[0];
-        }
-        if (!date && employeeId) {
-            where.date = new Date().toISOString().split('T')[0];
+        // Default to today (tenant-local) if no date specified
+        if (!date) {
+            where.date = await getTenantToday(tenantId);
         }
 
         const goals = await prisma.dailyGoal.findMany({
@@ -92,7 +87,7 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
 
         // If autoSession=true, filter to current session + ALL_DAY
         if (autoSession === 'true' && !session) {
-            const currentSession = detectSession();
+            const currentSession = await detectSessionSmart(tenantId);
             const filtered = goals.filter(g =>
                 g.session === 'ALL_DAY' || g.session === currentSession
             );
@@ -123,13 +118,14 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
         return reply.send({ success: true, data: goals });
     });
 
-    // GET /goals/session — detect current session
-    fastify.get('/goals/session', async (_request, reply) => {
+    // GET /goals/session — detect current session (smart: based on register sessions)
+    fastify.get('/goals/session', async (request, reply) => {
+        const tenantId = request.tenantId || 'enigma_hq';
+        const currentSession = await detectSessionSmart(tenantId);
         return reply.send({
             success: true,
             data: {
-                currentSession: detectSession(),
-                cutoffHour: SESSION_CUTOFF_HOUR,
+                currentSession,
                 serverTime: new Date().toISOString(),
             },
         });
@@ -139,7 +135,7 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
     fastify.get('/goals/leaderboard', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
         const { date, sessionId, session } = request.query as { date?: string; sessionId?: string; session?: string };
-        const targetDate = date || new Date().toISOString().split('T')[0];
+        const targetDate = date || await getTenantToday(tenantId);
 
         const where: any = { tenantId, date: targetDate };
         if (sessionId) where.sessionId = sessionId;
@@ -150,7 +146,7 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
         });
 
         // Filter by session: 'ALL' = show everything, otherwise filter to specific or auto-detected
-        const currentSession = session || detectSession();
+        const currentSession = session || await detectSessionSmart(tenantId);
         const filteredGoals = session === 'ALL'
             ? goals
             : goals.filter(g => g.session === 'ALL_DAY' || g.session === currentSession);
@@ -255,7 +251,7 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
     fastify.post('/goals/batch', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
         const { goals } = request.body as { goals: any[] };
-        const date = new Date().toISOString().split('T')[0];
+        const date = await getTenantToday(tenantId);
 
         const created = [];
         for (const g of goals) {
@@ -287,7 +283,7 @@ export default async function goalsRoutes(fastify: FastifyInstance) {
     fastify.post('/goals/duplicate', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
         const { fromDate, toDate } = request.body as { fromDate: string; toDate?: string };
-        const targetDate = toDate || new Date().toISOString().split('T')[0];
+        const targetDate = toDate || await getTenantToday(tenantId);
 
         const sourceGoals = await prisma.dailyGoal.findMany({
             where: { tenantId, date: fromDate },
