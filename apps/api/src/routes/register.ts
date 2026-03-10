@@ -16,12 +16,13 @@ export default async function registerRoutes(fastify: FastifyInstance) {
     // Reads active templates from DB and creates DailyGoal instances.
     // Scope: SESSION = shared (employeeId=''), EMPLOYEE = one per waiter.
     // Duplicate prevention: skips if system goals already exist for today + session.
-    async function assignShiftGoals(tenantId: string, employeeId: string, _sessionId: string) {
+    async function assignShiftGoals(tenantId: string, employeeId: string, _sessionId: string, explicitSession?: 'MORNING' | 'AFTERNOON') {
         // Use tenant timezone for "today" so dates don't flip at UTC midnight
         const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { timezone: true } });
         const tz = tenant?.timezone || 'America/Caracas';
         const today = getLocalDateStr(tz);
-        const currentSession = await detectSessionSmart(tenantId);
+        // Use explicitly provided session if available, otherwise auto-detect
+        const currentSession = explicitSession || await detectSessionSmart(tenantId);
 
         // Fetch active templates that match current session
         const templates = await prisma.goalTemplate.findMany({
@@ -115,12 +116,13 @@ export default async function registerRoutes(fastify: FastifyInstance) {
     const openSchema = z.object({
         employeeId: z.string(),
         physical: cashBreakdownSchema,
-        electronic: cashBreakdownSchema
+        electronic: cashBreakdownSchema,
+        session: z.enum(['MORNING', 'AFTERNOON']).optional(), // explicit session selection
     });
 
     fastify.post('/register/open', async (request, reply) => {
         const tenantId = getTenant(request);
-        const { employeeId, physical, electronic } = openSchema.parse(request.body);
+        const { employeeId, physical, electronic, session: explicitSession } = openSchema.parse(request.body);
 
         // Security: Check employee exists and belongs to tenant
         const employee = await prisma.employee.findFirst({
@@ -201,7 +203,7 @@ export default async function registerRoutes(fastify: FastifyInstance) {
         // ── Auto-assign shift goals ──────────────────────────────────
         // Creates default goals for this session (non-fatal)
         try {
-            await assignShiftGoals(tenantId, employeeId, physicalSession.id);
+            await assignShiftGoals(tenantId, employeeId, physicalSession.id, explicitSession);
         } catch (e) {
             console.error('[Register] Failed to auto-assign goals:', e);
         }

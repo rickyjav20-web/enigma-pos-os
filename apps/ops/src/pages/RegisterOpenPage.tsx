@@ -1,13 +1,24 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCurrencies } from '../hooks/useCurrencies';
-import { Loader2, ArrowRight, Smartphone, Wallet, LogOut } from 'lucide-react';
+import { Loader2, ArrowRight, Smartphone, Wallet, LogOut, Sun, Moon } from 'lucide-react';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
 export default function RegisterOpenPage() {
     const { employee, openRegister } = useAuth();
     const { currencies, getRate } = useCurrencies();
     const [isLoading, setIsLoading] = useState(false);
+    const [selectedSession, setSelectedSession] = useState<'MORNING' | 'AFTERNOON'>('MORNING');
+
+    // Auto-detect current session from API
+    useEffect(() => {
+        axios.get(`${API_URL}/goals/session`, { headers: { 'x-tenant-id': 'enigma_hq' } })
+            .then(res => { if (res.data?.data?.currentSession) setSelectedSession(res.data.data.currentSession); })
+            .catch(() => {});
+    }, []);
 
     // --- Caja Fisica: USD + COP ---
     const [usd, setUsd] = useState('');
@@ -49,7 +60,8 @@ export default function RegisterOpenPage() {
                         VES: electronicVES,
                         rates: { VES: vesRate }
                     }
-                }
+                },
+                session: selectedSession,
             });
         } catch (error) {
             console.error(error);
@@ -87,6 +99,37 @@ export default function RegisterOpenPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Session selector */}
+                    <div className="bg-white/5 rounded-xl border border-white/10 p-3">
+                        <p className="text-xs text-white/40 mb-2 text-center">Turno</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedSession('MORNING')}
+                                className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                                    selectedSession === 'MORNING'
+                                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                                        : 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10'
+                                }`}
+                            >
+                                <Sun className="w-4 h-4" />
+                                Mañana
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedSession('AFTERNOON')}
+                                className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                                    selectedSession === 'AFTERNOON'
+                                        ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40'
+                                        : 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10'
+                                }`}
+                            >
+                                <Moon className="w-4 h-4" />
+                                Tarde
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                         {/* ═══ CAJA FISICA ═══ */}

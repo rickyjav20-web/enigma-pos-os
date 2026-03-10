@@ -29,6 +29,7 @@ export interface OpenRegisterPayload {
         startingCash: number;
         startingBreakdown?: Record<string, any>;
     };
+    session?: 'MORNING' | 'AFTERNOON';
 }
 
 interface AuthContextType {
@@ -155,7 +156,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const res = await axios.post(`${API_URL}/register/open`, {
             employeeId: employee.id,
             physical: payload.physical,
-            electronic: payload.electronic
+            electronic: payload.electronic,
+            ...(payload.session ? { session: payload.session } : {}),
         }, { headers: { 'x-tenant-id': TENANT_ID } });
 
         const { physicalSession, electronicSession: elec } = res.data;
