@@ -12,8 +12,10 @@ import {
     MapPin, RefreshCw, Scissors, ArrowRightLeft, ArrowLeft,
     Check, Loader2, ShoppingBag, DollarSign, Smartphone,
     Building2, Wallet, CreditCard, Banknote, List,
-    LayoutGrid, FileText, Menu, AlertTriangle, Clock, Target
+    LayoutGrid, FileText, Menu, AlertTriangle, Clock, Target,
+    Printer, Bluetooth, BluetoothOff
 } from 'lucide-react';
+import { usePrinter, ReceiptData } from '../hooks/usePrinter';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 const TH = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
@@ -181,6 +183,10 @@ export default function TabletPOSPage() {
 
     // Confirm modal
     const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; confirmLabel?: string; confirmColor?: string; onConfirm: () => void } | null>(null);
+
+    // Bluetooth printer
+    const { connected: printerConnected, connecting: printerConnecting, printing, printerName, connect: connectPrinter, disconnect: disconnectPrinter, printReceipt } = usePrinter();
+    const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
 
     // Toast
     const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
@@ -433,14 +439,32 @@ export default function TabletPOSPage() {
                     }),
                 });
             }
+            // Save receipt data before clearing cart
+            const receiptData: ReceiptData = {
+                ticketName,
+                tableName,
+                employeeName: employee?.name?.split(' ')[0] || 'Staff',
+                items: items.map(i => ({ name: i.name, quantity: i.quantity, price: i.price })),
+                total: cartTotal,
+                paymentMethod: payMethod,
+                date: new Date(),
+            };
+            setLastReceipt(receiptData);
+
+            // Auto-print if printer is connected
+            if (printerConnected) {
+                printReceipt(receiptData).catch(() => {});
+            }
+
             setPaySuccess(true);
             setTimeout(() => {
                 clearCart();
                 setShowPayment(false);
                 setPaySuccess(false);
+                setLastReceipt(null);
                 setCashUSD(''); setCashCOP(''); setGiveBackUSD(0);
                 fetchTables();
-            }, 1500);
+            }, 4000);
         } catch {
             showToast('Error procesando el pago. Intenta de nuevo.');
         } finally { setPaying(false); }
@@ -495,7 +519,30 @@ export default function TabletPOSPage() {
                     </div>
                     <h2 className="text-2xl font-bold mb-2" style={{ color: '#F4F0EA' }}>Listo!</h2>
                     <p className="font-mono text-3xl font-bold mb-2" style={{ color: '#93B59D' }}>${cartTotal.toFixed(2)}</p>
-                    <p className="text-sm" style={{ color: 'rgba(244,240,234,0.3)' }}>Venta registrada</p>
+                    <p className="text-sm mb-6" style={{ color: 'rgba(244,240,234,0.3)' }}>Venta registrada</p>
+
+                    {/* Print receipt button */}
+                    {printerConnected && lastReceipt && (
+                        <button
+                            onClick={() => printReceipt(lastReceipt).catch(() => showToast('Error al imprimir'))}
+                            disabled={printing}
+                            className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all"
+                            style={{
+                                background: printing ? 'rgba(147,181,157,0.08)' : 'rgba(147,181,157,0.15)',
+                                color: '#93B59D',
+                                border: '1px solid rgba(147,181,157,0.2)',
+                            }}
+                        >
+                            <Printer className="w-4 h-4" />
+                            {printing ? 'Imprimiendo...' : 'Imprimir Cuenta'}
+                        </button>
+                    )}
+
+                    {printerConnected && (
+                        <p className="text-[10px] mt-3" style={{ color: 'rgba(244,240,234,0.2)' }}>
+                            {printing ? 'Enviando a impresora...' : 'Cuenta enviada automaticamente'}
+                        </p>
+                    )}
                 </div>
             );
         }
@@ -1551,6 +1598,34 @@ export default function TabletPOSPage() {
                                     </button>
                                 );
                             })}
+
+                            {/* Printer section */}
+                            <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(244,240,234,0.06)' }}>
+                                <button
+                                    onClick={() => {
+                                        if (printerConnected) {
+                                            disconnectPrinter();
+                                        } else {
+                                            connectPrinter();
+                                            setShowSideMenu(false);
+                                        }
+                                    }}
+                                    disabled={printerConnecting}
+                                    className="w-full flex items-center gap-3 px-5 py-3.5 text-sm transition-colors"
+                                    style={{ color: printerConnected ? '#93B59D' : 'rgba(244,240,234,0.6)' }}
+                                >
+                                    {printerConnected ? <Bluetooth className="w-5 h-5" /> : <BluetoothOff className="w-5 h-5" />}
+                                    <div className="flex-1 text-left">
+                                        <span>{printerConnecting ? 'Conectando...' : printerConnected ? 'Impresora' : 'Conectar Impresora'}</span>
+                                        {printerConnected && printerName && (
+                                            <p className="text-[10px] mt-0.5" style={{ color: 'rgba(244,240,234,0.3)' }}>{printerName}</p>
+                                        )}
+                                    </div>
+                                    {printerConnected && (
+                                        <span className="w-2 h-2 rounded-full" style={{ background: '#93B59D' }} />
+                                    )}
+                                </button>
+                            </div>
                         </nav>
 
                         {/* Session info */}
