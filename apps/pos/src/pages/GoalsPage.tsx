@@ -86,6 +86,7 @@ export default function GoalsPage() {
         prevCompletedIds.current = currentCompleted;
     }, [myGoals]);
 
+    const activeGoals = myGoals.filter(g => !g.isCompleted);
     const completedGoals = myGoals.filter(g => g.isCompleted);
 
     const GoalIcon = ({ type }: { type: string }) => {
