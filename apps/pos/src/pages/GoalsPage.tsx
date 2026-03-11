@@ -16,7 +16,7 @@ interface DailyGoal {
     rewardNote?: string;
     rewardValue?: number;
     rewardType?: string;
-    sessionId?: string;
+    session?: string;
     status: string;
     date: string;
 }
@@ -39,15 +39,14 @@ export default function GoalsPage() {
     const [celebratingGoal, setCelebratingGoal] = useState<DailyGoal | null>(null);
     const prevCompletedIds = useRef<Set<string>>(new Set());
 
-    const today = new Date().toISOString().split('T')[0];
-    const sessionId = localStorage.getItem('wave_pos_session') || undefined;
-
     // ── Tab 1: My Goals ────────────────────────────────────────────
+    // Uses autoSession=true so the API: 1) auto-detects date in tenant timezone,
+    // 2) filters to current session, 3) includes shared goals (employeeId='')
     const { data: myGoals = [] } = useQuery<DailyGoal[]>({
-        queryKey: ['pos-my-goals', employee?.id, today],
+        queryKey: ['pos-my-goals', employee?.id],
         queryFn: async () => {
             if (!employee?.id) return [];
-            const { data } = await api.get(`/goals?employeeId=${employee.id}&date=${today}`);
+            const { data } = await api.get(`/goals?autoSession=true`);
             return data?.data || [];
         },
         refetchInterval: 5000,
@@ -56,9 +55,9 @@ export default function GoalsPage() {
 
     // ── Tab 2: Leaderboard ─────────────────────────────────────────
     const { data: leaderboard = [] } = useQuery<LeaderboardEntry[]>({
-        queryKey: ['pos-leaderboard', today],
+        queryKey: ['pos-leaderboard'],
         queryFn: async () => {
-            const { data } = await api.get(`/goals/leaderboard?date=${today}`);
+            const { data } = await api.get(`/goals/leaderboard`);
             return data?.data || [];
         },
         refetchInterval: 15000,
@@ -88,8 +87,6 @@ export default function GoalsPage() {
     }, [myGoals]);
 
     const completedGoals = myGoals.filter(g => g.isCompleted);
-    const sessionGoals = myGoals.filter(g => g.sessionId === sessionId);
-    const dailyGoals = myGoals.filter(g => !g.sessionId);
 
     const GoalIcon = ({ type }: { type: string }) => {
         if (type === 'PRODUCT') return <Package className="w-4 h-4" style={{ color: '#93B59D' }} />;
@@ -170,30 +167,28 @@ export default function GoalsPage() {
                             </div>
                         )}
 
-                        {/* Session goals */}
-                        {sessionGoals.length > 0 && (
+                        {/* Active goals */}
+                        {activeGoals.length > 0 && (
                             <div>
                                 <p className="text-[10px] font-semibold uppercase tracking-widest mb-2 flex items-center gap-1.5"
                                     style={{ color: 'rgba(147,181,157,0.6)' }}>
                                     <Clock className="w-3 h-3" /> Este Turno
                                 </p>
                                 <div className="space-y-2">
-                                    {sessionGoals.map(goal => <GoalCard key={goal.id} goal={goal} />)}
+                                    {activeGoals.map(goal => <GoalCard key={goal.id} goal={goal} />)}
                                 </div>
                             </div>
                         )}
 
-                        {/* Daily goals (no session) */}
-                        {dailyGoals.length > 0 && (
+                        {/* Completed goals */}
+                        {completedGoals.length > 0 && (
                             <div>
-                                {sessionGoals.length > 0 && (
-                                    <p className="text-[10px] font-semibold uppercase tracking-widest mb-2"
-                                        style={{ color: 'rgba(244,240,234,0.25)' }}>
-                                        Metas del Día
-                                    </p>
-                                )}
+                                <p className="text-[10px] font-semibold uppercase tracking-widest mb-2"
+                                    style={{ color: 'rgba(244,240,234,0.25)' }}>
+                                    Completadas
+                                </p>
                                 <div className="space-y-2">
-                                    {dailyGoals.map(goal => <GoalCard key={goal.id} goal={goal} />)}
+                                    {completedGoals.map(goal => <GoalCard key={goal.id} goal={goal} />)}
                                 </div>
                             </div>
                         )}

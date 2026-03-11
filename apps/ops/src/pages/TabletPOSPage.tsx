@@ -247,8 +247,7 @@ export default function TabletPOSPage() {
     // --- Fetch active goals ---
     const fetchGoals = useCallback(async () => {
         try {
-            const today = new Date().toISOString().split('T')[0];
-            const res = await fetch(`${API_URL}/goals?date=${today}&autoSession=true`, { headers: TH });
+            const res = await fetch(`${API_URL}/goals?autoSession=true`, { headers: TH });
             const data = await res.json();
             setActiveGoals((data.data || []).filter((g: any) => g.status === 'ACTIVE'));
         } catch { /* silent */ }
