@@ -1,98 +1,103 @@
-/**
- * Unit Conversion System for Purchases
- * Normalizes purchases to base units for consistent cost tracking
- */
+type UnitCategory = 'weight' | 'volume' | 'count';
 
-// Base units for each category
-export const BASE_UNITS = {
-    weight: 'kg',
-    volume: 'L',
-    count: 'unidad'
-} as const;
-
-// All available purchase units with conversion factors to base unit
-export interface PurchaseUnitOption {
+interface UnitDefinition {
     value: string;
     label: string;
     labelShort: string;
-    category: 'weight' | 'volume' | 'count';
-    toBaseUnit: number;  // Multiply by this to get base unit value
-    baseUnit: string;
+    category: UnitCategory;
+    toBase: number;
+    aliases?: string[];
 }
 
-export const PURCHASE_UNITS: PurchaseUnitOption[] = [
-    // WEIGHT - base: kg
-    { value: 'kg', label: 'Kilogramo (kg)', labelShort: 'kg', category: 'weight', toBaseUnit: 1, baseUnit: 'kg' },
-    { value: 'g', label: 'Gramos (g)', labelShort: 'g', category: 'weight', toBaseUnit: 0.001, baseUnit: 'kg' },
-    { value: '500g', label: 'Bolsa 500g', labelShort: '500g', category: 'weight', toBaseUnit: 0.5, baseUnit: 'kg' },
-    { value: '250g', label: 'Bolsa 250g', labelShort: '250g', category: 'weight', toBaseUnit: 0.25, baseUnit: 'kg' },
-    { value: '25kg', label: 'Costal 25kg', labelShort: 'costal', category: 'weight', toBaseUnit: 25, baseUnit: 'kg' },
-    { value: '50kg', label: 'Costal 50kg', labelShort: 'costal 50', category: 'weight', toBaseUnit: 50, baseUnit: 'kg' },
-    { value: 'lb', label: 'Libra (lb)', labelShort: 'lb', category: 'weight', toBaseUnit: 0.453592, baseUnit: 'kg' },
+export interface PurchaseUnitOption extends UnitDefinition {
+    toReference: number;
+}
 
-    // VOLUME - base: L
-    { value: 'L', label: 'Litro (L)', labelShort: 'L', category: 'volume', toBaseUnit: 1, baseUnit: 'L' },
-    { value: 'ml', label: 'Mililitros (ml)', labelShort: 'ml', category: 'volume', toBaseUnit: 0.001, baseUnit: 'L' },
-    { value: '500ml', label: 'Botella 500ml', labelShort: '500ml', category: 'volume', toBaseUnit: 0.5, baseUnit: 'L' },
-    { value: '250ml', label: 'Botella 250ml', labelShort: '250ml', category: 'volume', toBaseUnit: 0.25, baseUnit: 'L' },
-    { value: 'gal', label: 'Galón (3.78L)', labelShort: 'gal', category: 'volume', toBaseUnit: 3.78541, baseUnit: 'L' },
-
-    // COUNT - base: unidad
-    { value: 'unidad', label: 'Unidad', labelShort: 'und', category: 'count', toBaseUnit: 1, baseUnit: 'unidad' },
-    { value: 'docena', label: 'Docena (12)', labelShort: 'doc', category: 'count', toBaseUnit: 12, baseUnit: 'unidad' },
-    { value: 'caja', label: 'Caja', labelShort: 'caja', category: 'count', toBaseUnit: 1, baseUnit: 'unidad' },
-    { value: 'paquete', label: 'Paquete', labelShort: 'paq', category: 'count', toBaseUnit: 1, baseUnit: 'unidad' },
+const UNIT_DEFINITIONS: UnitDefinition[] = [
+    { value: 'kg', label: 'Kilogramo (kg)', labelShort: 'kg', category: 'weight', toBase: 1000, aliases: ['kilogramo'] },
+    { value: 'g', label: 'Gramos (g)', labelShort: 'g', category: 'weight', toBase: 1, aliases: ['gramos'] },
+    { value: '500g', label: 'Bolsa 500g', labelShort: '500g', category: 'weight', toBase: 500 },
+    { value: '250g', label: 'Bolsa 250g', labelShort: '250g', category: 'weight', toBase: 250 },
+    { value: '25kg', label: 'Costal 25kg', labelShort: '25kg', category: 'weight', toBase: 25000 },
+    { value: '50kg', label: 'Costal 50kg', labelShort: '50kg', category: 'weight', toBase: 50000 },
+    { value: 'lb', label: 'Libra (lb)', labelShort: 'lb', category: 'weight', toBase: 453.592 },
+    { value: 'lt', label: 'Litro (lt)', labelShort: 'lt', category: 'volume', toBase: 1000, aliases: ['l', 'litro', 'litros'] },
+    { value: 'ml', label: 'Mililitros (ml)', labelShort: 'ml', category: 'volume', toBase: 1 },
+    { value: '500ml', label: 'Botella 500ml', labelShort: '500ml', category: 'volume', toBase: 500 },
+    { value: '250ml', label: 'Botella 250ml', labelShort: '250ml', category: 'volume', toBase: 250 },
+    { value: 'gal', label: 'Galon', labelShort: 'gal', category: 'volume', toBase: 3785.41 },
+    { value: 'und', label: 'Unidad', labelShort: 'und', category: 'count', toBase: 1, aliases: ['unidad', 'unidades'] },
+    { value: 'docena', label: 'Docena (12)', labelShort: 'doc', category: 'count', toBase: 12 },
+    { value: 'caja', label: 'Caja', labelShort: 'caja', category: 'count', toBase: 1 },
+    { value: 'paquete', label: 'Paquete', labelShort: 'paq', category: 'count', toBase: 1 },
 ];
 
-/**
- * Get the category of a base unit
- */
-export function getUnitCategory(baseUnit: string): 'weight' | 'volume' | 'count' {
-    const lowerUnit = baseUnit.toLowerCase();
-    if (['kg', 'g', 'lb'].includes(lowerUnit)) return 'weight';
-    if (['l', 'ml', 'gal'].includes(lowerUnit)) return 'volume';
-    return 'count';
-}
-
-/**
- * Get available purchase units for a given base unit
- */
-export function getPurchaseUnitsForBase(baseUnit: string): PurchaseUnitOption[] {
-    const category = getUnitCategory(baseUnit);
-    return PURCHASE_UNITS.filter(u => u.category === category);
-}
-
-/**
- * Find a purchase unit by value
- */
-export function findPurchaseUnit(value: string): PurchaseUnitOption | undefined {
-    return PURCHASE_UNITS.find(u => u.value === value);
-}
-
-/**
- * Convert a quantity from any unit to base unit
- */
-export function convertToBaseUnit(quantity: number, purchaseUnit: string): {
-    normalizedQuantity: number;
-    baseUnit: string;
-} {
-    const unit = findPurchaseUnit(purchaseUnit);
-    if (!unit) {
-        // Fallback: assume it's already in base unit
-        return { normalizedQuantity: quantity, baseUnit: purchaseUnit };
+const UNIT_LOOKUP = new Map<string, UnitDefinition>();
+for (const definition of UNIT_DEFINITIONS) {
+    UNIT_LOOKUP.set(definition.value, definition);
+    for (const alias of definition.aliases || []) {
+        UNIT_LOOKUP.set(alias, definition);
     }
+}
+
+export function normalizeUnit(unit?: string | null): string {
+    const value = String(unit || 'und').trim().toLowerCase();
+    return UNIT_LOOKUP.get(value)?.value || value || 'und';
+}
+
+function getDefinition(unit?: string | null): UnitDefinition | undefined {
+    return UNIT_LOOKUP.get(normalizeUnit(unit));
+}
+
+export function getUnitCategory(baseUnit: string): UnitCategory {
+    return getDefinition(baseUnit)?.category || 'count';
+}
+
+export function getPurchaseUnitsForBase(baseUnit: string): PurchaseUnitOption[] {
+    const normalizedBase = normalizeUnit(baseUnit);
+    const baseDefinition = getDefinition(normalizedBase);
+    if (!baseDefinition) return [];
+
+    return UNIT_DEFINITIONS
+        .filter((definition) => definition.category === baseDefinition.category)
+        .map((definition) => ({
+            ...definition,
+            toReference: definition.toBase / baseDefinition.toBase,
+        }));
+}
+
+export function findPurchaseUnit(value: string): PurchaseUnitOption | undefined {
+    const normalized = normalizeUnit(value);
+    const definition = getDefinition(normalized);
+    if (!definition) return undefined;
     return {
-        normalizedQuantity: quantity * unit.toBaseUnit,
-        baseUnit: unit.baseUnit
+        ...definition,
+        toReference: 1,
     };
 }
 
-/**
- * Calculate cost per base unit from purchase data
- */
+export function convertToBaseUnit(quantity: number, purchaseUnit: string, baseUnit: string): {
+    normalizedQuantity: number;
+    baseUnit: string;
+} {
+    const baseDefinition = getDefinition(baseUnit);
+    const purchaseDefinition = getDefinition(purchaseUnit);
+
+    if (!baseDefinition || !purchaseDefinition || baseDefinition.category !== purchaseDefinition.category) {
+        return { normalizedQuantity: quantity, baseUnit: normalizeUnit(baseUnit) };
+    }
+
+    const normalizedQuantity = (Number(quantity) || 0) * (purchaseDefinition.toBase / baseDefinition.toBase);
+    return {
+        normalizedQuantity,
+        baseUnit: baseDefinition.value,
+    };
+}
+
 export function calculateCostPerBaseUnit(
     quantity: number,
     purchaseUnit: string,
+    baseUnit: string,
     price: number,
     priceType: 'total' | 'per_unit'
 ): {
@@ -101,38 +106,25 @@ export function calculateCostPerBaseUnit(
     totalCost: number;
     costPerBaseUnit: number;
 } {
-    const { normalizedQuantity, baseUnit } = convertToBaseUnit(quantity, purchaseUnit);
-
-    // Calculate total cost
+    const { normalizedQuantity, baseUnit: normalizedBaseUnit } = convertToBaseUnit(quantity, purchaseUnit, baseUnit);
     const totalCost = priceType === 'total' ? price : price * quantity;
-
-    // Cost per base unit
     const costPerBaseUnit = normalizedQuantity > 0 ? totalCost / normalizedQuantity : 0;
 
     return {
         normalizedQuantity,
-        baseUnit,
+        baseUnit: normalizedBaseUnit,
         totalCost,
-        costPerBaseUnit
+        costPerBaseUnit,
     };
 }
 
-/**
- * Format quantity with unit for display
- */
 export function formatQuantityWithUnit(quantity: number, unit: string): string {
-    const purchaseUnit = findPurchaseUnit(unit);
-    const label = purchaseUnit?.labelShort || unit;
-
-    // Format number nicely
+    const definition = getDefinition(unit);
+    const label = definition?.labelShort || unit;
     const formattedQty = quantity % 1 === 0 ? quantity.toString() : quantity.toFixed(2);
-
     return `${formattedQty} ${label}`;
 }
 
-/**
- * Format price change percentage
- */
 export function formatPriceChange(oldPrice: number, newPrice: number): {
     percentage: number;
     direction: 'up' | 'down' | 'same';
@@ -144,7 +136,10 @@ export function formatPriceChange(oldPrice: number, newPrice: number): {
 
     const percentage = ((newPrice - oldPrice) / oldPrice) * 100;
     const direction = percentage > 0 ? 'up' : 'down';
-    const formatted = `${direction === 'up' ? '+' : ''}${percentage.toFixed(1)}%`;
 
-    return { percentage, direction, formatted };
+    return {
+        percentage,
+        direction,
+        formatted: `${direction === 'up' ? '+' : ''}${percentage.toFixed(1)}%`,
+    };
 }

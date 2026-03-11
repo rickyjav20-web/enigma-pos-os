@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
+import { getOperationalUnit } from '../lib/units';
 
 export default async function inventoryTasksRoutes(fastify: FastifyInstance) {
 
@@ -192,7 +193,7 @@ export default async function inventoryTasksRoutes(fastify: FastifyInstance) {
                         status: 'PENDING',
                         generatedBy: 'AUTO',
                         priority,
-                        reason: `Stock ${currentStock} ${batch.yieldUnit || batch.defaultUnit} < Par ${par} (avg diario: ${avgDailyProduction.toFixed(1)})`
+                        reason: `Stock ${currentStock} ${getOperationalUnit(batch)} < Par ${par} (avg diario: ${avgDailyProduction.toFixed(1)})`
                     }
                 });
                 created.push(task);
@@ -245,7 +246,15 @@ export default async function inventoryTasksRoutes(fastify: FastifyInstance) {
             orderBy: [{ priority: 'desc' }, { type: 'asc' }]
         });
 
-        return tasks;
+        return tasks.map((task) => ({
+            ...task,
+            supplyItem: task.supplyItem
+                ? {
+                    ...task.supplyItem,
+                    operationalUnit: getOperationalUnit(task.supplyItem),
+                }
+                : null,
+        }));
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -327,7 +336,7 @@ export default async function inventoryTasksRoutes(fastify: FastifyInstance) {
                         entityId: supplyItemId,
                         entityName: item.name,
                         quantity: lostQty,
-                        unit: item.defaultUnit,
+                        unit: getOperationalUnit(item),
                         metadata: {
                             wasteType: 'INVENTORY_CORRECTION',
                             reason: `Varianza negativa en conteo fisico (${shift}). Sistema: ${systemQty}, Real: ${countedQty}`,
@@ -370,7 +379,7 @@ export default async function inventoryTasksRoutes(fastify: FastifyInstance) {
                 entityId: supplyItemId,
                 entityName: item.name,
                 quantity: countedQty,
-                unit: item.defaultUnit,
+                unit: getOperationalUnit(item),
                 metadata: {
                     systemQty,
                     variance,

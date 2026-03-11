@@ -21,6 +21,8 @@ interface SupplyItem {
     currentCost: number;
     averageCost?: number;
     defaultUnit: string;
+    operationalUnit?: string;
+    preferredRecipeUnit?: string;
     stockQuantity?: number;
     preferredSupplierId?: string;
     // Batch Fields
@@ -31,7 +33,8 @@ interface SupplyItem {
 }
 
 const CATEGORIES = ['Lácteos', 'Panadería', 'Carnes', 'Vegetales', 'Bebidas', 'Secos', 'Frescos', 'Postres', 'Salsas', 'Preparaciones', 'Otros'];
-const UNITS = ['kg', 'g', 'L', 'ml', 'und', 'docena', 'caja'];
+const UNITS = ['kg', 'g', 'lt', 'ml', 'und', 'docena', 'caja', 'paquete'];
+const getOperationalUnit = (item?: Partial<SupplyItem> | null) => item?.operationalUnit || item?.yieldUnit || item?.defaultUnit || 'und';
 
 export default function InventoryPage() {
     const navigate = useNavigate();
@@ -150,6 +153,8 @@ export default function InventoryPage() {
                     ...newItem,
                     sku: newItem.sku || `SKU-${Date.now()}`,
                     currentCost: Number(newItem.currentCost),
+                    unitOfMeasure: newItem.defaultUnit,
+                    isProduction: newItem.isProduction,
                     // If production, yield is important
                     yieldQuantity: newItem.isProduction ? Number(newItem.yieldQuantity) : null,
                     yieldUnit: newItem.isProduction ? newItem.yieldUnit : null
@@ -181,7 +186,7 @@ export default function InventoryPage() {
                 body: JSON.stringify({
                     supplyItemId: selectedItem.id,
                     quantity: Number(productionQty),
-                    unit: selectedItem.yieldUnit || selectedItem.defaultUnit
+                    unit: getOperationalUnit(selectedItem)
                 })
             });
 
@@ -218,7 +223,7 @@ export default function InventoryPage() {
             id: `temp-${Date.now()}`,
             supplyItemId: component.id,
             quantity: Number(newIngredientQty),
-            unit: component.defaultUnit, // Default to component's unit
+            unit: component.preferredRecipeUnit || getOperationalUnit(component),
             component: component
         };
 
@@ -313,11 +318,11 @@ export default function InventoryPage() {
                                         <Tag className="w-3 h-3" /> {item.category}
                                     </span>
                                     <span className="flex items-center gap-1">
-                                        <Scale className="w-3 h-3" /> {item.defaultUnit}
+                                        <Scale className="w-3 h-3" /> {getOperationalUnit(item)}
                                     </span>
                                     {item.stockQuantity !== undefined && (
                                         <span className={`flex items-center gap-1 ${item.stockQuantity > 0 ? 'text-enigma-green' : 'text-white/20'}`}>
-                                            <Package className="w-3 h-3" /> {item.stockQuantity}
+                                            <Package className="w-3 h-3" /> {item.stockQuantity} {getOperationalUnit(item)}
                                         </span>
                                     )}
                                 </div>
@@ -362,11 +367,11 @@ export default function InventoryPage() {
                                         <Tag className="w-4 h-4" /> {selectedItem.category}
                                     </span>
                                     <span className="flex items-center gap-1">
-                                        <Scale className="w-4 h-4" /> {selectedItem.defaultUnit}
+                                        <Scale className="w-4 h-4" /> {getOperationalUnit(selectedItem)}
                                     </span>
                                     {selectedItem.stockQuantity !== undefined && (
                                         <span className="flex items-center gap-1 text-enigma-green">
-                                            <Package className="w-4 h-4" /> Stock: {selectedItem.stockQuantity}
+                                            <Package className="w-4 h-4" /> Stock: {selectedItem.stockQuantity} {getOperationalUnit(selectedItem)}
                                         </span>
                                     )}
                                 </div>
@@ -567,7 +572,7 @@ export default function InventoryPage() {
                                 Insumo (Compra)
                             </button>
                             <button
-                                onClick={() => setNewItem({ ...newItem, isProduction: true })}
+                                onClick={() => setNewItem({ ...newItem, isProduction: true, yieldUnit: newItem.defaultUnit })}
                                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${newItem.isProduction ? 'bg-orange-500 text-white' : 'text-white/50'}`}
                             >
                                 Producción (Batch)
@@ -605,7 +610,11 @@ export default function InventoryPage() {
                                     <label className="text-sm text-white/50 mb-1 block">Unidad Base</label>
                                     <select
                                         value={newItem.defaultUnit}
-                                        onChange={e => setNewItem({ ...newItem, defaultUnit: e.target.value })}
+                                        onChange={e => setNewItem({
+                                            ...newItem,
+                                            defaultUnit: e.target.value,
+                                            ...(newItem.isProduction ? { yieldUnit: e.target.value } : {})
+                                        })}
                                         className="w-full px-4 py-3 bg-enigma-black/50 rounded-xl border border-white/10 
                                             text-white focus:border-enigma-purple focus:outline-none"
                                     >
@@ -694,7 +703,7 @@ export default function InventoryPage() {
 
                             <div className="p-3 bg-white/5 rounded-lg border border-white/5 text-sm flex justify-between items-center">
                                 <span className="text-white/40">Rendimiento (1 Batch):</span>
-                                <span className="font-mono text-white font-bold">{selectedItem.yieldQuantity} {selectedItem.yieldUnit}</span>
+                                <span className="font-mono text-white font-bold">{selectedItem.yieldQuantity} {getOperationalUnit(selectedItem)}</span>
                             </div>
                         </div>
 
@@ -730,7 +739,7 @@ export default function InventoryPage() {
                                 <div className="p-3 bg-orange-500/10 rounded-xl border border-orange-500/20 text-center">
                                     <p className="text-xs text-orange-300 mb-1">Total Resultante:</p>
                                     <p className="text-2xl font-bold text-orange-400">
-                                        {Number(productionQty)} <span className="text-sm font-normal text-white/60">{selectedItem.yieldUnit || selectedItem.defaultUnit}</span>
+                                        {Number(productionQty)} <span className="text-sm font-normal text-white/60">{getOperationalUnit(selectedItem)}</span>
                                     </p>
                                 </div>
                             )}

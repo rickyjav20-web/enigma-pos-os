@@ -4,6 +4,7 @@ import { eventBus } from '../events/EventBus';
 import { EventType } from '@enigma/types';
 import { randomUUID } from 'crypto';
 import { notifyPurchase } from '../services/whatsapp';
+import { convertQuantity, getOperationalUnit, normalizeUnit } from '../lib/units';
 
 export default async function (fastify: FastifyInstance) {
 
@@ -399,12 +400,62 @@ export default async function (fastify: FastifyInstance) {
     });
 
     fastify.post('/purchases', async (request, reply) => {
-        const { supplierId, items = [], tenantId, status, paymentMethod, registeredById,
-                currency, totalAmountLocal, exchangeRate } = request.body as any;
-        // items = [{ supplyItemId, quantity, unitCost }]
-        // currency/totalAmountLocal/exchangeRate: optional multi-currency fields
+        const {
+            supplierId,
+            items = [],
+            tenantId,
+            status,
+            paymentMethod,
+            registeredById,
+            currency,
+            totalAmountLocal,
+            exchangeRate
+        } = request.body as any;
 
-        const totalAmount = items.reduce((acc: number, item: any) => acc + (item.quantity * item.unitCost), 0);
+        const supplyItems = items.length > 0
+            ? await prisma.supplyItem.findMany({
+                where: { id: { in: items.map((item: any) => item.supplyItemId) } },
+                select: { id: true, name: true, defaultUnit: true, yieldUnit: true }
+            })
+            : [];
+
+        const supplyItemMap = new Map(supplyItems.map((item) => [item.id, item]));
+
+        const normalizedItems = items.map((item: any) => {
+            const supplyItem = supplyItemMap.get(item.supplyItemId);
+            const purchaseQuantity = Number(item.purchaseQuantity ?? item.quantity) || 0;
+            const purchaseUnit = normalizeUnit(item.purchaseUnit || supplyItem?.defaultUnit || 'und');
+            const operationalUnit = getOperationalUnit(supplyItem);
+
+            let normalizedQuantity = Number(item.quantity) || 0;
+            if (purchaseQuantity > 0) {
+                try {
+                    normalizedQuantity = convertQuantity(purchaseQuantity, purchaseUnit, operationalUnit);
+                } catch {
+                    normalizedQuantity = Number(item.quantity) || purchaseQuantity;
+                }
+            }
+
+            let totalCost = normalizedQuantity * (Number(item.unitCost) || 0);
+            if (item.purchasePrice !== undefined && item.purchasePrice !== null) {
+                const purchasePrice = Number(item.purchasePrice) || 0;
+                totalCost = item.priceType === 'per_unit'
+                    ? purchasePrice * purchaseQuantity
+                    : purchasePrice;
+            }
+
+            const unitCost = normalizedQuantity > 0 ? totalCost / normalizedQuantity : 0;
+
+            return {
+                supplyItemId: item.supplyItemId,
+                quantity: normalizedQuantity,
+                unitCost,
+                totalCost,
+                itemNameSnapshot: supplyItem?.name || null
+            };
+        });
+
+        const totalAmount = normalizedItems.reduce((acc: number, item: any) => acc + item.totalCost, 0);
 
         const purchase = await prisma.purchaseOrder.create({
             data: {
@@ -418,11 +469,12 @@ export default async function (fastify: FastifyInstance) {
                 totalAmountLocal: totalAmountLocal || null,
                 exchangeRate: exchangeRate || null,
                 lines: {
-                    create: items.map((item: any) => ({
+                    create: normalizedItems.map((item: any) => ({
                         supplyItemId: item.supplyItemId,
-                        quantity: Number(item.quantity),
-                        unitCost: Number(item.unitCost),
-                        totalCost: Number(item.quantity) * Number(item.unitCost)
+                        quantity: item.quantity,
+                        unitCost: item.unitCost,
+                        totalCost: item.totalCost,
+                        itemNameSnapshot: item.itemNameSnapshot
                     }))
                 }
             },

@@ -25,6 +25,10 @@ const UNIT_FACTOR_MAP = {
     'und|und': 1,
 };
 
+const STOCK_UNIT_OPTIONS = ['und', 'kg', 'g', 'lt', 'ml'];
+const getOperationalUnit = (item) => item?.operationalUnit || item?.yieldUnit || item?.defaultUnit || 'und';
+const getPreferredRecipeUnit = (item) => item?.preferredRecipeUnit || item?.recipeUnit || getOperationalUnit(item);
+
 function calcFactor(stockUnit, recipeUnit) {
     const key = `${stockUnit}|${recipeUnit}`;
     return UNIT_FACTOR_MAP[key] ?? null; // null = invalid combo
@@ -187,16 +191,14 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
     const handleAddIngredient = (item) => {
         if (recipe.find(r => r.id === item.id)) return;
 
-        const recipeUnit = (item.recipeUnit && item.recipeUnit !== 'und')
-            ? item.recipeUnit
-            : (item.defaultUnit || 'und');
+        const recipeUnit = getPreferredRecipeUnit(item);
 
         setRecipe([...recipe, {
             id: item.id,
             name: item.name,
             // Effective cost per recipe unit (not raw $/kg)
             cost: getEffectiveCost(item),
-            _stockUnit: item.defaultUnit,
+            _stockUnit: getOperationalUnit(item),
             _recipeUnit: recipeUnit,
             _factor: item.stockCorrectionFactor || 1,
             quantity: 1,
@@ -410,6 +412,9 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                                         setFormData(prev => ({
                                             ...prev,
                                             unitOfMeasure: newStockUnit,
+                                            ...(type === 'BATCH' && (!prev.yieldUnit || prev.yieldUnit === prev.unitOfMeasure)
+                                                ? { yieldUnit: newStockUnit }
+                                                : {}),
                                             recipeUnit: currentRecipeUnit,
                                             stockCorrectionFactor: autoFactor,
                                         }));
@@ -437,12 +442,15 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                                             onChange={e => setFormData({ ...formData, yieldQuantity: e.target.value })}
                                             placeholder="Example: 5"
                                         />
-                                        <input
+                                        <select
                                             className="w-1/3 bg-zinc-800 border-zinc-700 rounded-lg p-2 text-zinc-400 text-center"
                                             value={formData.yieldUnit}
                                             onChange={e => setFormData({ ...formData, yieldUnit: e.target.value })}
-                                            placeholder="lt"
-                                        />
+                                        >
+                                            {STOCK_UNIT_OPTIONS.map(unit => (
+                                                <option key={unit} value={unit}>{unit}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                     <p className="text-[10px] text-indigo-400 mt-1">
                                         Unit Cost: ${calculatedUnitCost.toFixed(2)} / {formData.yieldUnit}
@@ -701,7 +709,7 @@ export function UnifiedItemModal({ isOpen, onClose, type, initialData, onSuccess
                                     <div className="absolute top-10 left-0 right-0 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-10 max-h-40 overflow-y-auto">
                                         {searchResults.map(item => {
                                             const effCost = getEffectiveCost(item);
-                                            const recipeU = item.recipeUnit || item.defaultUnit || 'und';
+                                            const recipeU = getPreferredRecipeUnit(item);
                                             return (
                                             <button
                                                 key={item.id}

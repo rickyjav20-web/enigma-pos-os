@@ -24,6 +24,7 @@
 import { FastifyInstance } from 'fastify';
 import prisma from '../lib/prisma';
 import { getEffectiveRecipeUnitCost } from '../lib/inventory-math';
+import { getOperationalUnit } from '../lib/units';
 
 export default async function analyticsRoutes(fastify: FastifyInstance) {
 
@@ -979,7 +980,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
                 id: true, name: true, category: true,
                 stockQuantity: true, minStock: true, parLevel: true, maxStock: true,
                 currentCost: true, averageCost: true,
-                defaultUnit: true, countZone: true,
+                defaultUnit: true, yieldUnit: true, isProduction: true, countZone: true,
                 lastCountedAt: true, lastPurchaseDate: true,
             },
         });
@@ -1012,12 +1013,12 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             },
             critical: critical.map(i => ({
                 id: i.id, name: i.name, category: i.category,
-                stock: i.stockQuantity, minStock: i.minStock, unit: i.defaultUnit,
+                stock: i.stockQuantity, minStock: i.minStock, unit: getOperationalUnit(i),
                 status: 'CRITICAL',
             })),
             belowPar: belowPar.map(i => ({
                 id: i.id, name: i.name, category: i.category,
-                stock: i.stockQuantity, parLevel: i.parLevel, unit: i.defaultUnit,
+                stock: i.stockQuantity, parLevel: i.parLevel, unit: getOperationalUnit(i),
                 deficit: Math.round(((i.parLevel ?? 0) - i.stockQuantity) * 100) / 100,
                 status: 'BELOW_PAR',
             })),

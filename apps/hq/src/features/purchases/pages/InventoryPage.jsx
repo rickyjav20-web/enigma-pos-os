@@ -10,6 +10,8 @@ import {
 import { api, CURRENT_TENANT_ID } from '@/lib/api';
 import { UnifiedItemModal } from '../components/UnifiedItemModal';
 
+const getDisplayUnit = (item) => item?.operationalUnit || item?.yieldUnit || item?.defaultUnit || 'und';
+
 export default function InventoryPage() {
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
@@ -70,7 +72,7 @@ export default function InventoryPage() {
             await api.post('/production', {
                 supplyItemId: productionItem.id,
                 quantity: parseFloat(productionQty) * (productionItem.yieldQuantity || 1),
-                unit: productionItem.yieldUnit || 'und'
+                unit: getDisplayUnit(productionItem)
             });
             setIsProductionModalOpen(false);
             fetchData();
@@ -747,14 +749,14 @@ export default function InventoryPage() {
                                                                             </div>
                                                                             <div className="text-xs text-zinc-400 ml-4 space-y-0.5">
                                                                                 <div>
-                                                                                    Stock actual: <span className="text-white font-mono font-bold">{stock % 1 === 0 ? stock.toFixed(0) : stock.toFixed(2)} {item.yieldUnit || 'und'}</span>
-                                                                                    {' '}— Par: <span className="text-amber-300 font-mono">{par} {item.yieldUnit || 'und'}</span>
+                                        Stock actual: <span className="text-white font-mono font-bold">{stock % 1 === 0 ? stock.toFixed(0) : stock.toFixed(2)} {getDisplayUnit(item)}</span>
+                                        {' '}— Par: <span className="text-amber-300 font-mono">{par} {getDisplayUnit(item)}</span>
                                                                                     {item.minStock != null && <span className="text-zinc-500"> — Mín: {item.minStock}</span>}
                                                                                 </div>
                                                                                 <div className="text-zinc-300">
                                                                                     → Producir <span className="text-amber-400 font-bold">{batchesToProduce} tanda{batchesToProduce !== 1 ? 's' : ''}</span>
-                                                                                    {yieldQty > 1 && <span className="text-zinc-500"> (= {batchesToProduce * yieldQty} {item.yieldUnit || 'und'})</span>}
-                                                                                    {' '}→ stock quedará en <span className="text-emerald-400 font-mono font-bold">{unitsAfter.toFixed(0)} {item.yieldUnit || 'und'}</span>
+                                            {yieldQty > 1 && <span className="text-zinc-500"> (= {batchesToProduce * yieldQty} {getDisplayUnit(item)})</span>}
+                                            {' '}→ stock quedará en <span className="text-emerald-400 font-mono font-bold">{unitsAfter.toFixed(0)} {getDisplayUnit(item)}</span>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -831,7 +833,7 @@ export default function InventoryPage() {
                                         </td>
                                         <td className="p-4">
                                             {item.yieldQuantity
-                                                ? <span className="text-zinc-300 font-mono">{item.yieldQuantity} {item.yieldUnit}</span>
+                                                ? <span className="text-zinc-300 font-mono">{item.yieldQuantity} {getDisplayUnit(item)}</span>
                                                 : <span className="text-orange-400/60 text-xs italic">No definido</span>
                                             }
                                         </td>
@@ -853,7 +855,7 @@ export default function InventoryPage() {
                                                             if (e.key === 'Escape') { setQuickEditId(null); setQuickEditValue(''); }
                                                         }}
                                                     />
-                                                    <span className="text-xs text-zinc-500">{item.yieldUnit || 'und'}</span>
+                                                    <span className="text-xs text-zinc-500">{getDisplayUnit(item)}</span>
                                                     <button onClick={() => handleQuickStockSave(item.id)} disabled={isSavingStock} className="p-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded disabled:opacity-50">
                                                         {isSavingStock ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                                                     </button>
@@ -864,7 +866,7 @@ export default function InventoryPage() {
                                             ) : (
                                                 <div>
                                                     <div className={`font-bold ${stockColor}`}>
-                                                        {stock % 1 === 0 ? stock.toFixed(0) : stock.toFixed(2)} <span className="text-xs font-normal text-zinc-500">{item.yieldUnit || 'und'}</span>
+                                                        {stock % 1 === 0 ? stock.toFixed(0) : stock.toFixed(2)} <span className="text-xs font-normal text-zinc-500">{getDisplayUnit(item)}</span>
                                                     </div>
                                                     {item.parLevel != null && (
                                                         <div className="text-[10px] text-zinc-600 mt-0.5">
@@ -906,7 +908,7 @@ export default function InventoryPage() {
                                 return (
                                     <tr key={item.id} className="hover:bg-zinc-800/50 group cursor-pointer" onClick={() => setViewingItem({ ...item, type: 'SUPPLY' })}>
                                         <td className="p-4 font-medium text-blue-100">{item.name}</td>
-                                        <td className="p-4 text-zinc-400">{item.defaultUnit}</td>
+                                        <td className="p-4 text-zinc-400">{getDisplayUnit(item)}</td>
                                         <td className="p-4">
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-zinc-300 font-mono">
@@ -921,7 +923,7 @@ export default function InventoryPage() {
                                             </div>
                                         </td>
                                         <td className="p-4 text-zinc-200 font-bold">
-                                            {(item.stockQuantity || 0).toFixed(2)} <span className="text-xs text-zinc-500 font-normal">{item.defaultUnit}</span>
+                                            {(item.stockQuantity || 0).toFixed(2)} <span className="text-xs text-zinc-500 font-normal">{getDisplayUnit(item)}</span>
                                         </td>
                                         <td className="p-4 text-emerald-400 font-bold">
                                             ${((item.stockQuantity || 0) * (item.lastThreePurchasesAvg || item.averageCost || 0)).toFixed(2)}
@@ -958,7 +960,7 @@ export default function InventoryPage() {
                                         <div className="font-medium text-white">{log.supplyItem?.name || 'Unknown Item'}</div>
                                         <div className="text-xs text-zinc-500">{new Date(log.createdAt).toLocaleString()}</div>
                                     </td>
-                                    <td className="p-4 text-zinc-400">{log.supplyItem?.defaultUnit || '-'}</td>
+                                    <td className="p-4 text-zinc-400">{log.supplyItem?.operationalUnit || log.supplyItem?.defaultUnit || '-'}</td>
                                     <td className="p-4 text-zinc-300 uppercase text-xs font-bold">{log.reason}</td>
                                     <td className="p-4 text-zinc-400 text-right">{log.previousStock}</td>
                                     <td className="p-4 text-white font-bold text-right">{log.newStock}</td>
@@ -1001,7 +1003,7 @@ export default function InventoryPage() {
                         <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg">
                             <p className="text-amber-400 font-bold">{productionItem.name}</p>
                             <p className="text-xs text-zinc-400">
-                                1 Tandas (Batch) = {productionItem.yieldQuantity} {productionItem.yieldUnit}
+                                1 Tandas (Batch) = {productionItem.yieldQuantity} {getDisplayUnit(productionItem)}
                             </p>
                         </div>
 
@@ -1028,7 +1030,7 @@ export default function InventoryPage() {
                                 <div className="bg-zinc-800 p-2 rounded">
                                     <span className="block text-zinc-500">Total a Producir</span>
                                     <span className="block text-white font-bold text-lg">
-                                        {(parseFloat(productionQty) * (productionItem.yieldQuantity || 1)).toFixed(0)} {productionItem.yieldUnit}
+                                        {(parseFloat(productionQty) * (productionItem.yieldQuantity || 1)).toFixed(0)} {getDisplayUnit(productionItem)}
                                     </span>
                                 </div>
                                 <div className="bg-zinc-800 p-2 rounded">

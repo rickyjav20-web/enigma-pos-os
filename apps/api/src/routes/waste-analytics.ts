@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import prisma from '../lib/prisma';
+import { getOperationalUnit } from '../lib/units';
 
 export default async function wasteAnalyticsRoutes(fastify: FastifyInstance) {
 
@@ -65,7 +66,7 @@ export default async function wasteAnalyticsRoutes(fastify: FastifyInstance) {
         const supplyItems = supplyItemIds.length > 0
             ? await prisma.supplyItem.findMany({
                 where: { id: { in: supplyItemIds } },
-                select: { id: true, name: true, currentCost: true, averageCost: true, defaultUnit: true, isProduction: true, category: true, countZone: true }
+                select: { id: true, name: true, currentCost: true, averageCost: true, defaultUnit: true, yieldUnit: true, isProduction: true, category: true, countZone: true }
             })
             : [];
 
@@ -256,7 +257,7 @@ export default async function wasteAnalyticsRoutes(fastify: FastifyInstance) {
         const { id } = request.params as { id: string };
         const { from, to, limit } = request.query as { from?: string; to?: string; limit?: string };
 
-        const item = await prisma.supplyItem.findUnique({ where: { id }, select: { name: true, defaultUnit: true, currentCost: true, averageCost: true } });
+        const item = await prisma.supplyItem.findUnique({ where: { id }, select: { name: true, defaultUnit: true, yieldUnit: true, isProduction: true, currentCost: true, averageCost: true } });
         if (!item) return reply.status(404).send({ error: 'Item not found' });
 
         const where: any = { tenantId, action: 'WASTE', entityId: id };
@@ -287,7 +288,7 @@ export default async function wasteAnalyticsRoutes(fastify: FastifyInstance) {
         const totalCost = events.reduce((s, e) => s + e.costLost, 0);
 
         return {
-            item: { id, name: item.name, unit: item.defaultUnit, unitCost },
+            item: { id, name: item.name, unit: getOperationalUnit(item), unitCost },
             totalEvents: events.length,
             totalCost: Math.round(totalCost * 100) / 100,
             events

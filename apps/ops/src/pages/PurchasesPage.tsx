@@ -15,7 +15,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 const TENANT_HEADER = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
 
 const CATEGORIES = ['Lácteos', 'Panadería', 'Carnes', 'Vegetales', 'Bebidas', 'Otros'];
-const UNITS = ['kg', 'g', 'L', 'ml', 'unidad', 'docena', 'caja'];
+const UNITS = ['kg', 'g', 'lt', 'ml', 'und', 'docena', 'caja', 'paquete'];
 
 interface Supplier {
     id: string;
@@ -34,6 +34,7 @@ interface SupplyItem {
     currentCost: number;
     averageCost?: number;
     defaultUnit: string;
+    operationalUnit?: string;
 }
 
 interface CartItem extends SupplyItem {
@@ -102,6 +103,7 @@ export default function PurchasesPage() {
 
     const location = useLocation(); // Need to import useLocation
     const smartShopperState = location.state as { smartShopperMode?: boolean, preselectedSupplier?: any, itemsToAdd?: any[] } | null;
+    const getBaseUnit = (item: SupplyItem) => item.operationalUnit || item.defaultUnit;
 
     // Load data on mount
     useEffect(() => {
@@ -137,12 +139,12 @@ export default function PurchasesPage() {
                         if (fullItem) {
                             // Calculate default cart item
                             const qty = planItem.quantity || 1;
-                            const calc = calculateCostPerBaseUnit(qty, fullItem.defaultUnit, planItem.price, 'per_unit');
+                            const calc = calculateCostPerBaseUnit(qty, getBaseUnit(fullItem), getBaseUnit(fullItem), planItem.price, 'per_unit');
                             newCart.push({
                                 ...fullItem,
                                 quantity: qty,
                                 displayQuantity: qty.toString(),
-                                purchaseUnit: fullItem.defaultUnit,
+                                purchaseUnit: getBaseUnit(fullItem),
                                 priceType: 'per_unit',
                                 price: planItem.price,
                                 normalizedQuantity: calc.normalizedQuantity,
@@ -254,14 +256,14 @@ export default function PurchasesPage() {
     const addToCart = (item: SupplyItem, initialValues?: { quantity: number, purchaseUnit: string, price: number, priceType: 'total' | 'per_unit' }) => {
         if (cart.find(c => c.id === item.id)) return;
 
-        const defaultPurchaseUnit = initialValues?.purchaseUnit || item.defaultUnit;
+        const defaultPurchaseUnit = initialValues?.purchaseUnit || getBaseUnit(item);
 
         // Initial calculations
         const qty = initialValues?.quantity || 1;
         const price = initialValues?.price !== undefined ? initialValues.price : item.currentCost;
         const priceType = initialValues?.priceType || 'total';
 
-        const calc = calculateCostPerBaseUnit(qty, defaultPurchaseUnit, price, priceType);
+        const calc = calculateCostPerBaseUnit(qty, defaultPurchaseUnit, getBaseUnit(item), price, priceType);
 
         const newCartItem: CartItem = {
             ...item,
@@ -293,6 +295,7 @@ export default function PurchasesPage() {
             const calc = calculateCostPerBaseUnit(
                 newItem.quantity,
                 newItem.purchaseUnit,
+                getBaseUnit(newItem),
                 newItem.price,
                 newItem.priceType
             );
@@ -496,7 +499,7 @@ export default function PurchasesPage() {
                                         </div>
                                         <div className="flex-1 text-left">
                                             <p className="font-medium">{item.name}</p>
-                                            <p className="text-xs text-white/40">{item.defaultUnit} • {item.category}</p>
+                                            <p className="text-xs text-white/40">{getBaseUnit(item)} • {item.category}</p>
                                         </div>
                                         <div className="text-right">
                                             <p className="font-mono text-enigma-green">${item.currentCost.toFixed(2)}</p>
@@ -556,7 +559,7 @@ export default function PurchasesPage() {
                                 </div>
 
                                 {cart.map(item => {
-                                    const availableUnits = getPurchaseUnitsForBase(item.defaultUnit);
+                                    const availableUnits = getPurchaseUnitsForBase(getBaseUnit(item));
                                     const priceChange = formatPriceChange(item.currentCost, item.costPerBaseUnit);
 
                                     return (
@@ -567,7 +570,7 @@ export default function PurchasesPage() {
                                                     <p className="font-medium text-lg">{item.name}</p>
                                                     <p className="text-xs text-white/40 flex items-center gap-1">
                                                         <Scale className="w-3 h-3" />
-                                                        Unidad base: {item.defaultUnit}
+                                                        Unidad base: {getBaseUnit(item)}
                                                     </p>
                                                 </div>
                                                 <button
@@ -688,12 +691,12 @@ export default function PurchasesPage() {
                                                 <div className="flex justify-between items-center">
                                                     <div>
                                                         <p className="text-sm text-white/70">
-                                                            {item.quantity} {findPurchaseUnit(item.purchaseUnit)?.labelShort || item.purchaseUnit} = <span className="font-bold text-white">{item.normalizedQuantity.toFixed(2)} {item.defaultUnit}</span>
+                                                            {item.quantity} {findPurchaseUnit(item.purchaseUnit)?.labelShort || item.purchaseUnit} = <span className="font-bold text-white">{item.normalizedQuantity.toFixed(2)} {getBaseUnit(item)}</span>
                                                         </p>
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="font-mono font-bold text-enigma-green text-lg">
-                                                            ${item.costPerBaseUnit.toFixed(2)}/{item.defaultUnit}
+                                                            ${item.costPerBaseUnit.toFixed(2)}/{getBaseUnit(item)}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -706,7 +709,7 @@ export default function PurchasesPage() {
                                                         <span>
                                                             {priceChange.direction === 'up' ? '↑ Subió' : '↓ Bajó'} {priceChange.formatted}
                                                             <span className="text-white/40 ml-2">
-                                                                (antes: ${item.currentCost.toFixed(2)}/{item.defaultUnit})
+                                                                (antes: ${item.currentCost.toFixed(2)}/{getBaseUnit(item)})
                                                             </span>
                                                         </span>
                                                     </div>
@@ -749,12 +752,12 @@ export default function PurchasesPage() {
                                         <p className="font-medium">{item.name}</p>
                                         <p className="text-xs text-white/40">
                                             {item.quantity} {findPurchaseUnit(item.purchaseUnit)?.labelShort || item.purchaseUnit}
-                                            {item.purchaseUnit !== item.defaultUnit && (
-                                                <span className="text-enigma-purple"> → {item.normalizedQuantity.toFixed(2)} {item.defaultUnit}</span>
+                                            {item.purchaseUnit !== getBaseUnit(item) && (
+                                                <span className="text-enigma-purple"> → {item.normalizedQuantity.toFixed(2)} {getBaseUnit(item)}</span>
                                             )}
                                         </p>
                                         <p className="text-xs text-enigma-green/70 mt-0.5">
-                                            ${item.costPerBaseUnit.toFixed(2)}/{item.defaultUnit}
+                                            ${item.costPerBaseUnit.toFixed(2)}/{getBaseUnit(item)}
                                         </p>
                                     </div>
                                     <p className="font-mono text-enigma-green text-lg">${(item.normalizedQuantity * item.costPerBaseUnit).toFixed(2)}</p>
@@ -1070,7 +1073,7 @@ export default function PurchasesPage() {
                                             <span className="text-white/70">
                                                 {newItem.purchaseQuantity} {newItem.purchaseUnit} = {' '}
                                                 <span className="font-bold text-white">
-                                                    {(newItem.purchaseQuantity * (getPurchaseUnitsForBase(newItem.defaultUnit).find(u => u.value === newItem.purchaseUnit)?.toBaseUnit || 1)).toFixed(2)} {newItem.defaultUnit}
+                                                    {(newItem.purchaseQuantity * (getPurchaseUnitsForBase(newItem.defaultUnit).find(u => u.value === newItem.purchaseUnit)?.toReference || 1)).toFixed(2)} {newItem.defaultUnit}
                                                 </span>
                                             </span>
                                             <span className="font-mono font-bold text-enigma-green">
@@ -1078,6 +1081,7 @@ export default function PurchasesPage() {
                                                     const calc = calculateCostPerBaseUnit(
                                                         newItem.purchaseQuantity,
                                                         newItem.purchaseUnit,
+                                                        newItem.defaultUnit,
                                                         newItem.currentCost,
                                                         newItem.priceType
                                                     );

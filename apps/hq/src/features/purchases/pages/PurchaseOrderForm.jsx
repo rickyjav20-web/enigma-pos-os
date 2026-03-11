@@ -47,7 +47,7 @@ export default function PurchaseOrderForm() {
         try {
             const res = await api.post('/supply-items', {
                 name: newItemName,
-                defaultUnit: newItemUnit,
+                unitOfMeasure: newItemUnit,
                 currentCost: parseFloat(newItemCost) || 0,
                 category: 'Generico', // Default for Shopper creation
                 isProduction: false,   // Zone 3
