@@ -5,7 +5,7 @@ import { alertGroup, ftime } from './services/whatsapp';
 
 dotenv.config();
 
-// Force Reload Trigger (Step 1100) - Retry API Build
+// Force Reload Trigger (Step 1200) - Rebuild with logoUrl + receipt config
 
 const fastify = Fastify({
     logger: true
