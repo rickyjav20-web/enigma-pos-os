@@ -63,6 +63,14 @@ export default function ReceiptSettings() {
         },
     });
 
+    const { data: currencies } = useQuery({
+        queryKey: ['currencies'],
+        queryFn: async () => {
+            const res = await api.get('/currencies');
+            return res.data as { code: string; symbol: string; exchangeRate: number }[];
+        },
+    });
+
     useEffect(() => {
         if (config) setForm(config);
     }, [config]);
@@ -111,6 +119,10 @@ export default function ReceiptSettings() {
         );
     }
 
+    // Currency rates for preview
+    const vesRate = currencies?.find(c => c.code === 'VES')?.exchangeRate || 0;
+    const copRate = currencies?.find(c => c.code === 'COP')?.exchangeRate || 0;
+
     // Receipt preview
     const previewLines: string[] = [];
     const cols = form.paperWidth;
@@ -130,9 +142,16 @@ export default function ReceiptSettings() {
     previewLines.push('Panini Capresa');
     previewLines.push('  1 x $5.50                $5.50');
     previewLines.push('─'.repeat(cols));
-    if (form.showUSD) previewLines.push(`${'TOTAL'.padEnd(cols - 7)}$12.50`);
-    if (form.showVES) previewLines.push(`${''.padEnd(cols - 11)}Bs.693.75`);
-    if (form.showCOP) previewLines.push(`${''.padEnd(cols - 13)}$52,500 COP`);
+    const exampleTotal = 12.50;
+    if (form.showUSD) previewLines.push(`${'TOTAL'.padEnd(cols - 7)}$${exampleTotal.toFixed(2)}`);
+    if (form.showVES && vesRate) {
+        const vesStr = `Bs.${(exampleTotal * vesRate).toFixed(2)}`;
+        previewLines.push(`${''.padEnd(cols - vesStr.length)}${vesStr}`);
+    }
+    if (form.showCOP && copRate) {
+        const copStr = `$${Math.round(exampleTotal * copRate).toLocaleString('es-CO')} COP`;
+        previewLines.push(`${''.padEnd(cols - copStr.length)}${copStr}`);
+    }
     previewLines.push('');
     previewLines.push('─'.repeat(cols));
     if (form.footerLine1) previewLines.push(pad(form.footerLine1));
@@ -287,9 +306,9 @@ export default function ReceiptSettings() {
                             <h2 className="text-sm font-semibold text-zinc-200 uppercase tracking-wider">Monedas y Papel</h2>
                         </div>
                         <div className="divide-y divide-zinc-800">
-                            <Toggle label="USD ($)" checked={form.showUSD} onChange={v => updateField('showUSD', v)} description="Dolares americanos" />
-                            <Toggle label="VES (Bs)" checked={form.showVES} onChange={v => updateField('showVES', v)} description="Bolivares venezolanos" />
-                            <Toggle label="COP ($)" checked={form.showCOP} onChange={v => updateField('showCOP', v)} description="Pesos colombianos" />
+                            <Toggle label="USD ($)" checked={form.showUSD} onChange={v => updateField('showUSD', v)} description="Dolares americanos (moneda base)" />
+                            <Toggle label="VES (Bs)" checked={form.showVES} onChange={v => updateField('showVES', v)} description={vesRate ? `Tasa actual: Bs.${vesRate.toLocaleString('es-VE')} por $1` : 'Bolivares venezolanos'} />
+                            <Toggle label="COP ($)" checked={form.showCOP} onChange={v => updateField('showCOP', v)} description={copRate ? `Tasa actual: $${copRate.toLocaleString('es-CO')} por $1` : 'Pesos colombianos'} />
                         </div>
                         <div className="mt-4 pt-4 border-t border-zinc-800">
                             <div className="flex items-center gap-2 mb-2">
