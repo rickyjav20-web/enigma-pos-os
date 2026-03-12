@@ -40,12 +40,12 @@ export default function PaymentPage() {
                     paymentMethod: apiMethod,
                     totalAmount: cartTotal,
                     tableId: tableId || undefined,
-                    items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price })),
+                    items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price, notes: i.notes || undefined })),
                 });
             } else {
                 // New sale via POST
                 const payload = {
-                    items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price })),
+                    items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price, notes: i.notes || undefined })),
                     paymentMethod: apiMethod,
                     employeeId: employee?.id || undefined,
                     tableId: tableId || undefined,

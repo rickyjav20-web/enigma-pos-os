@@ -37,6 +37,8 @@ interface DiningTable {
     currentTicket: CurrentTicket | null;
     itemsDone?: number;
     itemsTotal?: number;
+    guestCount?: number | null;
+    totalAmount?: number;
 }
 
 interface OrderItem {
@@ -174,26 +176,35 @@ function TableCard({ table, onClick }: {
                 {isTakeaway ? '📦 ' : isBar ? '🍷 ' : ''}{table.name}
             </h3>
 
-            {/* Capacity */}
-            {table.capacity && (
-                <div className="flex items-center gap-1 mb-2">
-                    <Users className="w-3 h-3 text-[#F4F0EA]/25" />
+            {/* Guest count / Capacity */}
+            <div className="flex items-center gap-1 mb-2">
+                <Users className="w-3 h-3 text-[#F4F0EA]/25" />
+                {table.guestCount ? (
+                    <span className="text-[11px] text-[#93B59D]">{table.guestCount} persona{table.guestCount > 1 ? 's' : ''}</span>
+                ) : table.capacity ? (
                     <span className="text-[11px] text-[#F4F0EA]/30">{table.capacity} pax</span>
-                </div>
-            )}
+                ) : null}
+            </div>
 
             {/* Status content */}
             {table.isOccupied && table.currentTicket ? (
                 <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                         <span className="text-sm font-bold font-mono" style={{ color: cfg.color }}>
-                            ${table.currentTicket.totalAmount.toFixed(2)}
+                            ${(table.totalAmount || table.currentTicket.totalAmount).toFixed(2)}
                         </span>
                         <div className="flex items-center gap-1 text-[10px] text-[#F4F0EA]/30">
                             <Clock className="w-3 h-3" />
                             <span>{timeElapsed(table.currentTicket.createdAt)}</span>
                         </div>
                     </div>
+
+                    {/* Per-person average */}
+                    {table.guestCount && table.guestCount > 0 && (
+                        <div className="text-[10px] text-[#F4F0EA]/40 font-mono">
+                            ${((table.totalAmount || table.currentTicket.totalAmount) / table.guestCount).toFixed(2)}/persona
+                        </div>
+                    )}
 
                     {/* Progress bar */}
                     {hasProgress && (

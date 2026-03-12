@@ -27,6 +27,7 @@ interface OrderItem {
     quantity: number;
     unitPrice: number;
     kdsStation?: string | null;
+    notes?: string | null;
 }
 
 interface Order {
@@ -808,14 +809,22 @@ function OrderCard({
                                 {item.quantity}
                             </span>
 
-                            {/* Product name */}
-                            <span className="flex-1 text-[15px] font-semibold leading-tight"
-                                style={{
-                                    color: done ? 'rgba(147,181,157,0.5)' : 'rgba(244,240,234,0.9)',
-                                    textDecoration: done ? 'line-through' : 'none',
-                                }}>
-                                {item.productNameSnapshot}
-                            </span>
+                            {/* Product name + notes */}
+                            <div className="flex-1 min-w-0">
+                                <span className="text-[15px] font-semibold leading-tight block"
+                                    style={{
+                                        color: done ? 'rgba(147,181,157,0.5)' : 'rgba(244,240,234,0.9)',
+                                        textDecoration: done ? 'line-through' : 'none',
+                                    }}>
+                                    {item.productNameSnapshot}
+                                </span>
+                                {item.notes && (
+                                    <span className="text-[12px] italic block mt-0.5"
+                                        style={{ color: done ? 'rgba(245,158,11,0.3)' : '#f59e0b' }}>
+                                        {item.notes}
+                                    </span>
+                                )}
+                            </div>
 
                             {/* Check icon */}
                             {done && (

@@ -30,7 +30,7 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
             include: {
                 salesOrders: {
                     where: { status: 'open' },
-                    select: { id: true, ticketName: true, totalAmount: true, createdAt: true, items: { select: { id: true } } },
+                    select: { id: true, ticketName: true, totalAmount: true, createdAt: true, guestCount: true, items: { select: { id: true } } },
                     take: 5,
                 }
             }
@@ -96,7 +96,7 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
                 return {
                     id: t.id, name: t.name, zone: t.zone, capacity: t.capacity, sortOrder: t.sortOrder,
                     status: 'libre' as TableStatus, isOccupied: false, currentTicket: null,
-                    itemsDone: 0, itemsTotal: 0,
+                    itemsDone: 0, itemsTotal: 0, guestCount: null,
                 };
             }
 
@@ -144,6 +144,11 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
                 }
             }
 
+            // Sum guest counts across all open orders for this table
+            const totalGuests = openOrders.reduce((sum, o) => sum + ((o as any).guestCount || 0), 0);
+            // Total amount across all open orders
+            const tableTotalAmount = openOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+
             return {
                 id: t.id, name: t.name, zone: t.zone, capacity: t.capacity, sortOrder: t.sortOrder,
                 status,
@@ -151,6 +156,8 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
                 currentTicket: { id: mainOrder.id, ticketName: mainOrder.ticketName, totalAmount: mainOrder.totalAmount, createdAt: mainOrder.createdAt },
                 itemsDone: doneItems,
                 itemsTotal: totalItems,
+                guestCount: totalGuests || null,
+                totalAmount: tableTotalAmount,
             };
         });
 

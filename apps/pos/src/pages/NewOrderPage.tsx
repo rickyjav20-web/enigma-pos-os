@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, X, ShoppingBag, ChevronRight, Minus, Plus, Trash2, UserPlus } from 'lucide-react';
+import { ArrowLeft, Search, X, ShoppingBag, ChevronRight, Minus, Plus, Trash2, UserPlus, MessageSquare, Check } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { useCartStore } from '../stores/cartStore';
@@ -15,11 +15,13 @@ interface Product {
 
 export default function NewOrderPage() {
     const navigate = useNavigate();
-    const { items, addItem, removeItem, updateQuantity, total, itemCount, orderType, setOrderType, clearCart } = useCartStore();
+    const { items, addItem, removeItem, updateQuantity, updateItemNotes, total, itemCount, orderType, setOrderType, clearCart } = useCartStore();
 
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
     const [showCart, setShowCart] = useState(false);
+    const [editingNotesFor, setEditingNotesFor] = useState<string | null>(null);
+    const [draftItemNote, setDraftItemNote] = useState('');
 
     // Fetch products
     const { data: productsData, isLoading } = useQuery({
@@ -209,35 +211,87 @@ export default function NewOrderPage() {
                         {/* Items */}
                         <div className="flex-1 overflow-y-auto px-5 space-y-2 py-2">
                             {items.map(item => (
-                                <div key={item.productId} className="flex items-center gap-3 p-3 rounded-xl bg-wave-gray/60 border border-wave-border animate-fade-in">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold truncate">{item.name}</p>
-                                        <p className="text-xs text-wave-text-muted font-mono">${item.price.toFixed(2)} c/u</p>
+                                <div key={item.productId} className="p-3 rounded-xl bg-wave-gray/60 border border-wave-border animate-fade-in">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold truncate">{item.name}</p>
+                                            <p className="text-xs text-wave-text-muted font-mono">${item.price.toFixed(2)} c/u</p>
+                                            {item.notes && editingNotesFor !== item.productId && (
+                                                <p className="text-[11px] italic text-wave-green/70 mt-0.5 truncate">{item.notes}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Note button */}
+                                        <button
+                                            onClick={() => {
+                                                if (editingNotesFor === item.productId) {
+                                                    setEditingNotesFor(null);
+                                                } else {
+                                                    setEditingNotesFor(item.productId);
+                                                    setDraftItemNote(item.notes || '');
+                                                }
+                                            }}
+                                            className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center press"
+                                        >
+                                            <MessageSquare className="w-3.5 h-3.5" style={{ color: item.notes ? '#10b981' : 'rgba(255,255,255,0.3)' }} />
+                                        </button>
+
+                                        {/* Quantity Controls */}
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => updateQuantity(item.productId, -1)}
+                                                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center press"
+                                            >
+                                                <Minus className="w-3.5 h-3.5" />
+                                            </button>
+                                            <span className="text-sm font-bold font-mono w-5 text-center">{item.quantity}</span>
+                                            <button
+                                                onClick={() => updateQuantity(item.productId, 1)}
+                                                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center press"
+                                            >
+                                                <Plus className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+
+                                        <div className="text-right ml-1">
+                                            <p className="text-sm font-bold font-mono">${(item.price * item.quantity).toFixed(2)}</p>
+                                            <button onClick={() => removeItem(item.productId)} className="mt-0.5">
+                                                <Trash2 className="w-3.5 h-3.5 text-wave-red/60 hover:text-wave-red" />
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    {/* Quantity Controls */}
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => updateQuantity(item.productId, -1)}
-                                            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center press"
-                                        >
-                                            <Minus className="w-3.5 h-3.5" />
-                                        </button>
-                                        <span className="text-sm font-bold font-mono w-5 text-center">{item.quantity}</span>
-                                        <button
-                                            onClick={() => updateQuantity(item.productId, 1)}
-                                            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center press"
-                                        >
-                                            <Plus className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-
-                                    <div className="text-right ml-1">
-                                        <p className="text-sm font-bold font-mono">${(item.price * item.quantity).toFixed(2)}</p>
-                                        <button onClick={() => removeItem(item.productId)} className="mt-0.5">
-                                            <Trash2 className="w-3.5 h-3.5 text-wave-red/60 hover:text-wave-red" />
-                                        </button>
-                                    </div>
+                                    {/* Inline note editor */}
+                                    {editingNotesFor === item.productId && (
+                                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-wave-border/30">
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                placeholder="Nota: sin chocolate, extra queso..."
+                                                value={draftItemNote}
+                                                onChange={e => setDraftItemNote(e.target.value)}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') {
+                                                        updateItemNotes(item.productId, draftItemNote);
+                                                        setEditingNotesFor(null);
+                                                    }
+                                                }}
+                                                className="flex-1 bg-black/30 border border-wave-border/50 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-wave-text-muted/50 focus:outline-none focus:border-wave-green/40"
+                                            />
+                                            <button
+                                                onClick={() => { updateItemNotes(item.productId, draftItemNote); setEditingNotesFor(null); }}
+                                                className="w-7 h-7 rounded-lg bg-wave-green/20 flex items-center justify-center press"
+                                            >
+                                                <Check className="w-3.5 h-3.5 text-wave-green" />
+                                            </button>
+                                            <button
+                                                onClick={() => setEditingNotesFor(null)}
+                                                className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center press"
+                                            >
+                                                <X className="w-3.5 h-3.5 text-wave-text-muted" />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>

@@ -67,6 +67,24 @@ const DEFAULT_CONFIG: ReceiptConfig = {
 const PRINTER_KEY = 'ops_bt_printer';
 const CONFIG_CACHE_KEY = 'ops_receipt_config';
 
+/**
+ * Sanitize text for ESC/POS thermal printers.
+ * Replaces Unicode chars that thermal printers can't handle:
+ * - Em/en dashes → hyphen
+ * - Smart quotes → straight quotes
+ * - Accented chars are OK (codepage 858/latin)
+ * - Other non-ASCII → stripped
+ */
+function sanitize(text: string): string {
+    return text
+        .replace(/[\u2014\u2013\u2015]/g, '-')  // em dash, en dash → hyphen
+        .replace(/[\u2018\u2019]/g, "'")          // smart single quotes
+        .replace(/[\u2022]/g, '*')                // bullet → asterisk
+        .replace(/[\u2026]/g, '...')              // ellipsis
+        .replace(/[\u00b7]/g, '-')                // middle dot → hyphen
+        .replace(/\u00a0/g, ' ');                 // non-breaking space → space
+}
+
 /** Load an image from URL and return as ImageData for the encoder */
 async function loadLogoImage(url: string, maxWidth: number): Promise<ImageData | null> {
     try {
@@ -86,6 +104,9 @@ async function loadLogoImage(url: string, maxWidth: number): Promise<ImageData |
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d')!;
+        // White background (thermal printers treat transparent as black)
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
         return ctx.getImageData(0, 0, w, h);
     } catch {
@@ -174,33 +195,39 @@ export function usePrinter() {
 
             let r = encoder.initialize();
 
-            // Logo
+            // Logo — if configured, print logo INSTEAD of text title
+            let logoPrinted = false;
             if (cfg.logoUrl) {
                 const maxPx = cols === 48 ? 576 : 384;
                 const logoData = await loadLogoImage(cfg.logoUrl, maxPx);
                 if (logoData) {
                     r = r.align('center').image(logoData, logoData.width, logoData.height, 'threshold').newline();
+                    logoPrinted = true;
                 }
             }
 
-            // Business name
-            const nameParts = cfg.businessName.split(' ');
-            const nameTop = nameParts[0]?.toUpperCase() || '';
-            const nameBottom = nameParts.slice(1).join(' ').toUpperCase();
+            // Business name — only as large text if no logo was printed
+            if (!logoPrinted) {
+                const nameParts = cfg.businessName.split(' ');
+                const nameTop = nameParts[0]?.toUpperCase() || '';
+                const nameBottom = nameParts.slice(1).join(' ').toUpperCase();
+                r = r.align('center').bold(true).size(2, 2).line(sanitize(nameTop));
+                if (nameBottom) r = r.size(1, 1).line(sanitize(nameBottom));
+                r = r.bold(false).size(1, 1);
+            } else {
+                // With logo, print business name smaller below it
+                r = r.align('center').bold(true).line(sanitize(cfg.businessName.toUpperCase())).bold(false);
+            }
 
-            r = r.align('center').bold(true).size(2, 2).line(nameTop);
-            if (nameBottom) r = r.size(1, 1).line(nameBottom);
-            r = r.bold(false).size(1, 1);
-
-            if (cfg.headerLine1) r = r.line(cfg.headerLine1);
-            if (cfg.headerLine2) r = r.line(cfg.headerLine2);
+            if (cfg.headerLine1) r = r.align('center').line(sanitize(cfg.headerLine1));
+            if (cfg.headerLine2) r = r.line(sanitize(cfg.headerLine2));
 
             r = r.newline().rule().align('left');
 
             // Order info
-            if (cfg.showTable && data.tableName) r = r.line(`Pedido: ${data.tableName}`);
-            if (cfg.showEmployee) r = r.line(`Empleado: ${data.employeeName}`);
-            if (cfg.showTicketName) r = r.line(`Ticket: ${data.ticketName}`);
+            if (cfg.showTable && data.tableName) r = r.line(sanitize(`Pedido: ${data.tableName}`));
+            if (cfg.showEmployee) r = r.line(sanitize(`Empleado: ${data.employeeName}`));
+            if (cfg.showTicketName) r = r.line(sanitize(`Ticket: ${data.ticketName}`));
 
             r = r.rule().bold(true).line('CUENTA').bold(false).rule();
 
@@ -210,7 +237,7 @@ export function usePrinter() {
             for (const item of data.items) {
                 const lineTotal = (item.price * item.quantity).toFixed(2);
                 r = r
-                    .line(item.name)
+                    .line(sanitize(item.name))
                     .table(
                         [{ width: nameColW, align: 'left' }, { width: priceColW, align: 'right' }],
                         [[`  ${item.quantity} x $${item.price.toFixed(2)}`, `$${lineTotal}`]]
@@ -219,7 +246,7 @@ export function usePrinter() {
 
             r = r.rule();
 
-            // Totals
+            // Totals — use currencies passed from the component (live rates)
             const halfCol = Math.floor(cols / 2);
             const currencies = data.currencies || [];
 
@@ -239,7 +266,7 @@ export function usePrinter() {
             // VES total
             if (cfg.showVES) {
                 const vesRate = currencies.find(c => c.code === 'VES');
-                if (vesRate) {
+                if (vesRate && vesRate.exchangeRate > 0) {
                     const vesTotal = data.total * vesRate.exchangeRate;
                     r = r.table(
                         [{ width: halfCol, align: 'left' }, { width: halfCol, align: 'right' }],
@@ -251,7 +278,7 @@ export function usePrinter() {
             // COP total
             if (cfg.showCOP) {
                 const copRate = currencies.find(c => c.code === 'COP');
-                if (copRate) {
+                if (copRate && copRate.exchangeRate > 0) {
                     const copTotal = Math.round(data.total * copRate.exchangeRate);
                     r = r.table(
                         [{ width: halfCol, align: 'left' }, { width: halfCol, align: 'right' }],
@@ -272,13 +299,13 @@ export function usePrinter() {
                     data.paymentMethod === 'binance' ? 'Binance' :
                     data.paymentMethod === 'bancolombia' ? 'Bancolombia' :
                     data.paymentMethod;
-                r = r.align('center').line(`Pago: ${payLabel}`).newline();
+                r = r.align('center').line(sanitize(`Pago: ${payLabel}`)).newline();
             }
 
             // Footer
             r = r.rule().align('center');
-            if (cfg.footerLine1) r = r.line(cfg.footerLine1);
-            if (cfg.footerLine2) r = r.line(cfg.footerLine2);
+            if (cfg.footerLine1) r = r.line(sanitize(cfg.footerLine1));
+            if (cfg.footerLine2) r = r.line(sanitize(cfg.footerLine2));
             if (cfg.showDateTime) r = r.newline().line(`${dateStr} ${timeStr}`);
 
             r = r.newline().newline().newline().cut();

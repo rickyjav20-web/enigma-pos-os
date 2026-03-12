@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 const HEADERS = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
 const CACHE_KEY = 'enigma_currencies';
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 export interface Currency {
     id: string;
@@ -51,8 +51,8 @@ export function useCurrencies() {
 
         const DEFAULTS: Currency[] = [
             { id: 'usd', code: 'USD', name: 'Dolar', symbol: '$',   exchangeRate: 1,    isBase: true,  isActive: true },
-            { id: 'ves', code: 'VES', name: 'Bolivar', symbol: 'Bs.', exchangeRate: 55, isBase: false, isActive: true },
-            { id: 'cop', code: 'COP', name: 'Peso', symbol: '$',    exchangeRate: 4200, isBase: false, isActive: true },
+            { id: 'ves', code: 'VES', name: 'Bolivar', symbol: 'Bs.', exchangeRate: 510.62, isBase: false, isActive: true },
+            { id: 'cop', code: 'COP', name: 'Peso', symbol: '$',    exchangeRate: 4000, isBase: false, isActive: true },
         ];
 
         // Fetch from API

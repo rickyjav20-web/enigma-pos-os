@@ -140,6 +140,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
             productId: z.string(),
             quantity: z.number().int().positive(),
             price: z.number().min(0),
+            notes: z.string().optional(),
         })),
         paymentMethod: z.enum(['cash', 'card', 'transfer', 'other']),
         status: z.enum(['open', 'completed']).optional().default('completed'),
@@ -148,12 +149,13 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         ticketName: z.string().optional(),
         employeeId: z.string().optional(),
         notes: z.string().optional(),
+        guestCount: z.number().int().min(1).max(50).optional(),
     });
 
     // ── POST /sales ───────────────────────────────────────────────────────────
     fastify.post('/sales', async (request, reply) => {
         const tenantId = request.tenantId || 'enigma_hq';
-        const { sessionId, items, paymentMethod, status, tableId, tableName, ticketName, employeeId, notes } = salesSchema.parse(request.body);
+        const { sessionId, items, paymentMethod, status, tableId, tableName, ticketName, employeeId, notes, guestCount } = salesSchema.parse(request.body);
 
         // Resolve a valid session (required for DB FK + cash transactions)
         const resolvedSessionId = await resolveSession(tenantId, sessionId, paymentMethod);
@@ -174,6 +176,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
                 price: product.price, // Use DB price, not client price
                 name: product.name,
                 kdsStation: product.kdsStation || null,
+                notes: item.notes || null,
             };
         }));
 
@@ -191,6 +194,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
                 ticketName,
                 employeeId,
                 notes,
+                guestCount,
                 items: {
                     create: verifiedItems.map(item => ({
                         productId: item.productId,
@@ -199,6 +203,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
                         totalPrice: item.price * item.quantity,
                         productNameSnapshot: item.name,
                         kdsStation: item.kdsStation,
+                        notes: item.notes,
                     })),
                 },
             },
@@ -430,6 +435,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         if (body.ticketName !== undefined) updateData.ticketName = body.ticketName;
         if (body.notes !== undefined) updateData.notes = body.notes;
         if (body.employeeId !== undefined) updateData.employeeId = body.employeeId;
+        if (body.guestCount !== undefined) updateData.guestCount = body.guestCount || null;
 
         // Replace items if provided — use DB prices to prevent manipulation
         if (body.items && Array.isArray(body.items) && body.items.length > 0) {
@@ -444,6 +450,7 @@ export default async function salesRoutes(fastify: FastifyInstance) {
                     totalPrice: verifiedPrice * item.quantity,
                     productNameSnapshot: product?.name || 'Unknown Product',
                     kdsStation: product?.kdsStation || null,
+                    notes: item.notes || null,
                 };
             }));
             // Recalculate total from verified prices

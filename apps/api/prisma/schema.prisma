@@ -502,6 +502,7 @@ model SalesOrder {
   tableName  String? // Snapshot of table name
   ticketName String? // Customer/ticket label
   notes      String? // POS notes
+  guestCount Int?    // Number of guests at the table
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -530,6 +531,7 @@ model SalesItem {
   // Snapshots
   productNameSnapshot String
   kdsStation          String? // Snapshot from product at order creation time
+  notes               String? // Item-level note (e.g. "sin chocolate", "extra caliente")
 
   // Relations
   salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id])

@@ -3,12 +3,12 @@
  * Configure receipt printing: business name, logo, header/footer, currency display, paper width.
  * Changes are applied to all POS devices on next print.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import {
     Printer, Save, RotateCcw, Type, AlignLeft,
-    DollarSign, Ruler, Eye, CheckCircle2,
+    DollarSign, Ruler, Eye, CheckCircle2, Upload, Trash2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,7 @@ export default function ReceiptSettings() {
     const queryClient = useQueryClient();
     const [form, setForm] = useState<ReceiptConfig>(DEFAULTS);
     const [saved, setSaved] = useState(false);
+    const logoInputRef = useRef<HTMLInputElement>(null);
 
     const { data: config, isLoading } = useQuery({
         queryKey: ['receipt-config'],
@@ -218,22 +219,41 @@ export default function ReceiptSettings() {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs text-zinc-500 mb-1 block">Logo (URL de imagen)</label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        value={form.logoUrl}
-                                        onChange={e => updateField('logoUrl', e.target.value)}
-                                        className="bg-zinc-800/50 border-zinc-700 text-zinc-200 flex-1"
-                                        placeholder="https://ejemplo.com/logo.png"
-                                    />
-                                    {form.logoUrl && (
-                                        <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center overflow-hidden shrink-0">
+                                <label className="text-xs text-zinc-500 mb-1 block">Logo</label>
+                                {form.logoUrl ? (
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-16 h-16 rounded-lg bg-white flex items-center justify-center overflow-hidden shrink-0 border border-zinc-700">
                                             <img src={form.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain"
+                                                style={{ filter: 'grayscale(100%) contrast(150%)' }}
                                                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                         </div>
-                                    )}
-                                </div>
-                                <p className="text-[10px] text-zinc-600 mt-1">Imagen PNG o JPG. Se imprime en blanco y negro.</p>
+                                        <button onClick={() => updateField('logoUrl', '')}
+                                            className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300">
+                                            <Trash2 className="w-3 h-3" /> Quitar logo
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button onClick={() => logoInputRef.current?.click()}
+                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed border-zinc-700 hover:border-zinc-600 transition-colors">
+                                        <Upload className="w-4 h-4 text-zinc-500" />
+                                        <span className="text-xs text-zinc-500">Subir imagen PNG o JPG</span>
+                                    </button>
+                                )}
+                                <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+                                    onChange={e => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        if (file.size > 500_000) { alert('Imagen muy grande (max 500KB)'); return; }
+                                        const reader = new FileReader();
+                                        reader.onload = () => {
+                                            const dataUrl = reader.result as string;
+                                            updateField('logoUrl', dataUrl);
+                                        };
+                                        reader.readAsDataURL(file);
+                                        e.target.value = '';
+                                    }}
+                                />
+                                <p className="text-[10px] text-zinc-600 mt-1">Se imprime en blanco y negro. Max 500KB.</p>
                             </div>
                             <div>
                                 <label className="text-xs text-zinc-500 mb-1 block">Linea 1 (subtitulo)</label>

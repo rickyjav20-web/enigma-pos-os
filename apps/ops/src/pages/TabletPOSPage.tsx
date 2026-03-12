@@ -13,7 +13,7 @@ import {
     Check, Loader2, ShoppingBag, DollarSign, Smartphone,
     Building2, Wallet, CreditCard, Banknote, List,
     LayoutGrid, FileText, Menu, AlertTriangle, Clock, Target,
-    Printer, Bluetooth, BluetoothOff
+    Printer, Bluetooth, BluetoothOff, Users, MessageSquare
 } from 'lucide-react';
 import { usePrinter } from '../hooks/usePrinter';
 import type { ReceiptData, CurrencyRate } from '../hooks/usePrinter';
@@ -130,10 +130,11 @@ function Toast({ message, type, onClose }: { message: string; type: 'error' | 's
 export default function TabletPOSPage() {
     const { session, employee } = useAuth();
     const {
-        items, addItem, removeItem, updateQuantity,
+        items, addItem, removeItem, updateQuantity, updateItemNotes,
         ticketName, setTicketName,
         total, itemCount, clearCart,
         tableId, tableName, ticketId, loadTicket,
+        guestCount, setGuestCount,
     } = useCartStore();
 
     // Product state
@@ -166,6 +167,10 @@ export default function TabletPOSPage() {
     const [giveBackUSD, setGiveBackUSD] = useState(0);
     const [activeInput, setActiveInput] = useState<'usd' | 'cop' | null>(null);
     const { currencies: allCurrencies, getRate, formatLocal } = useCurrencies();
+
+    // Item notes editing
+    const [editingNotesFor, setEditingNotesFor] = useState<string | null>(null);
+    const [draftItemNote, setDraftItemNote] = useState('');
 
     // Split
     const [showSplit, setShowSplit] = useState(false);
@@ -309,7 +314,7 @@ export default function TabletPOSPage() {
     const handleSave = async (saveTableId?: string, saveTableName?: string) => {
         setSaving(true);
         try {
-            const itemsPayload = items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price }));
+            const itemsPayload = items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price, ...(i.notes && { notes: i.notes }) }));
             const resolvedName = ticketName !== 'Ticket' ? ticketName : undefined;
             if (ticketId) {
                 await fetch(`${API_URL}/sales/${ticketId}`, {
@@ -321,6 +326,7 @@ export default function TabletPOSPage() {
                         totalAmount: cartTotal,
                         items: itemsPayload,
                         ...(resolvedName && { ticketName: resolvedName }),
+                        ...(guestCount && { guestCount }),
                     }),
                 });
             } else {
@@ -335,6 +341,7 @@ export default function TabletPOSPage() {
                         tableId: saveTableId || undefined,
                         tableName: saveTableName || undefined,
                         ticketName: resolvedName,
+                        ...(guestCount && { guestCount }),
                     }),
                 });
             }
@@ -382,11 +389,13 @@ export default function TabletPOSPage() {
                 name: order.ticketName || order.tableName || `Ticket #${order.id.slice(-4)}`,
                 tableId: order.tableId,
                 tableName: order.tableName,
+                guestCount: order.guestCount,
                 items: (order.items || []).map((i: any) => ({
                     productId: i.productId,
                     name: i.productNameSnapshot,
                     price: i.unitPrice,
                     quantity: i.quantity,
+                    notes: i.notes || undefined,
                 })),
             });
         } catch { showToast('Error sincronizando'); }
@@ -399,11 +408,13 @@ export default function TabletPOSPage() {
             name: ticket.ticketName || ticket.tableName || `Ticket #${ticket.id.slice(-4)}`,
             tableId: ticket.tableId || undefined,
             tableName: ticket.tableName || undefined,
+            guestCount: (ticket as any).guestCount || undefined,
             items: ticket.items.map(i => ({
                 productId: i.productId,
                 name: i.productNameSnapshot,
                 price: i.unitPrice,
                 quantity: i.quantity,
+                notes: (i as any).notes || undefined,
             })),
         });
         setShowTickets(false);
@@ -1440,12 +1451,29 @@ export default function TabletPOSPage() {
                                 )}
                             </div>
                         </div>
-                        {tableName && (
-                            <div className="flex items-center gap-1 mt-1">
-                                <MapPin className="w-3 h-3" style={{ color: '#93B59D' }} />
-                                <span className="text-[11px]" style={{ color: '#93B59D' }}>{tableName}</span>
+                        <div className="flex items-center gap-2 mt-1">
+                            {tableName && (
+                                <div className="flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" style={{ color: '#93B59D' }} />
+                                    <span className="text-[11px]" style={{ color: '#93B59D' }}>{tableName}</span>
+                                </div>
+                            )}
+                            {/* Guest count selector */}
+                            <div className="flex items-center gap-1 ml-auto">
+                                <Users className="w-3 h-3" style={{ color: 'rgba(244,240,234,0.3)' }} />
+                                <div className="flex items-center gap-0.5">
+                                    <button onClick={() => setGuestCount(Math.max(1, (guestCount || 1) - 1))}
+                                        className="w-5 h-5 rounded flex items-center justify-center text-[10px]"
+                                        style={{ background: 'rgba(244,240,234,0.06)', color: 'rgba(244,240,234,0.4)' }}>-</button>
+                                    <span className="text-[11px] w-4 text-center font-bold" style={{ color: guestCount ? '#93B59D' : 'rgba(244,240,234,0.2)' }}>
+                                        {guestCount || '—'}
+                                    </span>
+                                    <button onClick={() => setGuestCount((guestCount || 0) + 1)}
+                                        className="w-5 h-5 rounded flex items-center justify-center text-[10px]"
+                                        style={{ background: 'rgba(244,240,234,0.06)', color: '#93B59D' }}>+</button>
+                                </div>
                             </div>
-                        )}
+                        </div>
                     </div>
 
                     {/* Cart items */}
@@ -1460,37 +1488,75 @@ export default function TabletPOSPage() {
                             <div>
                                 {items.map(item => (
                                     <div key={item.productId}
-                                        className={`flex items-center gap-2 px-4 py-3 transition-colors duration-300 ${lastAddedId === item.productId ? 'bg-[#1C402E]/30' : ''}`}
+                                        className={`px-4 py-3 transition-colors duration-300 ${lastAddedId === item.productId ? 'bg-[#1C402E]/30' : ''}`}
                                         style={{ borderBottom: '1px solid rgba(244,240,234,0.04)' }}>
-                                        {/* Qty controls */}
-                                        <div className="flex items-center gap-1.5 shrink-0">
-                                            <button onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                                                className="w-7 h-7 rounded-lg flex items-center justify-center"
-                                                style={{ background: 'rgba(244,240,234,0.06)', color: '#F4F0EA' }}>
-                                                <Minus className="w-3 h-3" />
-                                            </button>
-                                            <span className="w-5 text-center font-bold text-sm" style={{ color: '#F4F0EA' }}>
-                                                {item.quantity}
+                                        <div className="flex items-center gap-2">
+                                            {/* Qty controls */}
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <button onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                                                    className="w-7 h-7 rounded-lg flex items-center justify-center"
+                                                    style={{ background: 'rgba(244,240,234,0.06)', color: '#F4F0EA' }}>
+                                                    <Minus className="w-3 h-3" />
+                                                </button>
+                                                <span className="w-5 text-center font-bold text-sm" style={{ color: '#F4F0EA' }}>
+                                                    {item.quantity}
+                                                </span>
+                                                <button onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                                                    className="w-7 h-7 rounded-lg flex items-center justify-center"
+                                                    style={{ background: 'rgba(244,240,234,0.06)', color: '#93B59D' }}>
+                                                    <Plus className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                            {/* Name */}
+                                            <span className="flex-1 text-sm truncate" style={{ color: 'rgba(244,240,234,0.85)' }}>
+                                                {item.name}
                                             </span>
-                                            <button onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                                                className="w-7 h-7 rounded-lg flex items-center justify-center"
-                                                style={{ background: 'rgba(244,240,234,0.06)', color: '#93B59D' }}>
-                                                <Plus className="w-3 h-3" />
+                                            {/* Note icon */}
+                                            <button onClick={() => { setEditingNotesFor(item.productId); setDraftItemNote(item.notes || ''); }}
+                                                className="p-1 shrink-0" style={{ color: item.notes ? '#93B59D' : 'rgba(244,240,234,0.15)' }}>
+                                                <MessageSquare className="w-3.5 h-3.5" />
+                                            </button>
+                                            {/* Price */}
+                                            <span className="font-mono text-sm tabular-nums shrink-0" style={{ color: 'rgba(244,240,234,0.5)' }}>
+                                                ${(item.price * item.quantity).toFixed(2)}
+                                            </span>
+                                            {/* Remove */}
+                                            <button onClick={() => removeItem(item.productId)}
+                                                className="p-1 shrink-0" style={{ color: 'rgba(239,68,68,0.4)' }}>
+                                                <X className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
-                                        {/* Name */}
-                                        <span className="flex-1 text-sm truncate" style={{ color: 'rgba(244,240,234,0.85)' }}>
-                                            {item.name}
-                                        </span>
-                                        {/* Price */}
-                                        <span className="font-mono text-sm tabular-nums shrink-0" style={{ color: 'rgba(244,240,234,0.5)' }}>
-                                            ${(item.price * item.quantity).toFixed(2)}
-                                        </span>
-                                        {/* Remove */}
-                                        <button onClick={() => removeItem(item.productId)}
-                                            className="p-1 shrink-0" style={{ color: 'rgba(239,68,68,0.4)' }}>
-                                            <X className="w-3.5 h-3.5" />
-                                        </button>
+                                        {/* Item note display */}
+                                        {item.notes && (
+                                            <p className="text-[10px] ml-[72px] mt-0.5 italic" style={{ color: 'rgba(147,181,157,0.6)' }}>
+                                                {item.notes}
+                                            </p>
+                                        )}
+                                        {/* Inline note editor */}
+                                        {editingNotesFor === item.productId && (
+                                            <div className="flex items-center gap-1.5 ml-[72px] mt-1.5">
+                                                <input
+                                                    type="text" autoFocus
+                                                    value={draftItemNote}
+                                                    onChange={e => setDraftItemNote(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') { updateItemNotes(item.productId, draftItemNote); setEditingNotesFor(null); }
+                                                        if (e.key === 'Escape') setEditingNotesFor(null);
+                                                    }}
+                                                    placeholder="sin chocolate, extra caliente..."
+                                                    className="flex-1 text-[11px] bg-transparent border-b px-1 py-0.5 focus:outline-none"
+                                                    style={{ color: '#F4F0EA', borderColor: '#93B59D' }}
+                                                />
+                                                <button onClick={() => { updateItemNotes(item.productId, draftItemNote); setEditingNotesFor(null); }}
+                                                    className="p-1 rounded" style={{ color: '#93B59D' }}>
+                                                    <Check className="w-3 h-3" />
+                                                </button>
+                                                <button onClick={() => setEditingNotesFor(null)}
+                                                    className="p-1 rounded" style={{ color: 'rgba(244,240,234,0.3)' }}>
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

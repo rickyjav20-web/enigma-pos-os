@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 const updateSchema = z.object({
     businessName: z.string().min(1).max(100).optional(),
-    logoUrl: z.string().max(500).optional(),
+    logoUrl: z.string().max(1_000_000).optional(), // supports base64 data URLs
     headerLine1: z.string().max(200).optional(),
     headerLine2: z.string().max(200).optional(),
     footerLine1: z.string().max(200).optional(),

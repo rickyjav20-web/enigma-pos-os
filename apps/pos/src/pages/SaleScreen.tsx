@@ -177,7 +177,7 @@ export default function SaleScreen() {
         setSaving(true);
         try {
             const sessionId = localStorage.getItem('wave_pos_session') || 'pos-mobile';
-            const itemsPayload = items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price }));
+            const itemsPayload = items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price, notes: i.notes || undefined }));
             const resolvedName = opts?.ticketName || (ticketName !== 'Ticket' ? ticketName : undefined);
             if (ticketId) {
                 await api.put(`/sales/${ticketId}`, {
@@ -246,7 +246,9 @@ export default function SaleScreen() {
                     name: i.productNameSnapshot,
                     price: i.unitPrice,
                     quantity: i.quantity,
+                    notes: i.notes || undefined,
                 })),
+                guestCount: order.guestCount || null,
             });
         } catch (e) {
             console.error('Sync error:', e);
@@ -978,6 +980,7 @@ export default function SaleScreen() {
                             name: i.productNameSnapshot,
                             price: i.unitPrice,
                             quantity: i.quantity,
+                            notes: i.notes || undefined,
                         }));
                         loadTicket({
                             id: data.original.id,

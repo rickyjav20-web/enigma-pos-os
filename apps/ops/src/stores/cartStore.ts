@@ -6,6 +6,7 @@ interface CartItem {
     price: number;
     quantity: number;
     category?: string;
+    notes?: string;
 }
 
 interface CartStore {
@@ -15,16 +16,19 @@ interface CartStore {
     tableId: string | null;
     tableName: string | null;
     orderType: string;
+    guestCount: number | null;
     addItem: (product: { id: string; name: string; price: number; category?: string }) => void;
     removeItem: (productId: string) => void;
     updateQuantity: (productId: string, quantity: number) => void;
+    updateItemNotes: (productId: string, notes: string) => void;
     clearCart: () => void;
     setTicketName: (name: string) => void;
     setTable: (id: string | null, name: string | null) => void;
     setOrderType: (type: string) => void;
+    setGuestCount: (count: number | null) => void;
     total: () => number;
     itemCount: () => number;
-    loadTicket: (ticket: { id: string; name: string; items: CartItem[]; tableId?: string; tableName?: string }) => void;
+    loadTicket: (ticket: { id: string; name: string; items: CartItem[]; tableId?: string; tableName?: string; guestCount?: number | null }) => void;
 }
 
 export const useCartStore = create<CartStore>((set, get) => ({
@@ -34,6 +38,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
     tableId: null,
     tableName: null,
     orderType: 'dine_in',
+    guestCount: null,
 
     addItem: (product) => {
         set((state) => {
@@ -78,13 +83,23 @@ export const useCartStore = create<CartStore>((set, get) => ({
         });
     },
 
-    clearCart: () => set({ items: [], ticketId: null, ticketName: 'Ticket', tableId: null, tableName: null }),
+    updateItemNotes: (productId, notes) => {
+        set((state) => ({
+            items: state.items.map(i =>
+                i.productId === productId ? { ...i, notes: notes || undefined } : i
+            ),
+        }));
+    },
+
+    clearCart: () => set({ items: [], ticketId: null, ticketName: 'Ticket', tableId: null, tableName: null, guestCount: null }),
 
     setTicketName: (name) => set({ ticketName: name }),
 
     setTable: (id, name) => set({ tableId: id, tableName: name }),
 
     setOrderType: (type) => set({ orderType: type }),
+
+    setGuestCount: (count) => set({ guestCount: count }),
 
     total: () => get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
 
@@ -96,5 +111,6 @@ export const useCartStore = create<CartStore>((set, get) => ({
         items: ticket.items,
         tableId: ticket.tableId || null,
         tableName: ticket.tableName || null,
+        guestCount: ticket.guestCount || null,
     }),
 }));
