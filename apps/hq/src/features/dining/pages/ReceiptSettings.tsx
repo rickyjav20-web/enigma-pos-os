@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import {
     Printer, Save, RotateCcw, Type, AlignLeft,
-    DollarSign, Ruler, Eye, CheckCircle2, ImageIcon,
+    DollarSign, Ruler, Eye, CheckCircle2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
