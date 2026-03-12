@@ -41,6 +41,7 @@ model Tenant {
   goalTemplates    GoalTemplate[]
   kitchenStations  KitchenStation[]
   tableFlowConfig  TableFlowConfig?
+  receiptConfig    ReceiptConfig?
 }
 
 // --- MODULE: ACCESS CONTROL ---
@@ -725,6 +726,39 @@ model TableFlowConfig {
 
   // System (seconds)
   autoRefreshSec Int @default(30) // Moderate pace; 2x/min catches stalls
+
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+}
+
+// --- MODULE: RECEIPT CONFIG ---
+
+model ReceiptConfig {
+  id       String @id @default(uuid())
+  tenantId String @unique
+
+  // Business identity
+  businessName String @default("Mi Negocio")
+  headerLine1  String @default("")  // Subtitle or tagline
+  headerLine2  String @default("")  // Extra line (address, phone, etc.)
+  footerLine1  String @default("Gracias por tu visita!")
+  footerLine2  String @default("Las propinas se agradecen")
+
+  // Content toggles
+  showTable      Boolean @default(true)
+  showEmployee   Boolean @default(true)
+  showOrderType  Boolean @default(false)
+  showTicketName Boolean @default(true)
+  showDateTime   Boolean @default(true)
+
+  // Currency display
+  showUSD Boolean @default(true)
+  showVES Boolean @default(false)
+  showCOP Boolean @default(false)
+
+  // Paper
+  paperWidth Int @default(32) // columns: 32 for 58mm, 48 for 80mm
 
   updatedAt DateTime @updatedAt
 

@@ -20,6 +20,7 @@ import DailyGoals from "./features/staff/pages/DailyGoals";
 import TableManager from "./features/dining/pages/TableManager";
 import TableFlowSettings from "./features/dining/pages/TableFlowSettings";
 import KdsStations from "./features/dining/pages/KdsStations";
+import ReceiptSettings from "./features/dining/pages/ReceiptSettings";
 // @ts-ignore
 import AccountPage from "./features/account/pages/AccountPage";
 // @ts-ignore
@@ -80,6 +81,7 @@ function AppRoot() {
               <Route path="dining/tables" element={<TableManager />} />
               <Route path="dining/flow" element={<TableFlowSettings />} />
               <Route path="dining/kds-stations" element={<KdsStations />} />
+              <Route path="dining/receipts" element={<ReceiptSettings />} />
             </Route>
 
             {/* Standalone Apps (No Layout) */}

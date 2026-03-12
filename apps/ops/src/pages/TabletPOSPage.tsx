@@ -15,7 +15,8 @@ import {
     LayoutGrid, FileText, Menu, AlertTriangle, Clock, Target,
     Printer, Bluetooth, BluetoothOff
 } from 'lucide-react';
-import { usePrinter, ReceiptData } from '../hooks/usePrinter';
+import { usePrinter } from '../hooks/usePrinter';
+import type { ReceiptData } from '../hooks/usePrinter';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 const TH = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
@@ -439,7 +440,7 @@ export default function TabletPOSPage() {
                     }),
                 });
             }
-            // Save receipt data before clearing cart
+            // Save receipt data for manual printing
             const receiptData: ReceiptData = {
                 ticketName,
                 tableName,
@@ -451,11 +452,6 @@ export default function TabletPOSPage() {
             };
             setLastReceipt(receiptData);
 
-            // Auto-print if printer is connected
-            if (printerConnected) {
-                printReceipt(receiptData).catch(() => {});
-            }
-
             setPaySuccess(true);
             setTimeout(() => {
                 clearCart();
@@ -464,7 +460,7 @@ export default function TabletPOSPage() {
                 setLastReceipt(null);
                 setCashUSD(''); setCashCOP(''); setGiveBackUSD(0);
                 fetchTables();
-            }, 4000);
+            }, 3000);
         } catch {
             showToast('Error procesando el pago. Intenta de nuevo.');
         } finally { setPaying(false); }
@@ -538,9 +534,9 @@ export default function TabletPOSPage() {
                         </button>
                     )}
 
-                    {printerConnected && (
+                    {printerConnected && printing && (
                         <p className="text-[10px] mt-3" style={{ color: 'rgba(244,240,234,0.2)' }}>
-                            {printing ? 'Enviando a impresora...' : 'Cuenta enviada automaticamente'}
+                            Enviando a impresora...
                         </p>
                     )}
                 </div>
@@ -1523,6 +1519,29 @@ export default function TabletPOSPage() {
                                         className="p-2.5 rounded-xl" title="Anular"
                                         style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
                                         <Trash2 className="w-4 h-4" style={{ color: '#ef4444' }} />
+                                    </button>
+                                )}
+
+                                {/* Print receipt */}
+                                {printerConnected && (
+                                    <button
+                                        onClick={() => {
+                                            const receiptData: ReceiptData = {
+                                                ticketName,
+                                                tableName,
+                                                employeeName: employee?.name?.split(' ')[0] || 'Staff',
+                                                items: items.map(i => ({ name: i.name, quantity: i.quantity, price: i.price })),
+                                                total: cartTotal,
+                                                date: new Date(),
+                                            };
+                                            printReceipt(receiptData)
+                                                .then(() => showToast('Cuenta impresa', 'success'))
+                                                .catch(() => showToast('Error al imprimir'));
+                                        }}
+                                        disabled={printing}
+                                        className="p-2.5 rounded-xl" title="Imprimir Cuenta"
+                                        style={{ background: 'rgba(147,181,157,0.08)', border: '1px solid rgba(147,181,157,0.15)' }}>
+                                        <Printer className="w-4 h-4" style={{ color: '#93B59D' }} />
                                     </button>
                                 )}
 
