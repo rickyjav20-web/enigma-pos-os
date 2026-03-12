@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 const updateSchema = z.object({
     businessName: z.string().min(1).max(100).optional(),
+    logoUrl: z.string().max(500).optional(),
     headerLine1: z.string().max(200).optional(),
     headerLine2: z.string().max(200).optional(),
     footerLine1: z.string().max(200).optional(),
@@ -21,6 +22,7 @@ const updateSchema = z.object({
 
 const DEFAULTS = {
     businessName: 'Mi Negocio',
+    logoUrl: '',
     headerLine1: '',
     headerLine2: '',
     footerLine1: 'Gracias por tu visita!',

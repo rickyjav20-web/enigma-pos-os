@@ -20,6 +20,7 @@ declare module '@point-of-sale/receipt-printer-encoder' {
         newline(): this;
         rule(): this;
         table(columns: TableColumn[], rows: string[][]): this;
+        image(data: ImageData, width: number, height: number, algorithm?: string): this;
         cut(): this;
         encode(): Uint8Array;
     }

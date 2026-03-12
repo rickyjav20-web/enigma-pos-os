@@ -16,7 +16,7 @@ import {
     Printer, Bluetooth, BluetoothOff
 } from 'lucide-react';
 import { usePrinter } from '../hooks/usePrinter';
-import type { ReceiptData } from '../hooks/usePrinter';
+import type { ReceiptData, CurrencyRate } from '../hooks/usePrinter';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 const TH = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
@@ -165,7 +165,7 @@ export default function TabletPOSPage() {
     const [cashCOP, setCashCOP] = useState('');
     const [giveBackUSD, setGiveBackUSD] = useState(0);
     const [activeInput, setActiveInput] = useState<'usd' | 'cop' | null>(null);
-    const { getRate, formatLocal } = useCurrencies();
+    const { currencies: allCurrencies, getRate, formatLocal } = useCurrencies();
 
     // Split
     const [showSplit, setShowSplit] = useState(false);
@@ -441,6 +441,9 @@ export default function TabletPOSPage() {
                 });
             }
             // Save receipt data for manual printing
+            const printCurrencies: CurrencyRate[] = allCurrencies
+                .filter(c => !c.isBase)
+                .map(c => ({ code: c.code, symbol: c.symbol, exchangeRate: c.exchangeRate }));
             const receiptData: ReceiptData = {
                 ticketName,
                 tableName,
@@ -449,6 +452,7 @@ export default function TabletPOSPage() {
                 total: cartTotal,
                 paymentMethod: payMethod,
                 date: new Date(),
+                currencies: printCurrencies,
             };
             setLastReceipt(receiptData);
 
@@ -1526,6 +1530,9 @@ export default function TabletPOSPage() {
                                 {printerConnected && (
                                     <button
                                         onClick={() => {
+                                            const printCurrencies: CurrencyRate[] = allCurrencies
+                                                .filter(c => !c.isBase)
+                                                .map(c => ({ code: c.code, symbol: c.symbol, exchangeRate: c.exchangeRate }));
                                             const receiptData: ReceiptData = {
                                                 ticketName,
                                                 tableName,
@@ -1533,6 +1540,7 @@ export default function TabletPOSPage() {
                                                 items: items.map(i => ({ name: i.name, quantity: i.quantity, price: i.price })),
                                                 total: cartTotal,
                                                 date: new Date(),
+                                                currencies: printCurrencies,
                                             };
                                             printReceipt(receiptData)
                                                 .then(() => showToast('Cuenta impresa', 'success'))

@@ -740,6 +740,7 @@ model ReceiptConfig {
 
   // Business identity
   businessName String @default("Mi Negocio")
+  logoUrl      String @default("")  // URL to logo image for receipt header
   headerLine1  String @default("")  // Subtitle or tagline
   headerLine2  String @default("")  // Extra line (address, phone, etc.)
   footerLine1  String @default("Gracias por tu visita!")

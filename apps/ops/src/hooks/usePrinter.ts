@@ -2,16 +2,18 @@
  * usePrinter – Web Bluetooth thermal receipt printer hook
  * Uses @point-of-sale libraries for ESC/POS encoding + BLE communication
  * Fetches receipt config from API for customizable formatting.
+ * Supports multi-currency totals and logo printing.
  */
 import { useState, useCallback, useRef, useEffect } from 'react';
 import ReceiptPrinterEncoder from '@point-of-sale/receipt-printer-encoder';
 import WebBluetoothReceiptPrinter from '@point-of-sale/webbluetooth-receipt-printer';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
-const TH = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
+const TH: Record<string, string> = { 'x-tenant-id': 'enigma_hq', 'Content-Type': 'application/json' };
 
 export interface ReceiptConfig {
     businessName: string;
+    logoUrl: string;
     headerLine1: string;
     headerLine2: string;
     footerLine1: string;
@@ -27,6 +29,12 @@ export interface ReceiptConfig {
     paperWidth: number;
 }
 
+export interface CurrencyRate {
+    code: string;
+    symbol: string;
+    exchangeRate: number; // per 1 USD
+}
+
 export interface ReceiptData {
     ticketName: string;
     tableName?: string | null;
@@ -35,10 +43,12 @@ export interface ReceiptData {
     total: number;
     paymentMethod?: string;
     date?: Date;
+    currencies?: CurrencyRate[]; // live rates for multi-currency
 }
 
 const DEFAULT_CONFIG: ReceiptConfig = {
     businessName: 'Enigma Cafe',
+    logoUrl: '',
     headerLine1: '',
     headerLine2: '',
     footerLine1: 'Gracias por tu visita!',
@@ -56,6 +66,32 @@ const DEFAULT_CONFIG: ReceiptConfig = {
 
 const PRINTER_KEY = 'ops_bt_printer';
 const CONFIG_CACHE_KEY = 'ops_receipt_config';
+
+/** Load an image from URL and return as ImageData for the encoder */
+async function loadLogoImage(url: string, maxWidth: number): Promise<ImageData | null> {
+    try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject();
+            img.src = url;
+        });
+        // Scale to fit printer width (max ~384px for 58mm, ~576px for 80mm)
+        const printWidth = Math.min(img.width, maxWidth);
+        const scale = printWidth / img.width;
+        const w = Math.floor(img.width * scale);
+        const h = Math.floor(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, w, h);
+        return ctx.getImageData(0, 0, w, h);
+    } catch {
+        return null;
+    }
+}
 
 export function usePrinter() {
     const [connected, setConnected] = useState(false);
@@ -136,22 +172,24 @@ export function usePrinter() {
             const dateStr = now.toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' });
             const timeStr = now.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-            // Split business name for large display (first word big, rest normal)
+            let r = encoder.initialize();
+
+            // Logo
+            if (cfg.logoUrl) {
+                const maxPx = cols === 48 ? 576 : 384;
+                const logoData = await loadLogoImage(cfg.logoUrl, maxPx);
+                if (logoData) {
+                    r = r.align('center').image(logoData, logoData.width, logoData.height, 'threshold').newline();
+                }
+            }
+
+            // Business name
             const nameParts = cfg.businessName.split(' ');
             const nameTop = nameParts[0]?.toUpperCase() || '';
             const nameBottom = nameParts.slice(1).join(' ').toUpperCase();
 
-            // Build receipt
-            let r = encoder
-                .initialize()
-                .align('center')
-                .bold(true)
-                .size(2, 2)
-                .line(nameTop);
-
-            if (nameBottom) {
-                r = r.size(1, 1).line(nameBottom);
-            }
+            r = r.align('center').bold(true).size(2, 2).line(nameTop);
+            if (nameBottom) r = r.size(1, 1).line(nameBottom);
             r = r.bold(false).size(1, 1);
 
             if (cfg.headerLine1) r = r.line(cfg.headerLine1);
@@ -160,15 +198,9 @@ export function usePrinter() {
             r = r.newline().rule().align('left');
 
             // Order info
-            if (cfg.showTable && data.tableName) {
-                r = r.line(`Pedido: ${data.tableName}`);
-            }
-            if (cfg.showEmployee) {
-                r = r.line(`Empleado: ${data.employeeName}`);
-            }
-            if (cfg.showTicketName) {
-                r = r.line(`Ticket: ${data.ticketName}`);
-            }
+            if (cfg.showTable && data.tableName) r = r.line(`Pedido: ${data.tableName}`);
+            if (cfg.showEmployee) r = r.line(`Empleado: ${data.employeeName}`);
+            if (cfg.showTicketName) r = r.line(`Ticket: ${data.ticketName}`);
 
             r = r.rule().bold(true).line('CUENTA').bold(false).rule();
 
@@ -187,20 +219,50 @@ export function usePrinter() {
 
             r = r.rule();
 
-            // Total
+            // Totals
             const halfCol = Math.floor(cols / 2);
-            r = r
-                .bold(true)
-                .size(1, 2)
-                .table(
-                    [{ width: halfCol, align: 'left' }, { width: halfCol, align: 'right' }],
-                    [['TOTAL', `$${data.total.toFixed(2)}`]]
-                )
-                .size(1, 1)
-                .bold(false)
-                .newline();
+            const currencies = data.currencies || [];
 
-            // Payment method (only if provided — for pre-payment "cuenta" prints, skip it)
+            // USD total (always if showUSD)
+            if (cfg.showUSD) {
+                r = r
+                    .bold(true)
+                    .size(1, 2)
+                    .table(
+                        [{ width: halfCol, align: 'left' }, { width: halfCol, align: 'right' }],
+                        [['TOTAL', `$${data.total.toFixed(2)}`]]
+                    )
+                    .size(1, 1)
+                    .bold(false);
+            }
+
+            // VES total
+            if (cfg.showVES) {
+                const vesRate = currencies.find(c => c.code === 'VES');
+                if (vesRate) {
+                    const vesTotal = data.total * vesRate.exchangeRate;
+                    r = r.table(
+                        [{ width: halfCol, align: 'left' }, { width: halfCol, align: 'right' }],
+                        [[cfg.showUSD ? '' : 'TOTAL', `Bs.${vesTotal.toFixed(2)}`]]
+                    );
+                }
+            }
+
+            // COP total
+            if (cfg.showCOP) {
+                const copRate = currencies.find(c => c.code === 'COP');
+                if (copRate) {
+                    const copTotal = Math.round(data.total * copRate.exchangeRate);
+                    r = r.table(
+                        [{ width: halfCol, align: 'left' }, { width: halfCol, align: 'right' }],
+                        [['', `$${copTotal.toLocaleString('es-CO')} COP`]]
+                    );
+                }
+            }
+
+            r = r.newline();
+
+            // Payment method
             if (data.paymentMethod) {
                 const payLabel =
                     data.paymentMethod === 'cash' ? 'Efectivo' :
@@ -217,10 +279,7 @@ export function usePrinter() {
             r = r.rule().align('center');
             if (cfg.footerLine1) r = r.line(cfg.footerLine1);
             if (cfg.footerLine2) r = r.line(cfg.footerLine2);
-
-            if (cfg.showDateTime) {
-                r = r.newline().line(`${dateStr} ${timeStr}`);
-            }
+            if (cfg.showDateTime) r = r.newline().line(`${dateStr} ${timeStr}`);
 
             r = r.newline().newline().newline().cut();
 

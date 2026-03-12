@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import {
     Printer, Save, RotateCcw, Type, AlignLeft,
-    DollarSign, Ruler, Eye, CheckCircle2,
+    DollarSign, Ruler, Eye, CheckCircle2, ImageIcon,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 
 interface ReceiptConfig {
     businessName: string;
+    logoUrl: string;
     headerLine1: string;
     headerLine2: string;
     footerLine1: string;
@@ -33,6 +34,7 @@ interface ReceiptConfig {
 
 const DEFAULTS: ReceiptConfig = {
     businessName: 'Enigma Cafe',
+    logoUrl: '',
     headerLine1: '',
     headerLine2: '',
     footerLine1: 'Gracias por tu visita!',
@@ -128,7 +130,9 @@ export default function ReceiptSettings() {
     previewLines.push('Panini Capresa');
     previewLines.push('  1 x $5.50                $5.50');
     previewLines.push('─'.repeat(cols));
-    previewLines.push(`${'TOTAL'.padEnd(cols - 7)}$12.50`);
+    if (form.showUSD) previewLines.push(`${'TOTAL'.padEnd(cols - 7)}$12.50`);
+    if (form.showVES) previewLines.push(`${''.padEnd(cols - 11)}Bs.693.75`);
+    if (form.showCOP) previewLines.push(`${''.padEnd(cols - 13)}$52,500 COP`);
     previewLines.push('');
     previewLines.push('─'.repeat(cols));
     if (form.footerLine1) previewLines.push(pad(form.footerLine1));
@@ -193,6 +197,24 @@ export default function ReceiptSettings() {
                                     className="bg-zinc-800/50 border-zinc-700 text-zinc-200"
                                     placeholder="Enigma Cafe"
                                 />
+                            </div>
+                            <div>
+                                <label className="text-xs text-zinc-500 mb-1 block">Logo (URL de imagen)</label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={form.logoUrl}
+                                        onChange={e => updateField('logoUrl', e.target.value)}
+                                        className="bg-zinc-800/50 border-zinc-700 text-zinc-200 flex-1"
+                                        placeholder="https://ejemplo.com/logo.png"
+                                    />
+                                    {form.logoUrl && (
+                                        <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center overflow-hidden shrink-0">
+                                            <img src={form.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain"
+                                                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="text-[10px] text-zinc-600 mt-1">Imagen PNG o JPG. Se imprime en blanco y negro.</p>
                             </div>
                             <div>
                                 <label className="text-xs text-zinc-500 mb-1 block">Linea 1 (subtitulo)</label>
@@ -304,6 +326,13 @@ export default function ReceiptSettings() {
                             <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Vista previa</h2>
                         </div>
                         <div className="bg-white rounded-lg p-4 shadow-lg mx-auto" style={{ maxWidth: form.paperWidth === 48 ? '320px' : '240px' }}>
+                            {form.logoUrl && (
+                                <div className="flex justify-center mb-2">
+                                    <img src={form.logoUrl} alt="Logo" className="max-h-16 object-contain"
+                                        style={{ filter: 'grayscale(100%) contrast(150%)' }}
+                                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                </div>
+                            )}
                             <pre className="font-mono text-[10px] leading-relaxed text-black whitespace-pre-wrap break-all">
                                 {previewLines.join('\n')}
                             </pre>
