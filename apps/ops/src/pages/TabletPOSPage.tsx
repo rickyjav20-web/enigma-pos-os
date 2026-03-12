@@ -434,14 +434,14 @@ export default function TabletPOSPage() {
                     body: JSON.stringify({
                         status: 'completed', paymentMethod: apiMethod,
                         totalAmount: cartTotal, tableId: tableId || undefined,
-                        items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price })),
+                        items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price, ...(i.notes && { notes: i.notes }) })),
                     }),
                 });
             } else {
                 await fetch(`${API_URL}/sales`, {
                     method: 'POST', headers: TH,
                     body: JSON.stringify({
-                        items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price })),
+                        items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price, ...(i.notes && { notes: i.notes }) })),
                         paymentMethod: apiMethod,
                         employeeId: employee?.id || undefined,
                         tableId: tableId || undefined,
@@ -501,6 +501,7 @@ export default function TabletPOSPage() {
                 name: i.productNameSnapshot,
                 price: i.unitPrice,
                 quantity: i.quantity,
+                notes: i.notes || undefined,
             }));
             loadTicket({
                 id: data.original.id,
