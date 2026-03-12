@@ -1,6 +1,6 @@
 /**
  * ReceiptSettings — HQ Back Office
- * Configure receipt printing: business name, header/footer, currency display, paper width.
+ * Configure receipt printing: business name, logo, header/footer, currency display, paper width.
  * Changes are applied to all POS devices on next print.
  */
 import { useState, useEffect } from 'react';
