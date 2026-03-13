@@ -429,12 +429,13 @@ export default function TabletPOSPage() {
                 ? 'transfer' : payMethod === 'card' ? 'card' : 'cash';
 
             if (ticketId) {
+                // Don't re-send items when completing — they're already saved in DB.
+                // Re-sending would trigger item ID regeneration and confuse KDS done-state.
                 await fetch(`${API_URL}/sales/${ticketId}`, {
                     method: 'PUT', headers: TH,
                     body: JSON.stringify({
                         status: 'completed', paymentMethod: apiMethod,
                         totalAmount: cartTotal, tableId: tableId || undefined,
-                        items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price, ...(i.notes && { notes: i.notes }) })),
                     }),
                 });
             } else {

@@ -253,19 +253,21 @@ function TableCard({ table, onClick }: {
 }
 
 // ─── Table Detail Drawer ─────────────────────────────────────────────────────
-function TableDrawer({ table, onClose, onNavigate, onCheck, onFree, fetchDetail }: {
+function TableDrawer({ table, onClose, onNavigate, onCheck, onFree, fetchDetail, onGuestCountChange }: {
     table: DiningTable;
     onClose: () => void;
     onNavigate: () => void;
     onCheck: () => void;
     onFree: () => void;
     fetchDetail: (id: string) => Promise<TableDetail | null>;
+    onGuestCountChange: (tableId: string, ticketId: string, count: number | null) => void;
 }) {
     const cfg = STATUS_CONFIG[table.status];
     const [detail, setDetail] = useState<TableDetail | null>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [confirmFree, setConfirmFree] = useState(false);
     const [freeing, setFreeing] = useState(false);
+    const [localGuestCount, setLocalGuestCount] = useState<number | null>(table.guestCount || null);
 
     useEffect(() => {
         if (table.isOccupied) {
@@ -340,6 +342,46 @@ function TableDrawer({ table, onClose, onNavigate, onCheck, onFree, fetchDetail 
                                     <span>{timeElapsed(table.currentTicket.createdAt)}</span>
                                 </div>
                             </div>
+
+                            {/* Guest count editor */}
+                            <div className="flex items-center justify-between py-2 mb-2 border-b border-white/[0.05]">
+                                <div className="flex items-center gap-2">
+                                    <Users className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.3)' }} />
+                                    <span className="text-xs" style={{ color: 'rgba(244,240,234,0.5)' }}>Personas</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => {
+                                            const next = Math.max(0, (localGuestCount || 1) - 1);
+                                            const val = next === 0 ? null : next;
+                                            setLocalGuestCount(val);
+                                            onGuestCountChange(table.id, table.currentTicket!.id, val);
+                                        }}
+                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-colors"
+                                        style={{ background: 'rgba(244,240,234,0.06)', color: 'rgba(244,240,234,0.5)' }}
+                                    >-</button>
+                                    <span className="text-sm w-6 text-center font-bold tabular-nums"
+                                        style={{ color: localGuestCount ? '#93B59D' : 'rgba(244,240,234,0.2)' }}>
+                                        {localGuestCount || '—'}
+                                    </span>
+                                    <button
+                                        onClick={() => {
+                                            const next = (localGuestCount || 0) + 1;
+                                            setLocalGuestCount(next);
+                                            onGuestCountChange(table.id, table.currentTicket!.id, next);
+                                        }}
+                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-colors"
+                                        style={{ background: 'rgba(147,181,157,0.1)', color: '#93B59D' }}
+                                    >+</button>
+                                </div>
+                            </div>
+
+                            {/* Per-person average */}
+                            {localGuestCount && localGuestCount > 0 && (
+                                <div className="text-[11px] font-mono mb-2" style={{ color: 'rgba(244,240,234,0.4)' }}>
+                                    ${(table.currentTicket.totalAmount / localGuestCount).toFixed(2)}/persona
+                                </div>
+                            )}
 
                             {/* Progress */}
                             {(table.itemsTotal ?? 0) > 0 && (
@@ -597,6 +639,7 @@ export default function TablesPage() {
                     name: order.ticketName || order.tableName || `Ticket #${order.id.slice(-4)}`,
                     tableId: table.id,
                     tableName: table.name,
+                    guestCount: order.guestCount || null,
                     items: (order.items || []).map((i: any) => ({
                         productId: i.productId,
                         name: i.productNameSnapshot,
@@ -638,6 +681,17 @@ export default function TablesPage() {
             alert('Error al liberar la mesa');
         }
     };
+
+    const handleGuestCountChange = useCallback(async (_tableId: string, ticketId: string, count: number | null) => {
+        try {
+            await fetch(`${API_URL}/sales/${ticketId}`, {
+                method: 'PUT', headers: TH,
+                body: JSON.stringify({ guestCount: count }),
+            });
+        } catch {
+            // Silent — optimistic update in drawer UI
+        }
+    }, []);
 
     // Build zone list
     const zones = ['Todas', ...Array.from(new Set(tables.map(t => t.zone || 'General')))];
@@ -843,6 +897,7 @@ export default function TablesPage() {
                     onCheck={() => handleTableCheck(selectedTable)}
                     onFree={() => handleFreeTable(selectedTable)}
                     fetchDetail={fetchTableDetail}
+                    onGuestCountChange={handleGuestCountChange}
                 />
             )}
 

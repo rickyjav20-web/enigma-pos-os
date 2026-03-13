@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { RefreshCw, Plus, Clock, LayoutGrid, ChevronRight, Users } from 'lucide-react';
 import api from '../lib/api';
 import { useCartStore } from '../stores/cartStore';
+import { Toast } from '../components/ui';
 
 interface CurrentTicket {
     id: string;
@@ -19,6 +20,7 @@ interface DiningTable {
     capacity: number | null;
     isOccupied: boolean;
     currentTicket: CurrentTicket | null;
+    guestCount?: number | null;
 }
 
 function timeElapsed(dateStr: string): string {
@@ -45,6 +47,7 @@ export default function FloorPage() {
     const { setTable, clearCart, loadTicket } = useCartStore();
     const [activeZone, setActiveZone] = useState('Todas');
     const [loadingTableId, setLoadingTableId] = useState<string | null>(null);
+    const [toastMsg, setToastMsg] = useState<string | null>(null);
 
     const { data: tables = [], isLoading, refetch, isRefetching } = useQuery({
         queryKey: ['floor-tables'],
@@ -94,6 +97,7 @@ export default function FloorPage() {
                         name: ticket.tableName || ticket.ticketName || table.name,
                         tableId: ticket.tableId || table.id,
                         tableName: ticket.tableName || table.name,
+                        guestCount: ticket.guestCount || null,
                         items: ticket.items.map((i: any) => ({
                             productId: i.productId,
                             name: i.productNameSnapshot,
@@ -104,7 +108,7 @@ export default function FloorPage() {
                     navigate('/sale');
                 }
             } catch {
-                alert('Error cargando el ticket');
+                setToastMsg('Error cargando el ticket');
             } finally {
                 setLoadingTableId(null);
             }
@@ -258,16 +262,21 @@ export default function FloorPage() {
                                                     {table.name}
                                                 </p>
 
-                                                {table.capacity && (
-                                                    <div className="flex items-center gap-1 mb-2">
-                                                        <Users className="w-3 h-3"
-                                                            style={{ color: 'rgba(244,240,234,0.2)' }} />
+                                                <div className="flex items-center gap-1 mb-2">
+                                                    <Users className="w-3 h-3"
+                                                        style={{ color: table.guestCount ? 'rgba(147,181,157,0.6)' : 'rgba(244,240,234,0.2)' }} />
+                                                    {table.guestCount ? (
+                                                        <span className="text-[10px] font-semibold"
+                                                            style={{ color: '#93B59D' }}>
+                                                            {table.guestCount} persona{table.guestCount > 1 ? 's' : ''}
+                                                        </span>
+                                                    ) : table.capacity ? (
                                                         <span className="text-[10px]"
                                                             style={{ color: 'rgba(244,240,234,0.2)' }}>
-                                                            {table.capacity}
+                                                            {table.capacity} pax
                                                         </span>
-                                                    </div>
-                                                )}
+                                                    ) : null}
+                                                </div>
 
                                                 {table.isOccupied && table.currentTicket ? (
                                                     <>
@@ -322,6 +331,8 @@ export default function FloorPage() {
                     })
                 )}
             </main>
+
+            {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg(null)} />}
 
             {/* ── Bottom Action Bar ── */}
             <div className="fixed bottom-0 left-0 right-0 z-30 p-4 safe-bottom">

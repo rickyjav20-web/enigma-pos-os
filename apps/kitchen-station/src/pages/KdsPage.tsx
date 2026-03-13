@@ -537,6 +537,26 @@ function KdsDisplay({
         }
     }, [user, doneItemIds, doneOrderIds, setDoneOrderIds, setDoneItemIds, setMarkingOrder]);
 
+    // ── Re-activate "done" orders that received new items ─────────────────
+    // If an order was marked ORDER_DONE but now has items not in doneItemIds,
+    // it means the POS added new items — re-activate it so kitchen sees them.
+    useEffect(() => {
+        const reactivated: string[] = [];
+        for (const order of orders) {
+            if (order.status !== 'open' || !doneOrderIds.has(order.id)) continue;
+            const hasNewItems = order.items.some(i => !doneItemIds.has(i.id));
+            if (hasNewItems) reactivated.push(order.id);
+        }
+        if (reactivated.length > 0) {
+            setDoneOrderIds(prev => {
+                const next = new Set(prev);
+                reactivated.forEach(id => next.delete(id));
+                return next;
+            });
+            if (soundEnabled && !initialLoadRef.current) playNotificationSound();
+        }
+    }, [orders, doneOrderIds, doneItemIds, soundEnabled, setDoneOrderIds, initialLoadRef]);
+
     // ── Derived state ────────────────────────────────────────────────────────
     const allActiveOrders = orders.filter(o => o.status === 'open' && !doneOrderIds.has(o.id));
     const doneOrders = orders.filter(o => doneOrderIds.has(o.id) || o.status === 'completed');

@@ -437,13 +437,12 @@ export default async function salesRoutes(fastify: FastifyInstance) {
         if (body.employeeId !== undefined) updateData.employeeId = body.employeeId;
         if (body.guestCount !== undefined) updateData.guestCount = body.guestCount || null;
 
-        // Replace items if provided — use DB prices to prevent manipulation
+        // Smart-diff items — preserve existing item IDs so KDS done-state survives
         if (body.items && Array.isArray(body.items) && body.items.length > 0) {
-            const itemsWithNames = await Promise.all(body.items.map(async (item: any) => {
+            const incomingItems = await Promise.all(body.items.map(async (item: any) => {
                 const product = await prisma.product.findUnique({ where: { id: item.productId } });
                 const verifiedPrice = product?.price ?? item.price;
                 return {
-                    salesOrderId: id,
                     productId: item.productId,
                     quantity: item.quantity,
                     unitPrice: verifiedPrice,
@@ -453,10 +452,61 @@ export default async function salesRoutes(fastify: FastifyInstance) {
                     notes: item.notes || null,
                 };
             }));
+
+            // Build a map of existing items keyed by productId+notes for matching
+            const existingMap = new Map<string, typeof existing.items[number][]>();
+            for (const ei of existing.items) {
+                const key = `${ei.productId}::${ei.notes || ''}`;
+                if (!existingMap.has(key)) existingMap.set(key, []);
+                existingMap.get(key)!.push(ei);
+            }
+
+            const keepIds = new Set<string>();    // existing item IDs to keep (update)
+            const toCreate: typeof incomingItems = []; // genuinely new items
+
+            for (const inc of incomingItems) {
+                const key = `${inc.productId}::${inc.notes || ''}`;
+                const candidates = existingMap.get(key);
+                if (candidates && candidates.length > 0) {
+                    // Match found — update existing item (preserve its ID)
+                    const match = candidates.shift()!;
+                    keepIds.add(match.id);
+                    if (match.quantity !== inc.quantity || match.unitPrice !== inc.unitPrice) {
+                        await prisma.salesItem.update({
+                            where: { id: match.id },
+                            data: {
+                                quantity: inc.quantity,
+                                unitPrice: inc.unitPrice,
+                                totalPrice: inc.totalPrice,
+                                kdsStation: inc.kdsStation,
+                            },
+                        });
+                    }
+                } else {
+                    // No match — new item
+                    toCreate.push(inc);
+                }
+            }
+
+            // Delete items that were removed from the ticket
+            const toDeleteIds = existing.items
+                .filter(ei => !keepIds.has(ei.id))
+                .map(ei => ei.id);
+            if (toDeleteIds.length > 0) {
+                await prisma.salesItem.deleteMany({
+                    where: { id: { in: toDeleteIds } },
+                });
+            }
+
+            // Create genuinely new items
+            if (toCreate.length > 0) {
+                await prisma.salesItem.createMany({
+                    data: toCreate.map(item => ({ salesOrderId: id, ...item })),
+                });
+            }
+
             // Recalculate total from verified prices
-            updateData.totalAmount = itemsWithNames.reduce((s, i) => s + i.totalPrice, 0);
-            await prisma.salesItem.deleteMany({ where: { salesOrderId: id } });
-            await prisma.salesItem.createMany({ data: itemsWithNames });
+            updateData.totalAmount = incomingItems.reduce((s, i) => s + i.totalPrice, 0);
         }
 
         const updated = await prisma.salesOrder.update({

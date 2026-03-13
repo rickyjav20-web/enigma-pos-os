@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Loader2, DollarSign, Smartphone, Building2, Wallet, C
 import { useCartStore } from '../stores/cartStore';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
+import { Toast } from '../components/ui';
 
 type PayMethod = 'cash' | 'bolivares' | 'zelle' | 'binance' | 'bancolombia' | 'card';
 
@@ -23,6 +24,7 @@ export default function PaymentPage() {
     const [method, setMethod] = useState<PayMethod>('cash');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [toastMsg, setToastMsg] = useState<string | null>(null);
 
     const cartTotal = total();
 
@@ -34,13 +36,14 @@ export default function PaymentPage() {
                 ? 'transfer' : method === 'card' ? 'card' : 'cash';
 
             if (ticketId) {
-                // Complete an existing open ticket via PUT
+                // Complete an existing open ticket — don't re-send items,
+                // they're already saved in DB. Re-sending would regenerate item IDs
+                // and confuse KDS done-state tracking.
                 await api.put(`/sales/${ticketId}`, {
                     status: 'completed',
                     paymentMethod: apiMethod,
                     totalAmount: cartTotal,
                     tableId: tableId || undefined,
-                    items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price, notes: i.notes || undefined })),
                 });
             } else {
                 // New sale via POST
@@ -59,7 +62,7 @@ export default function PaymentPage() {
             setTimeout(() => { clearCart(); navigate('/'); }, 1500);
         } catch (err) {
             console.error('[POS] Payment error:', err);
-            alert('Error procesando el pago. Intenta de nuevo.');
+            setToastMsg('Error procesando el pago. Intenta de nuevo.');
         } finally {
             setLoading(false);
         }
@@ -169,6 +172,8 @@ export default function PaymentPage() {
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Confirmar ${cartTotal.toFixed(2)}</>}
                 </button>
             </div>
+
+            {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg(null)} />}
         </div>
     );
 }

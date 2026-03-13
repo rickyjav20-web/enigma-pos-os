@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Search, X, Menu, ChevronDown, MoreVertical,
@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import { useCartStore } from '../stores/cartStore';
 import { useAuth } from '../context/AuthContext';
+import { Toast, ConfirmModal } from '../components/ui';
 
 interface Product {
     id: string;
@@ -63,6 +64,7 @@ export default function SaleScreen() {
         ticketName, setTicketName,
         total, itemCount, clearCart,
         tableId, tableName, ticketId, loadTicket,
+        guestCount, setGuestCount,
     } = useCartStore();
 
     const [search, setSearch] = useState('');
@@ -83,6 +85,11 @@ export default function SaleScreen() {
     const [splitQtys, setSplitQtys] = useState<Record<string, number>>({});
     const [splitting, setSplitting] = useState(false);
     const queryClient = useQueryClient();
+
+    // Toast & confirm modal state (replaces alert/window.confirm)
+    const [toastMsg, setToastMsg] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
+    const showToast = useCallback((message: string, type: 'error' | 'success' | 'info' = 'error') => setToastMsg({ message, type }), []);
+    const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; confirmLabel?: string; onConfirm: () => void } | null>(null);
 
     const getDefaultTicketName = () => {
         const now = new Date();
@@ -188,6 +195,7 @@ export default function SaleScreen() {
                     items: itemsPayload,
                     ...(resolvedName && { ticketName: resolvedName }),
                     ...(opts?.notes !== undefined && { notes: opts.notes }),
+                    ...(guestCount && { guestCount }),
                 });
             } else {
                 await api.post('/sales', {
@@ -200,6 +208,7 @@ export default function SaleScreen() {
                     tableName: saveTableName || undefined,
                     ticketName: resolvedName,
                     notes: opts?.notes || undefined,
+                    ...(guestCount && { guestCount }),
                 });
             }
             setShowTableSelector(false);
@@ -209,26 +218,35 @@ export default function SaleScreen() {
             queryClient.invalidateQueries({ queryKey: ['open-tickets'] });
         } catch (e) {
             console.error('Save error:', e);
-            alert('Error guardando el ticket');
+            showToast('Error guardando el ticket');
         } finally {
             setSaving(false);
         }
     };
 
-    const handleVoid = async () => {
-        if (!window.confirm('¿Anular este ticket? Esta acción no se puede deshacer.')) return;
-        if (ticketId) {
-            try {
-                await api.delete(`/sales/${ticketId}`);
-            } catch (e) {
-                console.error('Void error:', e);
-                alert('Error anulando el ticket');
-                return;
-            }
-        }
-        clearCart();
-        setShowTicketDetail(false);
-        setShowTicketMenu(false);
+    const handleVoid = () => {
+        setConfirmModal({
+            title: 'Anular Ticket',
+            message: ticketId
+                ? 'Esta acción no se puede deshacer. El ticket será eliminado.'
+                : 'Los items no guardados se perderán.',
+            confirmLabel: 'Anular',
+            onConfirm: async () => {
+                setConfirmModal(null);
+                if (ticketId) {
+                    try {
+                        await api.delete(`/sales/${ticketId}`);
+                    } catch (e) {
+                        console.error('Void error:', e);
+                        showToast('Error anulando el ticket');
+                        return;
+                    }
+                }
+                clearCart();
+                setShowTicketDetail(false);
+                setShowTicketMenu(false);
+            },
+        });
     };
 
     const handleSync = async () => {
@@ -252,7 +270,7 @@ export default function SaleScreen() {
             });
         } catch (e) {
             console.error('Sync error:', e);
-            alert('Error sincronizando el ticket');
+            showToast('Error sincronizando el ticket');
         }
         setShowTicketMenu(false);
     };
@@ -293,11 +311,20 @@ export default function SaleScreen() {
                     )}
                 </button>
 
-                {/* Add customer / future */}
-                <button className="w-9 h-9 rounded-lg flex items-center justify-center press"
-                    style={{ background: 'rgba(244,240,234,0.04)' }}>
-                    <Users className="w-4 h-4" style={{ color: 'rgba(244,240,234,0.4)' }} />
-                </button>
+                {/* Guest count */}
+                <div className="flex items-center gap-0.5 shrink-0">
+                    <Users className="w-3.5 h-3.5 mr-0.5" style={{ color: guestCount ? '#93B59D' : 'rgba(244,240,234,0.25)' }} />
+                    <button onClick={() => setGuestCount(Math.max(0, (guestCount || 1) - 1) || null)}
+                        className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold press"
+                        style={{ background: 'rgba(244,240,234,0.06)', color: 'rgba(244,240,234,0.4)' }}>-</button>
+                    <span className="text-[11px] w-4 text-center font-bold tabular-nums"
+                        style={{ color: guestCount ? '#93B59D' : 'rgba(244,240,234,0.2)' }}>
+                        {guestCount || '—'}
+                    </span>
+                    <button onClick={() => setGuestCount((guestCount || 0) + 1)}
+                        className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold press"
+                        style={{ background: 'rgba(147,181,157,0.1)', color: '#93B59D' }}>+</button>
+                </div>
 
                 {/* Ticket actions (⋮) */}
                 <button
@@ -946,6 +973,18 @@ export default function SaleScreen() {
                     )}
                 </div>
             )}
+            {/* ═══ Toast & Confirm Modal ═══ */}
+            {toastMsg && <Toast message={toastMsg.message} type={toastMsg.type} onClose={() => setToastMsg(null)} />}
+            {confirmModal && (
+                <ConfirmModal
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    confirmLabel={confirmModal.confirmLabel}
+                    onConfirm={confirmModal.onConfirm}
+                    onCancel={() => setConfirmModal(null)}
+                />
+            )}
+
             {/* ═══ Split Ticket View ═══ */}
             {showSplitView && (() => {
                 const splitItems = items.map(item => {
@@ -995,7 +1034,7 @@ export default function SaleScreen() {
                         setSplitQtys({});
                     } catch (e) {
                         console.error('Split error:', e);
-                        alert('Error al dividir el ticket');
+                        showToast('Error al dividir el ticket');
                     } finally {
                         setSplitting(false);
                     }
