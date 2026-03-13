@@ -130,7 +130,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'error' | 's
 export default function TabletPOSPage() {
     const { session, employee } = useAuth();
     const {
-        items, addItem, removeItem, updateQuantity, updateItemNotes,
+        items, addItem, removeItem, updateItemNotes,
         ticketName, setTicketName,
         total, itemCount, clearCart,
         tableId, tableName, ticketId, loadTicket,

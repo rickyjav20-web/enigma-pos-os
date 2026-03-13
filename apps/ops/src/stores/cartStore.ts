@@ -31,7 +31,7 @@ interface CartStore {
     setGuestCount: (count: number | null) => void;
     total: () => number;
     itemCount: () => number;
-    loadTicket: (ticket: { id: string; name: string; items: CartItem[]; tableId?: string; tableName?: string; guestCount?: number | null }) => void;
+    loadTicket: (ticket: { id: string; name: string; items: Omit<CartItem, 'lineId'>[]; tableId?: string; tableName?: string; guestCount?: number | null }) => void;
 }
 
 export const useCartStore = create<CartStore>((set, get) => ({
@@ -105,7 +105,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
             for (let n = 0; n < qty; n++) {
                 expanded.push({
                     ...item,
-                    lineId: item.lineId || genLineId(),
+                    lineId: genLineId(),
                     quantity: 1,
                 });
             }
