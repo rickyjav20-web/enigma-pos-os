@@ -374,4 +374,171 @@ export default async function tablesRoutes(fastify: FastifyInstance) {
 
         return reply.send({ success: true, count: created.length, data: created });
     });
+
+    // ── POST /tables/:sourceId/move-to/:targetId ─────────────────────────
+    // Move all open tickets from source table to target table.
+    // Preserves SalesItem IDs so KDS done-state survives.
+    // Items already marked done in KDS stay done — only table name changes.
+    fastify.post('/tables/:sourceId/move-to/:targetId', async (request, reply) => {
+        const tenantId = request.tenantId || 'enigma_hq';
+        const { sourceId, targetId } = request.params as { sourceId: string; targetId: string };
+
+        if (sourceId === targetId) {
+            return reply.status(400).send({ error: 'Source and target table must be different' });
+        }
+
+        const [source, target] = await Promise.all([
+            prisma.diningTable.findFirst({ where: { id: sourceId, tenantId } }),
+            prisma.diningTable.findFirst({ where: { id: targetId, tenantId } }),
+        ]);
+
+        if (!source) return reply.status(404).send({ error: 'Source table not found' });
+        if (!target) return reply.status(404).send({ error: 'Target table not found' });
+
+        // Move all open tickets from source → target
+        const updated = await prisma.salesOrder.updateMany({
+            where: { tenantId, tableId: sourceId, status: 'open' },
+            data: { tableId: targetId, tableName: target.name },
+        });
+
+        // Audit
+        if (updated.count > 0) {
+            await prisma.auditLog.create({
+                data: {
+                    tenantId,
+                    action: 'TABLE_MOVE',
+                    entityType: 'DiningTable',
+                    entityId: sourceId,
+                    metadata: {
+                        sourceTable: source.name,
+                        targetTable: target.name,
+                        targetTableId: targetId,
+                        ticketsMoved: updated.count,
+                    },
+                },
+            });
+        }
+
+        return reply.send({
+            success: true,
+            ticketsMoved: updated.count,
+            from: { id: source.id, name: source.name },
+            to: { id: target.id, name: target.name },
+        });
+    });
+
+    // ── POST /tables/:sourceId/merge-into/:targetId ──────────────────────
+    // Merge source table's open tickets INTO the target table's ticket.
+    // If target has one open ticket, all items from source tickets are moved into it.
+    // If target has no open tickets, source tickets are simply moved (like move-to).
+    // KDS: existing item IDs are preserved. Items already done stay done.
+    // Items not yet done will now show under the target table's name in KDS.
+    fastify.post('/tables/:sourceId/merge-into/:targetId', async (request, reply) => {
+        const tenantId = request.tenantId || 'enigma_hq';
+        const { sourceId, targetId } = request.params as { sourceId: string; targetId: string };
+
+        if (sourceId === targetId) {
+            return reply.status(400).send({ error: 'Source and target must be different' });
+        }
+
+        const [source, target] = await Promise.all([
+            prisma.diningTable.findFirst({ where: { id: sourceId, tenantId } }),
+            prisma.diningTable.findFirst({ where: { id: targetId, tenantId } }),
+        ]);
+
+        if (!source) return reply.status(404).send({ error: 'Source table not found' });
+        if (!target) return reply.status(404).send({ error: 'Target table not found' });
+
+        const sourceTickets = await prisma.salesOrder.findMany({
+            where: { tenantId, tableId: sourceId, status: 'open' },
+            include: { items: true },
+        });
+
+        if (sourceTickets.length === 0) {
+            return reply.status(400).send({ error: 'Source table has no open tickets' });
+        }
+
+        const targetTickets = await prisma.salesOrder.findMany({
+            where: { tenantId, tableId: targetId, status: 'open' },
+            include: { items: true },
+            orderBy: { createdAt: 'asc' },
+        });
+
+        let mergedIntoTicketId: string;
+        let itemsMoved = 0;
+
+        if (targetTickets.length > 0) {
+            // Target has tickets — merge items into the first (oldest) one
+            const targetTicket = targetTickets[0];
+            mergedIntoTicketId = targetTicket.id;
+
+            // Move all source items into target ticket (preserving their IDs for KDS)
+            for (const srcTicket of sourceTickets) {
+                await prisma.salesItem.updateMany({
+                    where: { salesOrderId: srcTicket.id },
+                    data: { salesOrderId: targetTicket.id },
+                });
+                itemsMoved += srcTicket.items.length;
+            }
+
+            // Combine guest counts
+            const sourceGuests = sourceTickets.reduce((s, t) => s + (t.guestCount || 0), 0);
+            const targetGuests = targetTicket.guestCount || 0;
+
+            // Recalculate total
+            const allItems = await prisma.salesItem.findMany({
+                where: { salesOrderId: targetTicket.id },
+                select: { totalPrice: true },
+            });
+            const newTotal = allItems.reduce((s, i) => s + i.totalPrice, 0);
+
+            await prisma.salesOrder.update({
+                where: { id: targetTicket.id },
+                data: {
+                    totalAmount: newTotal,
+                    guestCount: sourceGuests + targetGuests > 0 ? sourceGuests + targetGuests : null,
+                },
+            });
+
+            // Delete now-empty source tickets
+            for (const srcTicket of sourceTickets) {
+                await prisma.salesOrder.delete({ where: { id: srcTicket.id } });
+            }
+        } else {
+            // Target has no tickets — just move source tickets to target table
+            await prisma.salesOrder.updateMany({
+                where: { tenantId, tableId: sourceId, status: 'open' },
+                data: { tableId: targetId, tableName: target.name },
+            });
+            mergedIntoTicketId = sourceTickets[0].id;
+            itemsMoved = sourceTickets.reduce((s, t) => s + t.items.length, 0);
+        }
+
+        // Audit
+        await prisma.auditLog.create({
+            data: {
+                tenantId,
+                action: 'TABLE_MERGE',
+                entityType: 'DiningTable',
+                entityId: sourceId,
+                metadata: {
+                    sourceTable: source.name,
+                    targetTable: target.name,
+                    targetTableId: targetId,
+                    mergedIntoTicketId,
+                    sourceTicketCount: sourceTickets.length,
+                    itemsMoved,
+                },
+            },
+        });
+
+        return reply.send({
+            success: true,
+            mergedIntoTicketId,
+            itemsMoved,
+            sourceTicketsRemoved: targetTickets.length > 0 ? sourceTickets.length : 0,
+            from: { id: source.id, name: source.name },
+            to: { id: target.id, name: target.name },
+        });
+    });
 }

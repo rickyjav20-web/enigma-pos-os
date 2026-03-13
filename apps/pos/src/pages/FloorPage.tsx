@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { RefreshCw, Plus, Clock, LayoutGrid, ChevronRight, Users } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { RefreshCw, Plus, Clock, LayoutGrid, ChevronRight, Users, ArrowRightLeft, Merge } from 'lucide-react';
 import api from '../lib/api';
 import { useCartStore } from '../stores/cartStore';
-import { Toast } from '../components/ui';
+import { Toast, ConfirmModal } from '../components/ui';
 
 interface CurrentTicket {
     id: string;
@@ -44,10 +44,18 @@ function urgencyRgb(color: string): string {
 
 export default function FloorPage() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { setTable, clearCart, loadTicket } = useCartStore();
     const [activeZone, setActiveZone] = useState('Todas');
     const [loadingTableId, setLoadingTableId] = useState<string | null>(null);
     const [toastMsg, setToastMsg] = useState<string | null>(null);
+    const [toastType, setToastType] = useState<'error' | 'success' | 'info'>('error');
+
+    // Move/Merge state
+    const [actionMode, setActionMode] = useState<'move' | 'merge' | null>(null);
+    const [sourceTable, setSourceTable] = useState<DiningTable | null>(null);
+    const [confirmTarget, setConfirmTarget] = useState<DiningTable | null>(null);
+    const [actionLoading, setActionLoading] = useState(false);
 
     const { data: tables = [], isLoading, refetch, isRefetching } = useQuery({
         queryKey: ['floor-tables'],
@@ -122,6 +130,59 @@ export default function FloorPage() {
     const handleNewSale = () => {
         clearCart();
         navigate('/sale');
+    };
+
+    const showToast = (msg: string, type: 'error' | 'success' | 'info' = 'error') => {
+        setToastType(type);
+        setToastMsg(msg);
+    };
+
+    const startAction = (mode: 'move' | 'merge', table: DiningTable) => {
+        setActionMode(mode);
+        setSourceTable(table);
+    };
+
+    const cancelAction = () => {
+        setActionMode(null);
+        setSourceTable(null);
+        setConfirmTarget(null);
+    };
+
+    const handleTargetSelect = (target: DiningTable) => {
+        if (target.id === sourceTable?.id) return;
+        setConfirmTarget(target);
+    };
+
+    const executeAction = async () => {
+        if (!sourceTable || !confirmTarget || !actionMode) return;
+        setActionLoading(true);
+        try {
+            const endpoint = actionMode === 'move'
+                ? `/tables/${sourceTable.id}/move-to/${confirmTarget.id}`
+                : `/tables/${sourceTable.id}/merge-into/${confirmTarget.id}`;
+            await api.post(endpoint);
+            showToast(
+                actionMode === 'move'
+                    ? `${sourceTable.name} → ${confirmTarget.name}`
+                    : `${sourceTable.name} + ${confirmTarget.name} combinadas`,
+                'success'
+            );
+            cancelAction();
+            refetch();
+            queryClient.invalidateQueries({ queryKey: ['open-ticket-count'] });
+        } catch {
+            showToast(`Error al ${actionMode === 'move' ? 'mover' : 'mezclar'} mesa`);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleTableAction = (table: DiningTable) => {
+        if (actionMode && sourceTable) {
+            handleTargetSelect(table);
+            return;
+        }
+        handleTableTap(table);
     };
 
     return (
@@ -235,20 +296,30 @@ export default function FloorPage() {
                                             ? urgencyColor(table.currentTicket.createdAt)
                                             : '#93B59D';
                                         const rgb = urgencyRgb(color);
+                                        const isSource = actionMode && sourceTable?.id === table.id;
+                                        const isPickingTarget = actionMode && sourceTable && sourceTable.id !== table.id;
 
                                         return (
                                             <button
                                                 key={table.id}
-                                                onClick={() => handleTableTap(table)}
-                                                disabled={busy}
+                                                onClick={() => handleTableAction(table)}
+                                                disabled={busy || !!isSource}
                                                 className="relative p-4 rounded-2xl text-left press transition-all"
                                                 style={{
-                                                    background: table.isOccupied
-                                                        ? `rgba(${rgb},0.07)`
-                                                        : 'rgba(244,240,234,0.03)',
-                                                    border: `1px solid ${table.isOccupied
-                                                        ? `rgba(${rgb},0.2)`
-                                                        : 'rgba(244,240,234,0.06)'}`,
+                                                    background: isSource
+                                                        ? 'rgba(59,130,246,0.15)'
+                                                        : isPickingTarget
+                                                            ? 'rgba(59,130,246,0.05)'
+                                                            : table.isOccupied
+                                                                ? `rgba(${rgb},0.07)`
+                                                                : 'rgba(244,240,234,0.03)',
+                                                    border: `1px solid ${isSource
+                                                        ? 'rgba(59,130,246,0.4)'
+                                                        : isPickingTarget
+                                                            ? 'rgba(59,130,246,0.15)'
+                                                            : table.isOccupied
+                                                                ? `rgba(${rgb},0.2)`
+                                                                : 'rgba(244,240,234,0.06)'}`,
                                                 }}
                                             >
                                                 {/* Live dot */}
@@ -300,8 +371,30 @@ export default function FloorPage() {
                                                                 }}>
                                                                 Abrir
                                                             </span>
-                                                            <ChevronRight className="w-3.5 h-3.5"
-                                                                style={{ color: `rgba(${rgb},0.5)` }} />
+                                                            <div className="flex items-center gap-1">
+                                                                {!actionMode && (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); startAction('move', table); }}
+                                                                            className="w-6 h-6 rounded-md flex items-center justify-center"
+                                                                            style={{ background: 'rgba(59,130,246,0.12)' }}
+                                                                            title="Mover mesa"
+                                                                        >
+                                                                            <ArrowRightLeft className="w-3 h-3" style={{ color: '#3b82f6' }} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); startAction('merge', table); }}
+                                                                            className="w-6 h-6 rounded-md flex items-center justify-center"
+                                                                            style={{ background: 'rgba(168,85,247,0.12)' }}
+                                                                            title="Mezclar mesa"
+                                                                        >
+                                                                            <Merge className="w-3 h-3" style={{ color: '#a855f7' }} />
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                                <ChevronRight className="w-3.5 h-3.5"
+                                                                    style={{ color: `rgba(${rgb},0.5)` }} />
+                                                            </div>
                                                         </div>
                                                     </>
                                                 ) : (
@@ -332,7 +425,45 @@ export default function FloorPage() {
                 )}
             </main>
 
-            {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg(null)} />}
+            {toastMsg && <Toast message={toastMsg} type={toastType} onClose={() => setToastMsg(null)} />}
+
+            {/* ── Action Mode Banner ── */}
+            {actionMode && sourceTable && (
+                <div className="fixed top-0 left-0 right-0 z-40 px-4 py-3 flex items-center justify-between"
+                    style={{
+                        background: actionMode === 'move' ? 'rgba(59,130,246,0.15)' : 'rgba(168,85,247,0.15)',
+                        borderBottom: `1px solid ${actionMode === 'move' ? 'rgba(59,130,246,0.3)' : 'rgba(168,85,247,0.3)'}`,
+                    }}>
+                    <div className="flex items-center gap-2">
+                        {actionMode === 'move'
+                            ? <ArrowRightLeft className="w-4 h-4" style={{ color: '#3b82f6' }} />
+                            : <Merge className="w-4 h-4" style={{ color: '#a855f7' }} />}
+                        <span className="text-sm font-semibold" style={{ color: '#F4F0EA' }}>
+                            {actionMode === 'move' ? 'Mover' : 'Mezclar'} {sourceTable.name} →
+                            <span style={{ color: 'rgba(244,240,234,0.5)' }}> Selecciona destino</span>
+                        </span>
+                    </div>
+                    <button onClick={cancelAction}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                        style={{ background: 'rgba(244,240,234,0.1)', color: 'rgba(244,240,234,0.6)' }}>
+                        Cancelar
+                    </button>
+                </div>
+            )}
+
+            {/* ── Confirm Move/Merge Modal ── */}
+            {confirmTarget && sourceTable && actionMode && (
+                <ConfirmModal
+                    title={actionMode === 'move' ? 'Mover Mesa' : 'Mezclar Mesas'}
+                    message={actionMode === 'move'
+                        ? `¿Mover tickets de ${sourceTable.name} a ${confirmTarget.name}? Los items ya enviados a cocina no se re-envían.`
+                        : `¿Combinar ${sourceTable.name} con ${confirmTarget.name}? Todos los items se unen en un solo ticket.`}
+                    confirmLabel={actionLoading ? 'Procesando...' : actionMode === 'move' ? 'Mover' : 'Mezclar'}
+                    confirmColor={actionMode === 'move' ? '#3b82f6' : '#a855f7'}
+                    onConfirm={executeAction}
+                    onCancel={() => setConfirmTarget(null)}
+                />
+            )}
 
             {/* ── Bottom Action Bar ── */}
             <div className="fixed bottom-0 left-0 right-0 z-30 p-4 safe-bottom">
