@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, AlertTriangle, DollarSign, Package, Users } from "lucide-react";
+import { Activity, AlertTriangle, DollarSign, Package, Users, UserCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import {
     ResponsiveContainer,
@@ -84,6 +84,15 @@ export default function DashboardPage() {
             tone: "text-amber-400",
         },
         {
+            title: "Covers Hoy",
+            value: `${summary?.guests?.totalCovers || 0}`,
+            hint: summary?.guests?.totalCovers > 0
+                ? `${formatMoney(summary?.guests?.revenuePerGuest || 0)}/persona · ~${summary?.guests?.avgPartySize || 0} por mesa`
+                : 'Sin datos de personas aún',
+            icon: UserCheck,
+            tone: "text-violet-400",
+        },
+        {
             title: "Alertas de Stock",
             value: `${inventory?.summary?.critical || 0}`,
             hint: `${inventory?.summary?.belowPar || 0} debajo de par`,
@@ -108,7 +117,7 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                 {cards.map((card) => {
                     const Icon = card.icon;
                     return (
