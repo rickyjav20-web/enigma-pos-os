@@ -155,9 +155,9 @@ export default function PaymentPage() {
                     <div className="rounded-xl p-3 space-y-1"
                         style={{ background: 'rgba(244,240,234,0.03)', border: '1px solid rgba(244,240,234,0.06)' }}>
                         {items.map(item => (
-                            <div key={item.productId} className="flex items-center justify-between text-[13px] py-1">
-                                <span className="truncate flex-1" style={{ color: 'rgba(244,240,234,0.45)' }}>{item.name} × {item.quantity}</span>
-                                <span className="font-mono ml-2 tabular-nums" style={{ color: 'rgba(244,240,234,0.6)' }}>${(item.price * item.quantity).toFixed(2)}</span>
+                            <div key={item.lineId} className="flex items-center justify-between text-[13px] py-1">
+                                <span className="truncate flex-1" style={{ color: 'rgba(244,240,234,0.45)' }}>{item.name}</span>
+                                <span className="font-mono ml-2 tabular-nums" style={{ color: 'rgba(244,240,234,0.6)' }}>${item.price.toFixed(2)}</span>
                             </div>
                         ))}
                     </div>

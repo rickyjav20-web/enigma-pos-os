@@ -155,7 +155,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             // Completed orders today
             prisma.salesOrder.findMany({
                 where: { tenantId, status: 'completed', createdAt: today },
-                select: { totalAmount: true, paymentMethod: true, tableId: true, employeeId: true },
+                select: { totalAmount: true, paymentMethod: true, tableId: true, employeeId: true, guestCount: true },
             }),
             // Open orders right now
             prisma.salesOrder.count({ where: { tenantId, status: 'open' } }),
@@ -186,6 +186,12 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
         const totalRevenue = todayOrders.reduce((s, o) => s + o.totalAmount, 0);
         const orderCount = todayOrders.length;
         const avgTicket = orderCount > 0 ? totalRevenue / orderCount : 0;
+
+        // Guest / covers metrics
+        const ordersWithGuests = todayOrders.filter(o => o.guestCount && o.guestCount > 0);
+        const totalGuests = ordersWithGuests.reduce((s, o) => s + (o.guestCount || 0), 0);
+        const guestRevenue = ordersWithGuests.reduce((s, o) => s + o.totalAmount, 0);
+        const revenuePerGuest = totalGuests > 0 ? guestRevenue / totalGuests : 0;
 
         // Payment split
         const paymentSplit = todayOrders.reduce<Record<string, { count: number; total: number }>>((acc, o) => {
@@ -245,6 +251,18 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
                 events: wasteToday.length,
                 estimatedCost: Math.round(wasteCost * 100) / 100,
                 wasteRatioEstimate: totalRevenue > 0 ? Math.round((wasteCost / totalRevenue) * 10000) / 10000 : 0,
+            },
+            // Guests / Covers
+            guests: {
+                totalCovers: totalGuests,
+                ordersWithGuests: ordersWithGuests.length,
+                avgPartySize: ordersWithGuests.length > 0
+                    ? Math.round((totalGuests / ordersWithGuests.length) * 10) / 10
+                    : 0,
+                revenuePerGuest: Math.round(revenuePerGuest * 100) / 100,
+                coverageRate: orderCount > 0
+                    ? Math.round((ordersWithGuests.length / orderCount) * 100) / 100
+                    : 0,
             },
             // Goals
             goals: {
@@ -635,16 +653,20 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
 
         const orders = await prisma.salesOrder.findMany({
             where: { tenantId, status: 'completed', tableId: { not: null }, createdAt: range },
-            select: { tableId: true, tableName: true, totalAmount: true, createdAt: true },
+            select: { tableId: true, tableName: true, totalAmount: true, createdAt: true, guestCount: true },
         });
 
         // Build table stats
-        const tableStats: Record<string, { orders: number; revenue: number; lastOrder: Date | null }> = {};
+        const tableStats: Record<string, { orders: number; revenue: number; lastOrder: Date | null; totalGuests: number; ordersWithGuests: number }> = {};
         for (const o of orders) {
             const tid = o.tableId!;
-            if (!tableStats[tid]) tableStats[tid] = { orders: 0, revenue: 0, lastOrder: null };
+            if (!tableStats[tid]) tableStats[tid] = { orders: 0, revenue: 0, lastOrder: null, totalGuests: 0, ordersWithGuests: 0 };
             tableStats[tid].orders++;
             tableStats[tid].revenue += o.totalAmount;
+            if (o.guestCount && o.guestCount > 0) {
+                tableStats[tid].totalGuests += o.guestCount;
+                tableStats[tid].ordersWithGuests++;
+            }
             if (!tableStats[tid].lastOrder || o.createdAt > tableStats[tid].lastOrder!) {
                 tableStats[tid].lastOrder = o.createdAt;
             }
@@ -661,7 +683,15 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
                 revenue: Math.round(s.revenue * 100) / 100,
                 avgTicket: s.orders > 0 ? Math.round((s.revenue / s.orders) * 100) / 100 : 0,
                 lastOrder: s.lastOrder?.toISOString() || null,
-                // Revenue per seat estimate
+                // Guest metrics (actual guest count data)
+                totalGuests: s.totalGuests,
+                avgPartySize: s.ordersWithGuests > 0
+                    ? Math.round((s.totalGuests / s.ordersWithGuests) * 10) / 10
+                    : 0,
+                revenuePerGuest: s.totalGuests > 0
+                    ? Math.round((s.revenue / s.totalGuests) * 100) / 100
+                    : 0,
+                // Revenue per seat estimate (capacity-based fallback)
                 revenuePerSeat: t.capacity && t.capacity > 0 && s.orders > 0
                     ? Math.round((s.revenue / (t.capacity * Math.max(s.orders, 1))) * 100) / 100
                     : 0,
@@ -669,14 +699,19 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
         }).sort((a, b) => b.revenue - a.revenue);
 
         // Zone summary
-        const byZone: Record<string, { zone: string; tables: number; revenue: number; orders: number }> = {};
+        const byZone: Record<string, { zone: string; tables: number; revenue: number; orders: number; totalGuests: number }> = {};
         for (const t of result) {
             const z = t.zone || 'General';
-            if (!byZone[z]) byZone[z] = { zone: z, tables: 0, revenue: 0, orders: 0 };
+            if (!byZone[z]) byZone[z] = { zone: z, tables: 0, revenue: 0, orders: 0, totalGuests: 0 };
             byZone[z].tables++;
             byZone[z].revenue += t.revenue;
             byZone[z].orders += t.orders;
+            byZone[z].totalGuests += t.totalGuests;
         }
+
+        // Global guest totals
+        const allGuests = result.reduce((s, t) => s + t.totalGuests, 0);
+        const allRevenue = result.reduce((s, t) => s + t.revenue, 0);
 
         return {
             tables: result,
@@ -684,7 +719,12 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
                 ...z,
                 revenue: Math.round(z.revenue * 100) / 100,
                 avgTicket: z.orders > 0 ? Math.round((z.revenue / z.orders) * 100) / 100 : 0,
+                revenuePerGuest: z.totalGuests > 0 ? Math.round((z.revenue / z.totalGuests) * 100) / 100 : 0,
             })).sort((a, b) => b.revenue - a.revenue),
+            guestSummary: {
+                totalCovers: allGuests,
+                revenuePerGuest: allGuests > 0 ? Math.round((allRevenue / allGuests) * 100) / 100 : 0,
+            },
         };
     });
 

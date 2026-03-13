@@ -715,34 +715,18 @@ export default function SaleScreen() {
                         ) : (
                             <div>
                                 {items.map(item => (
-                                    <div key={item.productId}
+                                    <div key={item.lineId}
                                         className="flex items-center gap-3 px-5 py-3.5"
                                         style={{ borderBottom: '1px solid rgba(244,240,234,0.04)' }}>
-                                        {/* Qty controls */}
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <button
-                                                onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                                                className="w-7 h-7 rounded-lg flex items-center justify-center press"
-                                                style={{ background: 'rgba(244,240,234,0.06)', color: '#F4F0EA', fontSize: '16px', lineHeight: 1 }}
-                                            >−</button>
-                                            <span className="w-5 text-center font-bold text-[14px]" style={{ color: '#F4F0EA' }}>
-                                                {item.quantity}
-                                            </span>
-                                            <button
-                                                onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                                                className="w-7 h-7 rounded-lg flex items-center justify-center press"
-                                                style={{ background: 'rgba(244,240,234,0.06)', color: '#93B59D', fontSize: '16px', lineHeight: 1 }}
-                                            >+</button>
-                                        </div>
                                         {/* Name */}
                                         <span className="flex-1 text-[14px]" style={{ color: 'rgba(244,240,234,0.85)' }}>{item.name}</span>
                                         {/* Price */}
                                         <span className="font-mono text-[14px] tabular-nums shrink-0" style={{ color: 'rgba(244,240,234,0.5)' }}>
-                                            ${(item.price * item.quantity).toFixed(2)}
+                                            ${item.price.toFixed(2)}
                                         </span>
                                         {/* Remove */}
                                         <button
-                                            onClick={() => removeItem(item.productId)}
+                                            onClick={() => removeItem(item.lineId)}
                                             className="w-7 h-7 flex items-center justify-center press shrink-0"
                                             style={{ color: 'rgba(239,68,68,0.4)' }}
                                         >
@@ -988,18 +972,17 @@ export default function SaleScreen() {
             {/* ═══ Split Ticket View ═══ */}
             {showSplitView && (() => {
                 const splitItems = items.map(item => {
-                    const moveQty = splitQtys[item.productId] || 0;
+                    const moveQty = splitQtys[item.lineId] || 0;
                     return { ...item, moveQty };
                 });
                 const splitTotal = splitItems.reduce((s, i) => s + i.price * i.moveQty, 0);
                 const originalTotal = cartTotal - splitTotal;
                 const hasSplitItems = splitItems.some(i => i.moveQty > 0);
 
-                const handleTapItem = (productId: string, maxQty: number) => {
+                const handleTapItem = (lineId: string) => {
                     setSplitQtys(prev => {
-                        const current = prev[productId] || 0;
-                        const next = current >= maxQty ? 0 : current + 1;
-                        return { ...prev, [productId]: next };
+                        const current = prev[lineId] || 0;
+                        return { ...prev, [lineId]: current ? 0 : 1 };
                     });
                 };
 
@@ -1009,7 +992,7 @@ export default function SaleScreen() {
                     try {
                         const splitPayload = splitItems
                             .filter(i => i.moveQty > 0)
-                            .map(i => ({ productId: i.productId, quantity: i.moveQty }));
+                            .map(i => ({ productId: i.productId, quantity: 1 }));
 
                         const { data } = await api.post(`/sales/${ticketId}/split`, { items: splitPayload });
 
@@ -1085,27 +1068,23 @@ export default function SaleScreen() {
                         {/* Items */}
                         <div className="flex-1 overflow-y-auto">
                             {splitItems.map(item => {
-                                const isFullyMoved = item.moveQty === item.quantity;
-                                const isPartial = item.moveQty > 0 && !isFullyMoved;
+                                const isFullyMoved = item.moveQty > 0;
                                 return (
                                     <button
-                                        key={item.productId}
-                                        onClick={() => handleTapItem(item.productId, item.quantity)}
+                                        key={item.lineId}
+                                        onClick={() => handleTapItem(item.lineId)}
                                         className="w-full flex items-center gap-3 px-5 py-3.5 text-left transition-all active:bg-white/5"
                                         style={{
                                             borderBottom: '1px solid rgba(244,240,234,0.04)',
-                                            background: isFullyMoved ? 'rgba(245,158,11,0.06)' : isPartial ? 'rgba(245,158,11,0.03)' : 'transparent',
+                                            background: isFullyMoved ? 'rgba(245,158,11,0.06)' : 'transparent',
                                         }}
                                     >
                                         {/* Status dot */}
                                         <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
                                             style={{
-                                                border: `2px solid ${isFullyMoved ? '#f59e0b' : isPartial ? '#f59e0b' : 'rgba(147,181,157,0.4)'}`,
+                                                border: `2px solid ${isFullyMoved ? '#f59e0b' : 'rgba(147,181,157,0.4)'}`,
                                                 background: isFullyMoved ? '#f59e0b' : 'transparent',
                                             }}>
-                                            {isPartial && (
-                                                <div className="w-2 h-2 rounded-full" style={{ background: '#f59e0b' }} />
-                                            )}
                                             {isFullyMoved && (
                                                 <span className="text-[9px] font-bold" style={{ color: '#121413' }}>✓</span>
                                             )}
@@ -1117,11 +1096,11 @@ export default function SaleScreen() {
                                             textDecoration: isFullyMoved ? 'line-through' : 'none',
                                         }}>{item.name}</span>
 
-                                        {/* Qty indicator */}
+                                        {/* Price */}
                                         <span className="text-[12px] font-mono tabular-nums shrink-0" style={{
-                                            color: isPartial ? '#f59e0b' : 'rgba(244,240,234,0.35)',
+                                            color: 'rgba(244,240,234,0.35)',
                                         }}>
-                                            {isPartial ? `${item.moveQty}/${item.quantity}` : `x${item.quantity}`}
+                                            ${item.price.toFixed(2)}
                                         </span>
 
                                         {/* Price */}

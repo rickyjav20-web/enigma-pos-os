@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 
+const genLineId = () => Math.random().toString(36).slice(2, 10);
+
 interface CartItem {
+    lineId: string;
     productId: string;
     name: string;
     price: number;
@@ -18,9 +21,9 @@ interface CartStore {
     orderType: string;
     guestCount: number | null;
     addItem: (product: { id: string; name: string; price: number; category?: string }) => void;
-    removeItem: (productId: string) => void;
-    updateQuantity: (productId: string, quantity: number) => void;
-    updateItemNotes: (productId: string, notes: string) => void;
+    removeItem: (lineId: string) => void;
+    updateQuantity: (lineId: string, quantity: number) => void;
+    updateItemNotes: (lineId: string, notes: string) => void;
     clearCart: () => void;
     setTicketName: (name: string) => void;
     setTable: (id: string | null, name: string | null) => void;
@@ -41,52 +44,41 @@ export const useCartStore = create<CartStore>((set, get) => ({
     guestCount: null,
 
     addItem: (product) => {
-        set((state) => {
-            const existing = state.items.find(i => i.productId === product.id);
-            if (existing) {
-                return {
-                    items: state.items.map(i =>
-                        i.productId === product.id
-                            ? { ...i, quantity: i.quantity + 1 }
-                            : i
-                    ),
-                };
-            }
-            return {
-                items: [...state.items, {
-                    productId: product.id,
-                    name: product.name,
-                    price: product.price,
-                    quantity: 1,
-                    category: product.category,
-                }],
-            };
-        });
-    },
-
-    removeItem: (productId) => {
         set((state) => ({
-            items: state.items.filter(i => i.productId !== productId),
+            items: [...state.items, {
+                lineId: genLineId(),
+                productId: product.id,
+                name: product.name,
+                price: product.price,
+                quantity: 1,
+                category: product.category,
+            }],
         }));
     },
 
-    updateQuantity: (productId, quantity) => {
+    removeItem: (lineId) => {
+        set((state) => ({
+            items: state.items.filter(i => i.lineId !== lineId),
+        }));
+    },
+
+    updateQuantity: (lineId, quantity) => {
         set((state) => {
             if (quantity <= 0) {
-                return { items: state.items.filter(i => i.productId !== productId) };
+                return { items: state.items.filter(i => i.lineId !== lineId) };
             }
             return {
                 items: state.items.map(i =>
-                    i.productId === productId ? { ...i, quantity } : i
+                    i.lineId === lineId ? { ...i, quantity } : i
                 ),
             };
         });
     },
 
-    updateItemNotes: (productId, notes) => {
+    updateItemNotes: (lineId, notes) => {
         set((state) => ({
             items: state.items.map(i =>
-                i.productId === productId ? { ...i, notes: notes || undefined } : i
+                i.lineId === lineId ? { ...i, notes: notes || undefined } : i
             ),
         }));
     },
@@ -105,12 +97,26 @@ export const useCartStore = create<CartStore>((set, get) => ({
 
     itemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 
-    loadTicket: (ticket) => set({
-        ticketId: ticket.id,
-        ticketName: ticket.name,
-        items: ticket.items,
-        tableId: ticket.tableId || null,
-        tableName: ticket.tableName || null,
-        guestCount: ticket.guestCount || null,
-    }),
+    loadTicket: (ticket) => {
+        // Expand items with qty > 1 into individual lines
+        const expanded: CartItem[] = [];
+        for (const item of ticket.items) {
+            const qty = item.quantity || 1;
+            for (let n = 0; n < qty; n++) {
+                expanded.push({
+                    ...item,
+                    lineId: item.lineId || genLineId(),
+                    quantity: 1,
+                });
+            }
+        }
+        set({
+            ticketId: ticket.id,
+            ticketName: ticket.name,
+            items: expanded,
+            tableId: ticket.tableId || null,
+            tableName: ticket.tableName || null,
+            guestCount: ticket.guestCount || null,
+        });
+    },
 }));

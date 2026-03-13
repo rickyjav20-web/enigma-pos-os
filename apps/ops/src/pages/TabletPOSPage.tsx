@@ -488,8 +488,8 @@ export default function TabletPOSPage() {
         setSplitting(true);
         try {
             const splitPayload = items
-                .filter(i => (splitQtys[i.productId] || 0) > 0)
-                .map(i => ({ productId: i.productId, quantity: splitQtys[i.productId] }));
+                .filter(i => (splitQtys[i.lineId] || 0) > 0)
+                .map(i => ({ productId: i.productId, quantity: 1 }));
 
             const res = await fetch(`${API_URL}/sales/${ticketId}/split`, {
                 method: 'POST', headers: TH,
@@ -590,9 +590,9 @@ export default function TabletPOSPage() {
                         {/* Items summary */}
                         <div className="w-full max-w-sm rounded-xl p-4 space-y-1" style={{ background: 'rgba(244,240,234,0.03)', border: '1px solid rgba(244,240,234,0.06)' }}>
                             {items.map(item => (
-                                <div key={item.productId} className="flex items-center justify-between text-sm py-1">
-                                    <span className="truncate flex-1" style={{ color: 'rgba(244,240,234,0.45)' }}>{item.name} x{item.quantity}</span>
-                                    <span className="font-mono ml-2 tabular-nums" style={{ color: 'rgba(244,240,234,0.6)' }}>${(item.price * item.quantity).toFixed(2)}</span>
+                                <div key={item.lineId} className="flex items-center justify-between text-sm py-1">
+                                    <span className="truncate flex-1" style={{ color: 'rgba(244,240,234,0.45)' }}>{item.name}</span>
+                                    <span className="font-mono ml-2 tabular-nums" style={{ color: 'rgba(244,240,234,0.6)' }}>${item.price.toFixed(2)}</span>
                                 </div>
                             ))}
                         </div>
@@ -954,7 +954,7 @@ export default function TabletPOSPage() {
 
     // --- Split overlay ---
     if (showSplit) {
-        const splitItems = items.map(item => ({ ...item, moveQty: splitQtys[item.productId] || 0 }));
+        const splitItems = items.map(item => ({ ...item, moveQty: splitQtys[item.lineId] || 0 }));
         const splitTotal = splitItems.reduce((s, i) => s + i.price * i.moveQty, 0);
         const originalTotal = cartTotal - splitTotal;
         const hasSplitItems = splitItems.some(i => i.moveQty > 0);
@@ -988,39 +988,33 @@ export default function TabletPOSPage() {
                             Toca items para moverlos al nuevo ticket. Toca de nuevo para ajustar cantidad.
                         </p>
                         {splitItems.map(item => {
-                            const isFullyMoved = item.moveQty === item.quantity;
-                            const isPartial = item.moveQty > 0 && !isFullyMoved;
+                            const isSelected = item.moveQty > 0;
                             return (
-                                <button key={item.productId}
+                                <button key={item.lineId}
                                     onClick={() => {
-                                        setSplitQtys(prev => {
-                                            const current = prev[item.productId] || 0;
-                                            const next = current >= item.quantity ? 0 : current + 1;
-                                            return { ...prev, [item.productId]: next };
-                                        });
+                                        setSplitQtys(prev => ({
+                                            ...prev,
+                                            [item.lineId]: prev[item.lineId] ? 0 : 1,
+                                        }));
                                     }}
                                     className="w-full flex items-center gap-3 px-6 py-4 text-left transition-all active:bg-white/5"
                                     style={{
                                         borderBottom: '1px solid rgba(244,240,234,0.04)',
-                                        background: isFullyMoved ? 'rgba(245,158,11,0.06)' : isPartial ? 'rgba(245,158,11,0.03)' : 'transparent',
+                                        background: isSelected ? 'rgba(245,158,11,0.06)' : 'transparent',
                                     }}>
                                     <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
                                         style={{
-                                            border: `2px solid ${isFullyMoved || isPartial ? '#f59e0b' : 'rgba(147,181,157,0.4)'}`,
-                                            background: isFullyMoved ? '#f59e0b' : 'transparent',
+                                            border: `2px solid ${isSelected ? '#f59e0b' : 'rgba(147,181,157,0.4)'}`,
+                                            background: isSelected ? '#f59e0b' : 'transparent',
                                         }}>
-                                        {isPartial && <div className="w-2 h-2 rounded-full" style={{ background: '#f59e0b' }} />}
-                                        {isFullyMoved && <span className="text-[9px] font-bold" style={{ color: '#121413' }}>&#10003;</span>}
+                                        {isSelected && <span className="text-[9px] font-bold" style={{ color: '#121413' }}>&#10003;</span>}
                                     </div>
                                     <span className="flex-1 text-sm" style={{
-                                        color: isFullyMoved ? 'rgba(244,240,234,0.4)' : 'rgba(244,240,234,0.85)',
-                                        textDecoration: isFullyMoved ? 'line-through' : 'none',
+                                        color: isSelected ? 'rgba(244,240,234,0.4)' : 'rgba(244,240,234,0.85)',
+                                        textDecoration: isSelected ? 'line-through' : 'none',
                                     }}>{item.name}</span>
-                                    <span className="text-xs font-mono shrink-0" style={{ color: isPartial ? '#f59e0b' : 'rgba(244,240,234,0.35)' }}>
-                                        {isPartial ? `${item.moveQty}/${item.quantity}` : `x${item.quantity}`}
-                                    </span>
-                                    <span className="text-sm font-mono w-16 text-right shrink-0" style={{ color: item.moveQty > 0 ? '#f59e0b' : 'rgba(244,240,234,0.4)' }}>
-                                        ${(item.price * item.quantity).toFixed(2)}
+                                    <span className="text-sm font-mono w-16 text-right shrink-0" style={{ color: isSelected ? '#f59e0b' : 'rgba(244,240,234,0.4)' }}>
+                                        ${item.price.toFixed(2)}
                                     </span>
                                 </button>
                             );
@@ -1489,67 +1483,51 @@ export default function TabletPOSPage() {
                         ) : (
                             <div>
                                 {items.map(item => (
-                                    <div key={item.productId}
+                                    <div key={item.lineId}
                                         className={`px-4 py-3 transition-colors duration-300 ${lastAddedId === item.productId ? 'bg-[#1C402E]/30' : ''}`}
                                         style={{ borderBottom: '1px solid rgba(244,240,234,0.04)' }}>
                                         <div className="flex items-center gap-2">
-                                            {/* Qty controls */}
-                                            <div className="flex items-center gap-1.5 shrink-0">
-                                                <button onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                                                    className="w-7 h-7 rounded-lg flex items-center justify-center"
-                                                    style={{ background: 'rgba(244,240,234,0.06)', color: '#F4F0EA' }}>
-                                                    <Minus className="w-3 h-3" />
-                                                </button>
-                                                <span className="w-5 text-center font-bold text-sm" style={{ color: '#F4F0EA' }}>
-                                                    {item.quantity}
-                                                </span>
-                                                <button onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                                                    className="w-7 h-7 rounded-lg flex items-center justify-center"
-                                                    style={{ background: 'rgba(244,240,234,0.06)', color: '#93B59D' }}>
-                                                    <Plus className="w-3 h-3" />
-                                                </button>
-                                            </div>
                                             {/* Name */}
                                             <span className="flex-1 text-sm truncate" style={{ color: 'rgba(244,240,234,0.85)' }}>
                                                 {item.name}
                                             </span>
                                             {/* Note icon */}
-                                            <button onClick={() => { setEditingNotesFor(item.productId); setDraftItemNote(item.notes || ''); }}
+                                            <button onClick={() => { setEditingNotesFor(item.lineId); setDraftItemNote(item.notes || ''); }}
                                                 className="p-1 shrink-0" style={{ color: item.notes ? '#93B59D' : 'rgba(244,240,234,0.15)' }}>
                                                 <MessageSquare className="w-3.5 h-3.5" />
                                             </button>
                                             {/* Price */}
                                             <span className="font-mono text-sm tabular-nums shrink-0" style={{ color: 'rgba(244,240,234,0.5)' }}>
-                                                ${(item.price * item.quantity).toFixed(2)}
+                                                ${item.price.toFixed(2)}
                                             </span>
                                             {/* Remove */}
-                                            <button onClick={() => removeItem(item.productId)}
+                                            <button onClick={() => removeItem(item.lineId)}
                                                 className="p-1 shrink-0" style={{ color: 'rgba(239,68,68,0.4)' }}>
                                                 <X className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
                                         {/* Item note display */}
                                         {item.notes && (
-                                            <p className="text-[10px] ml-[72px] mt-0.5 italic" style={{ color: 'rgba(147,181,157,0.6)' }}>
+                                            <p className="text-[10px] ml-1 mt-0.5 italic" style={{ color: 'rgba(147,181,157,0.6)' }}>
                                                 {item.notes}
                                             </p>
                                         )}
                                         {/* Inline note editor */}
-                                        {editingNotesFor === item.productId && (
-                                            <div className="flex items-center gap-1.5 ml-[72px] mt-1.5">
+                                        {editingNotesFor === item.lineId && (
+                                            <div className="flex items-center gap-1.5 ml-1 mt-1.5">
                                                 <input
                                                     type="text" autoFocus
                                                     value={draftItemNote}
                                                     onChange={e => setDraftItemNote(e.target.value)}
                                                     onKeyDown={e => {
-                                                        if (e.key === 'Enter') { updateItemNotes(item.productId, draftItemNote); setEditingNotesFor(null); }
+                                                        if (e.key === 'Enter') { updateItemNotes(item.lineId, draftItemNote); setEditingNotesFor(null); }
                                                         if (e.key === 'Escape') setEditingNotesFor(null);
                                                     }}
                                                     placeholder="sin chocolate, extra caliente..."
                                                     className="flex-1 text-[11px] bg-transparent border-b px-1 py-0.5 focus:outline-none"
                                                     style={{ color: '#F4F0EA', borderColor: '#93B59D' }}
                                                 />
-                                                <button onClick={() => { updateItemNotes(item.productId, draftItemNote); setEditingNotesFor(null); }}
+                                                <button onClick={() => { updateItemNotes(item.lineId, draftItemNote); setEditingNotesFor(null); }}
                                                     className="p-1 rounded" style={{ color: '#93B59D' }}>
                                                     <Check className="w-3 h-3" />
                                                 </button>

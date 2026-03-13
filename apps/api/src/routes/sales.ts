@@ -471,29 +471,8 @@ export default async function salesRoutes(fastify: FastifyInstance) {
                     // Match found — preserve existing item ID (KDS done-state)
                     const match = candidates.shift()!;
                     keepIds.add(match.id);
-
-                    if (inc.quantity > match.quantity) {
-                        // Quantity INCREASED — keep existing item at its current qty
-                        // (already prepared/done in KDS) and create a NEW item for the
-                        // delta so KDS gets a fresh item ID to detect.
-                        const delta = inc.quantity - match.quantity;
-                        toCreate.push({
-                            ...inc,
-                            quantity: delta,
-                            totalPrice: inc.unitPrice * delta,
-                        });
-                        // Update price on existing if it changed
-                        if (match.unitPrice !== inc.unitPrice) {
-                            await prisma.salesItem.update({
-                                where: { id: match.id },
-                                data: {
-                                    unitPrice: inc.unitPrice,
-                                    totalPrice: inc.unitPrice * match.quantity,
-                                },
-                            });
-                        }
-                    } else if (inc.quantity < match.quantity || match.unitPrice !== inc.unitPrice) {
-                        // Quantity decreased or price changed — update in place
+                    // Update price/kdsStation if changed
+                    if (match.unitPrice !== inc.unitPrice || match.quantity !== inc.quantity) {
                         await prisma.salesItem.update({
                             where: { id: match.id },
                             data: {
