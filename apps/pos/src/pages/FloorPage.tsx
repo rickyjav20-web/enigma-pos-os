@@ -170,6 +170,8 @@ export default function FloorPage() {
             cancelAction();
             refetch();
             queryClient.invalidateQueries({ queryKey: ['open-ticket-count'] });
+            queryClient.invalidateQueries({ queryKey: ['open-tickets'] });
+            queryClient.invalidateQueries({ queryKey: ['open-orders-count'] });
         } catch {
             showToast(`Error al ${actionMode === 'move' ? 'mover' : 'mezclar'} mesa`);
         } finally {

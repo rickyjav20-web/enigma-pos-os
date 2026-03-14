@@ -10,7 +10,7 @@ import { useCartStore } from '../stores/cartStore';
 import {
     ArrowLeft, RefreshCw, MapPin, Users, Clock, LayoutGrid,
     ChefHat, CheckCircle2, AlertTriangle, CircleDot, Coffee,
-    Info, X, ExternalLink, Trash2, Eye,
+    Info, X, ExternalLink, Trash2, Eye, ArrowRightLeft, Merge,
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
@@ -147,9 +147,12 @@ function timeElapsed(dateStr: string): string {
 }
 
 // ─── Table Card ──────────────────────────────────────────────────────────────
-function TableCard({ table, onClick }: {
+function TableCard({ table, onClick, isSource, isPickingTarget, disabled }: {
     table: DiningTable;
     onClick: () => void;
+    isSource?: boolean;
+    isPickingTarget?: boolean;
+    disabled?: boolean;
 }) {
     const isTakeaway = table.zone === 'Takeaway';
     const isBar = table.zone === 'Bar';
@@ -159,10 +162,12 @@ function TableCard({ table, onClick }: {
     return (
         <button
             onClick={onClick}
+            disabled={disabled}
             className={`
                 relative w-full text-left p-4 rounded-2xl border
                 transition-all duration-200 active:scale-[0.96] touch-manipulation
-                ${cfg.bg} ${cfg.border} hover:brightness-110
+                ${isSource ? 'bg-sky-500/15 border-sky-500/50 ring-2 ring-sky-500/30' : isPickingTarget ? 'bg-sky-500/5 border-sky-400/30 hover:border-sky-400/60 hover:bg-sky-500/10' : `${cfg.bg} ${cfg.border} hover:brightness-110`}
+                ${disabled ? 'opacity-40 pointer-events-none' : ''}
             `}
         >
             {/* Live status dot */}
@@ -253,7 +258,7 @@ function TableCard({ table, onClick }: {
 }
 
 // ─── Table Detail Drawer ─────────────────────────────────────────────────────
-function TableDrawer({ table, onClose, onNavigate, onCheck, onFree, fetchDetail, onGuestCountChange }: {
+function TableDrawer({ table, onClose, onNavigate, onCheck, onFree, fetchDetail, onGuestCountChange, onMove, onMerge }: {
     table: DiningTable;
     onClose: () => void;
     onNavigate: () => void;
@@ -261,6 +266,8 @@ function TableDrawer({ table, onClose, onNavigate, onCheck, onFree, fetchDetail,
     onFree: () => void;
     fetchDetail: (id: string) => Promise<TableDetail | null>;
     onGuestCountChange: (tableId: string, ticketId: string, count: number | null) => void;
+    onMove: () => void;
+    onMerge: () => void;
 }) {
     const cfg = STATUS_CONFIG[table.status];
     const [detail, setDetail] = useState<TableDetail | null>(null);
@@ -478,6 +485,28 @@ function TableDrawer({ table, onClose, onNavigate, onCheck, onFree, fetchDetail,
                         </button>
                     </div>
 
+                    {/* Move / Merge actions for occupied tables */}
+                    {table.isOccupied && (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={onMove}
+                                className="flex-1 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5
+                                    bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition-colors"
+                            >
+                                <ArrowRightLeft className="w-3.5 h-3.5" />
+                                Mover
+                            </button>
+                            <button
+                                onClick={onMerge}
+                                className="flex-1 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5
+                                    bg-violet-500/10 text-violet-400 border border-violet-500/20 hover:bg-violet-500/20 transition-colors"
+                            >
+                                <Merge className="w-3.5 h-3.5" />
+                                Mezclar
+                            </button>
+                        </div>
+                    )}
+
                     {/* Secondary actions for occupied tables */}
                     {table.isOccupied && (
                         <div className="flex gap-2">
@@ -578,6 +607,13 @@ export default function TablesPage() {
     const [seeding, setSeeding] = useState(false);
     const [showLegend, setShowLegend] = useState(false);
     const [selectedTable, setSelectedTable] = useState<DiningTable | null>(null);
+
+    // Move / Merge action mode
+    const [actionMode, setActionMode] = useState<'move' | 'merge' | null>(null);
+    const [sourceTable, setSourceTable] = useState<DiningTable | null>(null);
+    const [confirmTarget, setConfirmTarget] = useState<DiningTable | null>(null);
+    const [actionLoading, setActionLoading] = useState(false);
+    const [actionToast, setActionToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
     const fetchTables = useCallback(async (silent = false) => {
         if (silent) setRefreshing(true);
@@ -692,6 +728,64 @@ export default function TablesPage() {
             // Silent — optimistic update in drawer UI
         }
     }, []);
+
+    // Move / Merge handlers
+    const startAction = (mode: 'move' | 'merge', table: DiningTable) => {
+        setActionMode(mode);
+        setSourceTable(table);
+        setSelectedTable(null); // close drawer
+        setConfirmTarget(null);
+    };
+
+    const cancelAction = () => {
+        setActionMode(null);
+        setSourceTable(null);
+        setConfirmTarget(null);
+    };
+
+    const handleTableCardClick = (table: DiningTable) => {
+        if (actionMode && sourceTable) {
+            if (table.id === sourceTable.id) return;
+            setConfirmTarget(table);
+        } else {
+            setSelectedTable(table);
+        }
+    };
+
+    const executeAction = async () => {
+        if (!sourceTable || !confirmTarget || !actionMode) return;
+        setActionLoading(true);
+        try {
+            const endpoint = actionMode === 'move'
+                ? `${API_URL}/tables/${sourceTable.id}/move-to/${confirmTarget.id}`
+                : `${API_URL}/tables/${sourceTable.id}/merge-into/${confirmTarget.id}`;
+            const res = await fetch(endpoint, { method: 'POST', headers: TH });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || `Error ${res.status}`);
+            }
+            setActionToast({
+                msg: actionMode === 'move'
+                    ? `${sourceTable.name} → ${confirmTarget.name}`
+                    : `${sourceTable.name} + ${confirmTarget.name} combinadas`,
+                type: 'success',
+            });
+            cancelAction();
+            await fetchTables(true);
+        } catch (e: any) {
+            setActionToast({ msg: e.message || 'Error al ejecutar accion', type: 'error' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // Auto-dismiss toast
+    useEffect(() => {
+        if (actionToast) {
+            const t = setTimeout(() => setActionToast(null), 3000);
+            return () => clearTimeout(t);
+        }
+    }, [actionToast]);
 
     // Build zone list
     const zones = ['Todas', ...Array.from(new Set(tables.map(t => t.zone || 'General')))];
@@ -878,7 +972,10 @@ export default function TablesPage() {
                                         <TableCard
                                             key={table.id}
                                             table={table}
-                                            onClick={() => setSelectedTable(table)}
+                                            onClick={() => handleTableCardClick(table)}
+                                            isSource={!!actionMode && sourceTable?.id === table.id}
+                                            isPickingTarget={!!actionMode && sourceTable?.id !== table.id}
+                                            disabled={!!actionMode && sourceTable?.id === table.id}
                                         />
                                     ))}
                                 </div>
@@ -888,8 +985,93 @@ export default function TablesPage() {
                 )}
             </div>
 
+            {/* ── Action Mode Banner ── */}
+            {actionMode && sourceTable && (
+                <div className="fixed bottom-0 left-0 right-0 z-40 bg-sky-950/95 backdrop-blur-xl border-t border-sky-500/30 px-4 py-3 safe-area-bottom">
+                    <div className="flex items-center justify-between max-w-2xl mx-auto">
+                        <div className="flex items-center gap-3">
+                            {actionMode === 'move' ? (
+                                <ArrowRightLeft className="w-5 h-5 text-sky-400" />
+                            ) : (
+                                <Merge className="w-5 h-5 text-violet-400" />
+                            )}
+                            <div>
+                                <p className="text-sm font-semibold text-[#F4F0EA]">
+                                    {actionMode === 'move' ? 'Mover' : 'Mezclar'} {sourceTable.name}
+                                </p>
+                                <p className="text-[11px] text-[#F4F0EA]/50">
+                                    Selecciona la mesa destino
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={cancelAction}
+                            className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/[0.08] text-[#F4F0EA]/70 hover:bg-white/[0.15] transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Confirm Action Modal ── */}
+            {confirmTarget && sourceTable && actionMode && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                    onClick={() => setConfirmTarget(null)}>
+                    <div className="w-full max-w-sm mx-4 bg-[#1A1D1B] rounded-2xl border border-white/[0.08] p-5 space-y-4"
+                        onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-3">
+                            {actionMode === 'move' ? (
+                                <div className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-500/25 flex items-center justify-center">
+                                    <ArrowRightLeft className="w-5 h-5 text-sky-400" />
+                                </div>
+                            ) : (
+                                <div className="w-10 h-10 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center">
+                                    <Merge className="w-5 h-5 text-violet-400" />
+                                </div>
+                            )}
+                            <div>
+                                <h3 className="text-base font-bold text-[#F4F0EA]">
+                                    {actionMode === 'move' ? 'Mover Mesa' : 'Mezclar Mesas'}
+                                </h3>
+                                <p className="text-xs text-[#F4F0EA]/50">
+                                    {sourceTable.name} → {confirmTarget.name}
+                                </p>
+                            </div>
+                        </div>
+
+                        <p className="text-sm text-[#F4F0EA]/60">
+                            {actionMode === 'move'
+                                ? `Todos los tickets abiertos de ${sourceTable.name} se moveran a ${confirmTarget.name}. Los items que ya salieron en KDS no se re-envian.`
+                                : `Todos los items de ${sourceTable.name} se combinaran en el ticket de ${confirmTarget.name}. Los tickets vacios se eliminaran.`
+                            }
+                        </p>
+
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setConfirmTarget(null)}
+                                className="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-white/[0.06] text-[#F4F0EA]/60 hover:bg-white/10 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={executeAction}
+                                disabled={actionLoading}
+                                className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 ${
+                                    actionMode === 'move'
+                                        ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30 hover:bg-sky-500/30'
+                                        : 'bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30'
+                                }`}
+                            >
+                                {actionLoading ? 'Procesando...' : actionMode === 'move' ? 'Mover' : 'Mezclar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ── Table Detail Drawer ── */}
-            {selectedTable && (
+            {selectedTable && !actionMode && (
                 <TableDrawer
                     table={selectedTable}
                     onClose={() => setSelectedTable(null)}
@@ -898,7 +1080,20 @@ export default function TablesPage() {
                     onFree={() => handleFreeTable(selectedTable)}
                     fetchDetail={fetchTableDetail}
                     onGuestCountChange={handleGuestCountChange}
+                    onMove={() => startAction('move', selectedTable)}
+                    onMerge={() => startAction('merge', selectedTable)}
                 />
+            )}
+
+            {/* ── Toast ── */}
+            {actionToast && (
+                <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-2xl transition-all ${
+                    actionToast.type === 'success'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                }`}>
+                    {actionToast.msg}
+                </div>
             )}
 
             {/* ── Color Legend Modal ── */}
