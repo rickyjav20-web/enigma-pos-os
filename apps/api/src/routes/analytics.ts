@@ -43,10 +43,16 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     };
 
     // ── helpers ──────────────────────────────────────────────────────────────
+    function parseDateOnly(value: string, endOfDay = false): Date {
+        const [year, month, day] = value.split('-').map(Number);
+        return endOfDay
+            ? new Date(year, month - 1, day, 23, 59, 59, 999)
+            : new Date(year, month - 1, day, 0, 0, 0, 0);
+    }
+
     function dateRange(from?: string, to?: string): { gte: Date; lte: Date } {
-        const now = new Date();
-        const start = from ? new Date(from) : new Date(new Date().setHours(0, 0, 0, 0));
-        const end = to ? new Date(to) : new Date(new Date().setHours(23, 59, 59, 999));
+        const start = from ? parseDateOnly(from) : new Date(new Date().setHours(0, 0, 0, 0));
+        const end = to ? parseDateOnly(to, true) : new Date(new Date().setHours(23, 59, 59, 999));
         return { gte: start, lte: end };
     }
 
@@ -59,7 +65,23 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     }
 
     function dayKey(date: Date | string): string {
-        return new Date(date).toISOString().split('T')[0];
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function shiftDate(date: Date, days: number): Date {
+        const copy = new Date(date);
+        copy.setDate(copy.getDate() + days);
+        return copy;
+    }
+
+    function diffDaysInclusive(range: { gte: Date; lte: Date }): number {
+        const start = new Date(range.gte.getFullYear(), range.gte.getMonth(), range.gte.getDate());
+        const end = new Date(range.lte.getFullYear(), range.lte.getMonth(), range.lte.getDate());
+        return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1);
     }
 
     async function getLiveOrderDays(tenantId: string, range: { gte: Date; lte: Date }) {
@@ -135,10 +157,190 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             });
     }
 
+    async function buildOverview(tenantId: string, range: { gte: Date; lte: Date }) {
+        const liveDaysPromise = getLiveOrderDays(tenantId, range);
+        const [
+            orders,
+            tables,
+            closedSessions,
+            goals,
+            liveDays,
+        ] = await Promise.all([
+            prisma.salesOrder.findMany({
+                where: { tenantId, status: 'completed', createdAt: range },
+                select: {
+                    totalAmount: true,
+                    paymentMethod: true,
+                    tableId: true,
+                    guestCount: true,
+                    createdAt: true,
+                },
+            }),
+            prisma.diningTable.findMany({
+                where: { tenantId, isActive: true },
+                select: { id: true },
+            }),
+            prisma.registerSession.findMany({
+                where: { tenantId, endedAt: range },
+                select: { id: true, startedAt: true, endedAt: true },
+            }),
+            prisma.dailyGoal.findMany({
+                where: {
+                    tenantId,
+                    date: {
+                        gte: dayKey(range.gte),
+                        lte: dayKey(range.lte),
+                    },
+                },
+                select: { id: true, isCompleted: true },
+            }),
+            liveDaysPromise,
+        ]);
+        const importedEvents = await getImportedEventsForAnalytics(tenantId, range, liveDays);
+
+        const liveRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+        const liveOrderCount = orders.length;
+        const importedRevenue = importedEvents.reduce((sum, event) => sum + event.totalPrice, 0);
+
+        const importedOrderKeys = new Set(
+            importedEvents.map((event) => `${event.day}:${event.externalId || `event:${event.id}`}`)
+        );
+        const importedOrderCount = importedOrderKeys.size;
+
+        const totalRevenue = liveRevenue + importedRevenue;
+        const totalOrders = liveOrderCount + importedOrderCount;
+
+        const paymentSplit = orders.reduce<Record<string, { count: number; total: number }>>((acc, order) => {
+            const method = order.paymentMethod || 'other';
+            if (!acc[method]) acc[method] = { count: 0, total: 0 };
+            acc[method].count += 1;
+            acc[method].total += order.totalAmount;
+            return acc;
+        }, {});
+
+        const ordersWithGuests = orders.filter((order) => order.guestCount && order.guestCount > 0);
+        const totalGuests = ordersWithGuests.reduce((sum, order) => sum + (order.guestCount || 0), 0);
+        const guestRevenue = ordersWithGuests.reduce((sum, order) => sum + order.totalAmount, 0);
+        const uniqueTablesUsed = new Set(orders.filter((order) => order.tableId).map((order) => order.tableId));
+
+        const hours = Array.from({ length: 24 }, (_, hour) => ({ hour, revenue: 0, orders: 0 }));
+        for (const order of orders) {
+            const hour = order.createdAt.getHours();
+            hours[hour].revenue += order.totalAmount;
+            hours[hour].orders += 1;
+        }
+        const importedHourKeys = new Map<number, Set<string>>();
+        for (const event of importedEvents) {
+            hours[event.hour].revenue += event.totalPrice;
+            if (!importedHourKeys.has(event.hour)) importedHourKeys.set(event.hour, new Set());
+            importedHourKeys.get(event.hour)!.add(`${event.day}:${event.externalId || `event:${event.id}`}`);
+        }
+        for (const [hour, orderKeys] of importedHourKeys.entries()) {
+            hours[hour].orders += orderKeys.size;
+        }
+
+        const busiestHour = [...hours]
+            .sort((a, b) => (b.revenue - a.revenue) || (b.orders - a.orders))[0] || { hour: 0, revenue: 0, orders: 0 };
+
+        const sessionHours = closedSessions.reduce((sum, session) => {
+            if (!session.startedAt || !session.endedAt) return sum;
+            return sum + Math.max(0, (new Date(session.endedAt).getTime() - new Date(session.startedAt).getTime()) / 3_600_000);
+        }, 0);
+
+        const totalGoals = goals.length;
+        const completedGoals = goals.filter((goal) => goal.isCompleted).length;
+        const rangeDays = diffDaysInclusive(range);
+
+        return {
+            period: {
+                from: dayKey(range.gte),
+                to: dayKey(range.lte),
+                days: rangeDays,
+            },
+            revenue: {
+                total: Math.round(totalRevenue * 100) / 100,
+                orderCount: totalOrders,
+                avgTicket: totalOrders > 0 ? Math.round((totalRevenue / totalOrders) * 100) / 100 : 0,
+                dailyAverage: rangeDays > 0 ? Math.round((totalRevenue / rangeDays) * 100) / 100 : 0,
+                runRatePerHour: sessionHours > 0 ? Math.round((liveRevenue / sessionHours) * 100) / 100 : 0,
+                byMethod: paymentSplit,
+            },
+            service: {
+                tablesUsed: uniqueTablesUsed.size,
+                totalTables: tables.length,
+                avgTicketPerTable: uniqueTablesUsed.size > 0
+                    ? Math.round((orders.reduce((sum, order) => sum + order.totalAmount, 0) / uniqueTablesUsed.size) * 100) / 100
+                    : 0,
+            },
+            guests: {
+                totalCovers: totalGuests,
+                ordersWithGuests: ordersWithGuests.length,
+                avgPartySize: ordersWithGuests.length > 0
+                    ? Math.round((totalGuests / ordersWithGuests.length) * 10) / 10
+                    : 0,
+                revenuePerGuest: totalGuests > 0
+                    ? Math.round((guestRevenue / totalGuests) * 100) / 100
+                    : 0,
+                coverageRate: totalOrders > 0
+                    ? Math.round((ordersWithGuests.length / totalOrders) * 10000) / 100
+                    : 0,
+            },
+            goals: {
+                total: totalGoals,
+                completed: completedGoals,
+                completionRate: totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 10000) / 100 : 0,
+            },
+            timing: {
+                busiestHour: {
+                    hour: busiestHour.hour,
+                    label: `${String(busiestHour.hour).padStart(2, '0')}:00`,
+                    revenue: Math.round(busiestHour.revenue * 100) / 100,
+                    orders: busiestHour.orders,
+                },
+            },
+            dataAvailability: {
+                hasImportedSales: importedEvents.length > 0,
+                liveOrderDays: liveDays.size,
+                importedOnlyDays: Math.max(0, rangeDays - liveDays.size),
+                guestMetricsComplete: importedEvents.length === 0,
+                tableMetricsComplete: importedEvents.length === 0,
+                paymentMethodsComplete: importedEvents.length === 0,
+            },
+            generatedAt: new Date().toISOString(),
+        };
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // GET /analytics/summary/today
     // Real-time operational snapshot
     // ─────────────────────────────────────────────────────────────────────────
+    fastify.get('/analytics/summary/overview', async (req, reply) => {
+        const tenantId = getTenant(req);
+        const { from, to } = req.query as { from?: string; to?: string };
+        const range = dateRange(from, to);
+        const current = await buildOverview(tenantId, range);
+
+        const previousDays = diffDaysInclusive(range);
+        const previousRange = {
+            gte: shiftDate(range.gte, -previousDays),
+            lte: shiftDate(range.lte, -previousDays),
+        };
+        const previous = await buildOverview(tenantId, previousRange);
+
+        return {
+            ...current,
+            comparison: {
+                previousPeriod: previous.period,
+                revenueDelta: Math.round((current.revenue.total - previous.revenue.total) * 100) / 100,
+                revenueDeltaPct: previous.revenue.total > 0
+                    ? Math.round((((current.revenue.total - previous.revenue.total) / previous.revenue.total) * 100) * 100) / 100
+                    : null,
+                ordersDelta: current.revenue.orderCount - previous.revenue.orderCount,
+                avgTicketDelta: Math.round((current.revenue.avgTicket - previous.revenue.avgTicket) * 100) / 100,
+            },
+        };
+    });
+
     fastify.get('/analytics/summary/today', async (req, reply) => {
         const tenantId = getTenant(req);
         const today = todayRange();
