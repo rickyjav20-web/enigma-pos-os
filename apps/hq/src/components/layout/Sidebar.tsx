@@ -1,14 +1,13 @@
 // 🔒 PROTECTED FILE: DO NOT EDIT WITHOUT EXPLICIT USER APPROVAL
 // Module: Core Navigation
 // Status: STABLE — Rebranded Feb 2026 (60-30-10 + Color Intelligence)
-import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useUserAuth } from "@/context/UserAuthContext";
 import {
     Settings, LogOut, Package, Brain, LayoutDashboard,
     Users, Calendar, ShoppingCart, Building2, Wallet,
-    TrendingUp, Trash2, FileUp, Target, LayoutGrid, Settings2, Monitor, Printer, Smartphone, BarChart3
+    TrendingUp, Trash2, FileUp, Target, LayoutGrid, Settings2, Monitor, Printer, BarChart3
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -104,8 +103,6 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> { }
 
 export function Sidebar({ className }: SidebarProps) {
     const location = useLocation();
-    const navigate = useNavigate();
-    const { logout, user } = useUserAuth();
     const pathname = location.pathname;
 
     const isActive = (item: NavItem) =>
@@ -202,29 +199,6 @@ export function Sidebar({ className }: SidebarProps) {
 
             {/* ── Footer ───────────────────────────────────────────────────── */}
             <div className="px-3 py-3 border-t border-white/[0.05] bg-black/30 flex-shrink-0 space-y-[2px]">
-                {/* Devices */}
-                <Button
-                    asChild
-                    variant="ghost"
-                    className={cn(
-                        "w-full justify-start text-[13px] font-medium h-9 rounded-lg px-3 relative overflow-hidden group transition-all duration-150",
-                        pathname === '/devices'
-                            ? "text-white bg-white/[0.07]"
-                            : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04]"
-                    )}
-                >
-                    <Link to="/devices">
-                        {pathname === '/devices' && (
-                            <div className="absolute left-0 top-[6px] bottom-[6px] w-[3px] rounded-r-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
-                        )}
-                        <Smartphone className={cn(
-                            "h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-150",
-                            pathname === '/devices' ? "text-cyan-400" : "text-zinc-600 group-hover:text-zinc-400"
-                        )} />
-                        Dispositivos
-                    </Link>
-                </Button>
-
                 {/* Organisation */}
                 <Button
                     asChild
@@ -248,15 +222,9 @@ export function Sidebar({ className }: SidebarProps) {
                     </Link>
                 </Button>
 
-                {/* User info + Disconnect */}
-                {user && (
-                    <div className="px-3 py-2 mt-1 border-t border-white/[0.03]">
-                        <p className="text-[11px] text-zinc-500 truncate mb-1">{user.email}</p>
-                    </div>
-                )}
+                {/* Disconnect */}
                 <Button
                     variant="ghost"
-                    onClick={() => { logout(); navigate('/login'); }}
                     className="w-full justify-start text-[13px] font-medium h-9 rounded-lg px-3 text-zinc-600 hover:text-red-400 hover:bg-red-500/10 group transition-all duration-150"
                 >
                     <LogOut className="h-4 w-4 mr-3 flex-shrink-0 group-hover:translate-x-0.5 transition-transform duration-150" />
