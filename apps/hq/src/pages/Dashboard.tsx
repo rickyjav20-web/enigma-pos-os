@@ -76,18 +76,20 @@ export default function DashboardPage() {
     const [dailyRevenue, setDailyRevenue] = useState<any[]>([]);
     const [hourlyRevenue, setHourlyRevenue] = useState<any[]>([]);
     const [topProducts, setTopProducts] = useState<any[]>([]);
+    const [tableStats, setTableStats] = useState<any>(null);
     const [inventory, setInventory] = useState<any>(null);
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [liveRes, historyRes, dailyRes, hourlyRes, productsRes, inventoryRes] = await Promise.all([
+                const [liveRes, historyRes, dailyRes, hourlyRes, productsRes, tablesRes, inventoryRes] = await Promise.all([
                     api.get("/analytics/summary/today"),
                     api.get(`/analytics/summary/overview?from=${from}&to=${to}`),
                     api.get(`/analytics/revenue/daily?from=${from}&to=${to}`),
                     api.get(`/analytics/revenue/hourly?date=${to}`),
                     api.get(`/analytics/products/velocity?from=${from}&to=${to}&limit=5`),
+                    api.get(`/analytics/tables/performance?from=${from}&to=${to}`),
                     api.get("/analytics/inventory/health"),
                 ]);
 
@@ -96,6 +98,7 @@ export default function DashboardPage() {
                 setDailyRevenue(dailyRes.data?.data || []);
                 setHourlyRevenue(hourlyRes.data || []);
                 setTopProducts(productsRes.data?.data || []);
+                setTableStats(tablesRes.data || null);
                 setInventory(inventoryRes.data || null);
             } catch (error) {
                 console.error(error);
@@ -463,6 +466,43 @@ export default function DashboardPage() {
 
                     <div className="grid gap-4 lg:grid-cols-7">
                         <Card className="lg:col-span-4 bg-zinc-950 border-zinc-800 text-white">
+                            <CardHeader>
+                                <CardTitle>Top 5 Mesas</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {loading ? (
+                                    <div className="text-sm text-zinc-500">Cargando mesas...</div>
+                                ) : !tableStats?.tables?.length ? (
+                                    <div className="text-sm text-zinc-500">No hay tickets con mesa en el periodo.</div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {tableStats.tables.slice(0, 5).map((table: any) => (
+                                            <div key={table.tableId} className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <div>
+                                                        <div className="text-sm font-semibold text-white">{table.name}</div>
+                                                        <div className="text-xs text-zinc-500">
+                                                            {table.zone || "General"} · {table.orders} ticket(s) cerrados
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-sm font-semibold text-white">{formatMoney(table.revenue)}</div>
+                                                        <div className="text-xs text-zinc-500">{formatMoney(table.avgTicket)} ticket promedio</div>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-3 text-xs text-zinc-500">
+                                                    {table.totalGuests > 0
+                                                        ? `${table.totalGuests} personas capturadas · ${formatMoney(table.revenuePerGuest)} por persona`
+                                                        : "Sin guestCount suficiente para promedio por persona"}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="lg:col-span-3 bg-zinc-950 border-zinc-800 text-white">
                             <CardHeader>
                                 <CardTitle>Ventas por Dia</CardTitle>
                             </CardHeader>
