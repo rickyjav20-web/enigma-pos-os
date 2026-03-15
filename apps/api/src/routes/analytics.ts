@@ -25,6 +25,7 @@ import { FastifyInstance } from 'fastify';
 import prisma from '../lib/prisma';
 import { getEffectiveRecipeUnitCost } from '../lib/inventory-math';
 import { getOperationalUnit } from '../lib/units';
+import { getLocalDateStr } from '../lib/detectSession';
 
 export default async function analyticsRoutes(fastify: FastifyInstance) {
 
@@ -43,33 +44,79 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     };
 
     // ── helpers ──────────────────────────────────────────────────────────────
-    function parseDateOnly(value: string, endOfDay = false): Date {
-        const [year, month, day] = value.split('-').map(Number);
-        return endOfDay
-            ? new Date(year, month - 1, day, 23, 59, 59, 999)
-            : new Date(year, month - 1, day, 0, 0, 0, 0);
+    async function getTenantTimezone(tenantId: string): Promise<string> {
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { timezone: true },
+        });
+        return tenant?.timezone || 'America/Caracas';
     }
 
-    function dateRange(from?: string, to?: string): { gte: Date; lte: Date } {
-        const start = from ? parseDateOnly(from) : new Date(new Date().setHours(0, 0, 0, 0));
-        const end = to ? parseDateOnly(to, true) : new Date(new Date().setHours(23, 59, 59, 999));
+    function parseOffsetMinutes(label: string): number {
+        const match = label.match(/GMT([+-]\d{1,2})(?::?(\d{2}))?/i);
+        if (!match) return 0;
+        const hours = parseInt(match[1], 10);
+        const minutes = match[2] ? parseInt(match[2], 10) : 0;
+        return hours * 60 + Math.sign(hours || 1) * minutes;
+    }
+
+    function getTimezoneOffsetMinutes(timezone: string, date: Date): number {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: timezone,
+            timeZoneName: 'shortOffset',
+            hour: '2-digit',
+        }).formatToParts(date);
+        const zoneName = parts.find((part) => part.type === 'timeZoneName')?.value || 'GMT+00';
+        return parseOffsetMinutes(zoneName);
+    }
+
+    function zonedDateTimeToUtc(dateStr: string, timezone: string, endOfDay = false): Date {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const hours = endOfDay ? 23 : 0;
+        const minutes = endOfDay ? 59 : 0;
+        const seconds = endOfDay ? 59 : 0;
+        const millis = endOfDay ? 999 : 0;
+        const utcGuess = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds, millis));
+        const offsetMinutes = getTimezoneOffsetMinutes(timezone, utcGuess);
+        return new Date(utcGuess.getTime() - offsetMinutes * 60_000);
+    }
+
+    function dateRange(timezone: string, from?: string, to?: string): { gte: Date; lte: Date } {
+        const today = getLocalDateStr(timezone);
+        const start = zonedDateTimeToUtc(from || today, timezone, false);
+        const end = zonedDateTimeToUtc(to || today, timezone, true);
         return { gte: start, lte: end };
     }
 
-    function todayRange() {
-        const now = new Date();
+    function todayRange(timezone: string) {
+        const today = getLocalDateStr(timezone);
         return {
-            gte: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0),
-            lte: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59),
+            gte: zonedDateTimeToUtc(today, timezone, false),
+            lte: zonedDateTimeToUtc(today, timezone, true),
         };
     }
 
-    function dayKey(date: Date | string): string {
-        const d = new Date(date);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+    function zonedParts(date: Date | string, timezone: string) {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: timezone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            hour12: false,
+        }).formatToParts(new Date(date));
+        const get = (type: string) => parts.find((part) => part.type === type)?.value || '00';
+        return {
+            year: get('year'),
+            month: get('month'),
+            day: get('day'),
+            hour: Number(get('hour')),
+        };
+    }
+
+    function dayKey(date: Date | string, timezone: string): string {
+        const parts = zonedParts(date, timezone);
+        return `${parts.year}-${parts.month}-${parts.day}`;
     }
 
     function shiftDate(date: Date, days: number): Date {
@@ -84,17 +131,18 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
         return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1);
     }
 
-    async function getLiveOrderDays(tenantId: string, range: { gte: Date; lte: Date }) {
+    async function getLiveOrderDays(tenantId: string, timezone: string, range: { gte: Date; lte: Date }) {
         const orders = await prisma.salesOrder.findMany({
             where: { tenantId, status: 'completed', createdAt: range },
             select: { createdAt: true },
         });
 
-        return new Set(orders.map((order) => dayKey(order.createdAt)));
+        return new Set(orders.map((order) => dayKey(order.createdAt, timezone)));
     }
 
     async function getImportedEventsForAnalytics(
         tenantId: string,
+        timezone: string,
         range: { gte: Date; lte: Date },
         skipDays = new Set<string>()
     ): Promise<ImportedAnalyticsEvent[]> {
@@ -136,16 +184,17 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
         }
 
         return events
-            .filter((event) => !skipDays.has(dayKey(event.timestamp)))
+            .filter((event) => !skipDays.has(dayKey(event.timestamp, timezone)))
             .map((event) => {
                 const matched = (event.sku && skuMap.get(event.sku.toLowerCase()))
                     || nameMap.get(event.productName.toLowerCase())
                     || null;
+                const parts = zonedParts(event.timestamp, timezone);
 
                 return {
                     id: event.id,
-                    day: dayKey(event.timestamp),
-                    hour: event.timestamp.getHours(),
+                    day: `${parts.year}-${parts.month}-${parts.day}`,
+                    hour: parts.hour,
                     quantity: event.quantity,
                     unitPrice: event.unitPrice,
                     totalPrice: event.totalPrice,
@@ -157,8 +206,8 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             });
     }
 
-    async function buildOverview(tenantId: string, range: { gte: Date; lte: Date }) {
-        const liveDaysPromise = getLiveOrderDays(tenantId, range);
+    async function buildOverview(tenantId: string, timezone: string, range: { gte: Date; lte: Date }) {
+        const liveDaysPromise = getLiveOrderDays(tenantId, timezone, range);
         const [
             orders,
             tables,
@@ -188,15 +237,15 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
                 where: {
                     tenantId,
                     date: {
-                        gte: dayKey(range.gte),
-                        lte: dayKey(range.lte),
+                        gte: dayKey(range.gte, timezone),
+                        lte: dayKey(range.lte, timezone),
                     },
                 },
                 select: { id: true, isCompleted: true },
             }),
             liveDaysPromise,
         ]);
-        const importedEvents = await getImportedEventsForAnalytics(tenantId, range, liveDays);
+        const importedEvents = await getImportedEventsForAnalytics(tenantId, timezone, range, liveDays);
 
         const liveRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
         const liveOrderCount = orders.length;
@@ -225,7 +274,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
 
         const hours = Array.from({ length: 24 }, (_, hour) => ({ hour, revenue: 0, orders: 0 }));
         for (const order of orders) {
-            const hour = order.createdAt.getHours();
+            const hour = zonedParts(order.createdAt, timezone).hour;
             hours[hour].revenue += order.totalAmount;
             hours[hour].orders += 1;
         }
@@ -253,8 +302,8 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
 
         return {
             period: {
-                from: dayKey(range.gte),
-                to: dayKey(range.lte),
+                from: dayKey(range.gte, timezone),
+                to: dayKey(range.lte, timezone),
                 days: rangeDays,
             },
             revenue: {
@@ -316,16 +365,17 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     // ─────────────────────────────────────────────────────────────────────────
     fastify.get('/analytics/summary/overview', async (req, reply) => {
         const tenantId = getTenant(req);
+        const timezone = await getTenantTimezone(tenantId);
         const { from, to } = req.query as { from?: string; to?: string };
-        const range = dateRange(from, to);
-        const current = await buildOverview(tenantId, range);
+        const range = dateRange(timezone, from, to);
+        const current = await buildOverview(tenantId, timezone, range);
 
         const previousDays = diffDaysInclusive(range);
         const previousRange = {
             gte: shiftDate(range.gte, -previousDays),
             lte: shiftDate(range.lte, -previousDays),
         };
-        const previous = await buildOverview(tenantId, previousRange);
+        const previous = await buildOverview(tenantId, timezone, previousRange);
 
         return {
             ...current,
@@ -343,7 +393,8 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
 
     fastify.get('/analytics/summary/today', async (req, reply) => {
         const tenantId = getTenant(req);
-        const today = todayRange();
+        const timezone = await getTenantTimezone(tenantId);
+        const today = todayRange(timezone);
 
         const [
             todayOrders,
@@ -379,7 +430,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             }),
             // Daily goals today
             prisma.dailyGoal.aggregate({
-                where: { tenantId, date: new Date().toISOString().split('T')[0] },
+                where: { tenantId, date: getLocalDateStr(timezone) },
                 _count: { id: true },
                 _sum: { currentQty: true },
             }),
@@ -424,7 +475,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
         const runRatePerHour = avgHoursOpen > 0 ? totalRevenue / avgHoursOpen : 0;
 
         const completedGoals = await prisma.dailyGoal.count({
-            where: { tenantId, date: new Date().toISOString().split('T')[0], isCompleted: true },
+            where: { tenantId, date: getLocalDateStr(timezone), isCompleted: true },
         });
 
         return {
@@ -484,8 +535,9 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     // ─────────────────────────────────────────────────────────────────────────
     fastify.get('/analytics/revenue/daily', async (req, reply) => {
         const tenantId = getTenant(req);
+        const timezone = await getTenantTimezone(tenantId);
         const { from, to } = req.query as { from?: string; to?: string };
-        const range = dateRange(from, to);
+        const range = dateRange(timezone, from, to);
 
         const orders = await prisma.salesOrder.findMany({
             where: { tenantId, status: 'completed', createdAt: range },
@@ -496,7 +548,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
         // Group by date
         const byDate: Record<string, { date: string; revenue: number; orders: number; cash: number; card: number; transfer: number }> = {};
         for (const o of orders) {
-            const d = o.createdAt.toISOString().split('T')[0];
+            const d = dayKey(o.createdAt, timezone);
             if (!byDate[d]) byDate[d] = { date: d, revenue: 0, orders: 0, cash: 0, card: 0, transfer: 0 };
             byDate[d].revenue += o.totalAmount;
             byDate[d].orders++;
@@ -506,7 +558,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
         }
 
         const liveDays = new Set(Object.keys(byDate));
-        const importedEvents = await getImportedEventsForAnalytics(tenantId, range, liveDays);
+        const importedEvents = await getImportedEventsForAnalytics(tenantId, timezone, range, liveDays);
         const importedOrdersByDay: Record<string, Set<string>> = {};
 
         for (const event of importedEvents) {
@@ -552,12 +604,10 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     // ─────────────────────────────────────────────────────────────────────────
     fastify.get('/analytics/revenue/hourly', async (req, reply) => {
         const tenantId = getTenant(req);
+        const timezone = await getTenantTimezone(tenantId);
         const { date } = req.query as { date?: string };
-        const d = date ? new Date(date) : new Date();
-        const range = {
-            gte: new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0),
-            lte: new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59),
-        };
+        const targetDate = date || getLocalDateStr(timezone);
+        const range = dateRange(timezone, targetDate, targetDate);
 
         const orders = await prisma.salesOrder.findMany({
             where: { tenantId, status: 'completed', createdAt: range },
@@ -569,14 +619,14 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
         for (let h = 0; h < 24; h++) hours[h] = { hour: h, revenue: 0, orders: 0, tablesActive: new Set() };
 
         for (const o of orders) {
-            const h = o.createdAt.getHours();
+            const h = zonedParts(o.createdAt, timezone).hour;
             hours[h].revenue += o.totalAmount;
             hours[h].orders++;
             if (o.tableId) hours[h].tablesActive.add(o.tableId);
         }
 
         if (orders.length === 0) {
-            const importedEvents = await getImportedEventsForAnalytics(tenantId, range);
+            const importedEvents = await getImportedEventsForAnalytics(tenantId, timezone, range);
             const hourlyOrderKeys: Record<number, Set<string>> = {};
 
             for (const event of importedEvents) {
@@ -606,8 +656,9 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     // ─────────────────────────────────────────────────────────────────────────
     fastify.get('/analytics/products/velocity', async (req, reply) => {
         const tenantId = getTenant(req);
+        const timezone = await getTenantTimezone(tenantId);
         const { from, to, limit } = req.query as { from?: string; to?: string; limit?: string };
-        const range = dateRange(from, to);
+        const range = dateRange(timezone, from, to);
         const take = Math.min(parseInt(limit || '20', 10), 100);
 
         const items = await prisma.salesItem.findMany({
@@ -646,8 +697,8 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             byProduct[key].orders++;
         }
 
-        const liveDays = await getLiveOrderDays(tenantId, range);
-        const importedEvents = await getImportedEventsForAnalytics(tenantId, range, liveDays);
+        const liveDays = await getLiveOrderDays(tenantId, timezone, range);
+        const importedEvents = await getImportedEventsForAnalytics(tenantId, timezone, range, liveDays);
         for (const event of importedEvents) {
             const key = event.productId || event.productName;
             if (!byProduct[key]) {
@@ -693,8 +744,9 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     // ─────────────────────────────────────────────────────────────────────────
     fastify.get('/analytics/products/profitability', async (req, reply) => {
         const tenantId = getTenant(req);
+        const timezone = await getTenantTimezone(tenantId);
         const { from, to, limit } = req.query as { from?: string; to?: string; limit?: string };
-        const range = dateRange(from, to);
+        const range = dateRange(timezone, from, to);
         const take = Math.min(parseInt(limit || '20', 10), 100);
 
         // Get products with recipes
@@ -756,8 +808,8 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             };
         }
 
-        const liveDays = await getLiveOrderDays(tenantId, range);
-        const importedEvents = await getImportedEventsForAnalytics(tenantId, range, liveDays);
+        const liveDays = await getLiveOrderDays(tenantId, timezone, range);
+        const importedEvents = await getImportedEventsForAnalytics(tenantId, timezone, range, liveDays);
         for (const event of importedEvents) {
             if (!event.productId) continue;
             if (!salesMap[event.productId]) {
@@ -794,8 +846,9 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     // ─────────────────────────────────────────────────────────────────────────
     fastify.get('/analytics/categories/performance', async (req, reply) => {
         const tenantId = getTenant(req);
+        const timezone = await getTenantTimezone(tenantId);
         const { from, to } = req.query as { from?: string; to?: string };
-        const range = dateRange(from, to);
+        const range = dateRange(timezone, from, to);
 
         const items = await prisma.salesItem.findMany({
             where: { salesOrder: { tenantId, status: 'completed', createdAt: range } },
@@ -815,8 +868,8 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
             byCategory[catId].units += i.quantity;
         }
 
-        const liveDays = await getLiveOrderDays(tenantId, range);
-        const importedEvents = await getImportedEventsForAnalytics(tenantId, range, liveDays);
+        const liveDays = await getLiveOrderDays(tenantId, timezone, range);
+        const importedEvents = await getImportedEventsForAnalytics(tenantId, timezone, range, liveDays);
         for (const event of importedEvents) {
             const catId = event.categoryId || 'uncategorized';
             const catName = catId === 'uncategorized' ? 'Sin Categoría' : catId;
@@ -845,8 +898,9 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     // ─────────────────────────────────────────────────────────────────────────
     fastify.get('/analytics/tables/performance', async (req, reply) => {
         const tenantId = getTenant(req);
+        const timezone = await getTenantTimezone(tenantId);
         const { from, to } = req.query as { from?: string; to?: string };
-        const range = dateRange(from, to);
+        const range = dateRange(timezone, from, to);
 
         const tables = await prisma.diningTable.findMany({
             where: { tenantId, isActive: true },
@@ -936,8 +990,9 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     // ─────────────────────────────────────────────────────────────────────────
     fastify.get('/analytics/staff/sales', async (req, reply) => {
         const tenantId = getTenant(req);
+        const timezone = await getTenantTimezone(tenantId);
         const { from, to, limit } = req.query as { from?: string; to?: string; limit?: string };
-        const range = dateRange(from, to);
+        const range = dateRange(timezone, from, to);
         const take = parseInt(limit || '20', 10);
 
         const orders = await prisma.salesOrder.findMany({
@@ -1049,8 +1104,9 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     // ─────────────────────────────────────────────────────────────────────────
     fastify.get('/analytics/cash/accuracy', async (req, reply) => {
         const tenantId = getTenant(req);
+        const timezone = await getTenantTimezone(tenantId);
         const { from, to } = req.query as { from?: string; to?: string };
-        const range = dateRange(from, to);
+        const range = dateRange(timezone, from, to);
 
         const sessions = await prisma.registerSession.findMany({
             where: { tenantId, status: 'closed', endedAt: range },
@@ -1136,8 +1192,9 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     // ─────────────────────────────────────────────────────────────────────────
     fastify.get('/analytics/kitchen/production', async (req, reply) => {
         const tenantId = getTenant(req);
+        const timezone = await getTenantTimezone(tenantId);
         const { from, to } = req.query as { from?: string; to?: string };
-        const range = dateRange(from, to);
+        const range = dateRange(timezone, from, to);
 
         const [prodLogs, wasteLogs, doneLogs] = await Promise.all([
             prisma.kitchenActivityLog.findMany({
@@ -1274,8 +1331,9 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     // ─────────────────────────────────────────────────────────────────────────
     fastify.get('/analytics/waste/digest', async (req, reply) => {
         const tenantId = getTenant(req);
+        const timezone = await getTenantTimezone(tenantId);
         const { from, to } = req.query as { from?: string; to?: string };
-        const range = dateRange(from, to);
+        const range = dateRange(timezone, from, to);
 
         const [wasteLogs, periodRevenue] = await Promise.all([
             prisma.kitchenActivityLog.findMany({
@@ -1360,8 +1418,9 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
     // ─────────────────────────────────────────────────────────────────────────
     fastify.get('/analytics/orders/timing', async (req, reply) => {
         const tenantId = getTenant(req);
+        const timezone = await getTenantTimezone(tenantId);
         const { from, to } = req.query as { from?: string; to?: string };
-        const range = dateRange(from, to);
+        const range = dateRange(timezone, from, to);
 
         const [orders, doneLogs] = await Promise.all([
             prisma.salesOrder.findMany({
